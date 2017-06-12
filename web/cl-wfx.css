@@ -1,0 +1,126 @@
+@page{size:auto; margin:0;}
+
+.bodyclass {
+    margin: auto;
+    font-size:small;
+}
+
+html {
+  font-size: 14px;
+}
+
+/*
+h1 {
+    font-size: 200%;
+}
+
+
+h2 {
+    font-size: 150%;
+}
+
+h3 {
+    font-size: 117%;
+}
+
+ h4 {
+    font-size: 100%;
+}
+
+h5 {
+    font-size: 83%;
+}
+
+h6 {
+    font-size: 67;
+}
+
+input {
+  font-size:small;  
+}
+
+
+.form-control  {
+    font-size:small;
+}
+
+
+
+select.form-control:not([size]):not([multiple])
+				   {height:2.2rem}
+
+select {
+    font-size:small;
+}
+
+*/
+
+.card-title {
+   font-size:120%;
+}
+
+.btn {
+    font-size:small;
+}
+
+
+/*
+    10px = 0.625rem
+    12px = 0.75rem
+    14px = 0.875rem
+    16px = 1rem (base)
+    18px = 1.125rem
+    20px = 1.25rem
+    24px = 1.5rem
+    30px = 1.875rem
+    32px = 2rem
+*/
+
+
+/*
+ * Off Canvas
+ * --------------------------------------------------
+ */
+
+/*
+@media screen and (min-width: 768px) {
+  .sidebar-offcanvas .nav-stacked {
+   position: fixed;
+   top: 8em;
+   width: 33%;
+  } 
+}
+
+   .row-offcanvas-right {
+    right: 0;
+  }
+
+  .row-offcanvas-left {
+    left: 0;
+  }
+
+  .row-offcanvas-right
+  .sidebar-offcanvas {
+    right: 16%; /* 6 columns */
+  }
+
+  .row-offcanvas-left
+  .sidebar-offcanvas {
+    left: 16%; /* 6 columns */
+  }
+
+  .row-offcanvas-right.active {
+    right: -16%; /* 6 columns */
+  }
+
+  .row-offcanvas-left.active {
+    left: -16%; /* 6 columns */
+  }
+
+  .sidebar-offcanvas {
+    position: absolute;
+    top: 5;
+    width: -16%; /* 6 columns */
+  }
+  
+*/
