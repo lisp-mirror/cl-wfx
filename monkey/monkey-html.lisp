@@ -129,9 +129,9 @@
     (:output-op-code            
      (lambda (value &optional escapes)
        (if (get-pretty-printer)
-	   (if escapes
-	      `(output-op-emit :raw-string (escape ,(princ-to-string value) escapes) t)
-	      `(output-op-emit :raw-string ,(princ-to-string value) t)))) 
+           (if escapes
+               `(output-op-emit :raw-string (escape (princ-to-string ,value) escapes) t)
+               `(output-op-emit :raw-string (princ-to-string ,value) t)))) 
      :output-op-emit 
      (lambda (value &optional escapes)
        (declare (ignore escapes))
