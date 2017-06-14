@@ -373,8 +373,8 @@
 	 (:input :type "hidden" :id "contextid" :value (context-id *context*))
 	 (:div :class "container"
 
-
-	       (:embed-value ,@body )
+	       (break "poes ~A" ,(format nil "~A" body))
+	       ,@body
 	       )
 	 (:input :type "hidden" :id "huh" :value "shit fuch")
 	 (:div :id "shit-id"
@@ -437,9 +437,9 @@ function ajax_call(func, callback, args, widget_args) {
 	(data-spec (get-data-spec (getf attributes :data-spec)))
 	
 	)
-  ;; (break "pous")
+  (break "pous")
     
-    `(monkey-html-lisp:with-html
+    (monkey-html-lisp:with-html
 	      (:p "Holy fuck")
 	       
 	       (:div
@@ -469,10 +469,16 @@ function ajax_call(func, callback, args, widget_args) {
 						       ))  
 				       :allow-other-keys t) ,(args spec)
       
-      (monkey-html-lisp:with-html
+
+      
+      (let ((body (monkey-lisp:monkey-lisp 
+		       (:processor-class cl-wfx::context-data-spec-processor)
+		     ,@(script spec))))
+
+	
+	
+	(monkey-html-lisp:with-html
 	  "<!doctype html>"
-	  	  
 	  (render-page			
-	   (monkey-lisp:monkey-lisp 
-				(:processor-class cl-wfx::context-data-spec-processor)
-			      ,@(script spec)))))))
+	   body)
+	  )))))
