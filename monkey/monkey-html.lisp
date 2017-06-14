@@ -210,20 +210,15 @@
 
 ;;;;%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^
 
-
-
-
 (defmacro htm (&body body)
-  (eval-when (:compile-toplevel :load-toplevel :execute)
-    `(monkey-output (:processor-class html-processor)
-       ,@body)))
+  `(monkey-output (:processor-class html-processor)
+     ,@body))
 
 (defmacro with-html (&body body)   
-  (eval-when (:compile-toplevel :load-toplevel :execute)
-    `(let ((monkey-output-lisp::*emit-output* (make-string-output-stream )))
-       (monkey-output-lisp (:processor-class html-processor)
-	 ,@body)
-       (get-output-stream-string monkey-output-lisp::*emit-output*))))
+  `(let ((monkey-output-lisp::*emit-output* (make-string-output-stream )))
+     (monkey-output-lisp (:processor-class html-processor)
+       ,@body)
+     (get-output-stream-string monkey-output-lisp::*emit-output*)))
 
 #|
 (monkey-html-lisp:with-html 
