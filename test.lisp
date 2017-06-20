@@ -29,6 +29,8 @@
  ;; (setup-context nil (get-context-spec "Data Specs") *hunch-sys*)
   )
 
+
+
 #|
 
 
@@ -41,7 +43,9 @@
 |#
 
 
-(defun shit (fuck)
+
+
+(defun shitx (fuck)
   (monkey-html-lisp:with-html 
     (:html
    (:body

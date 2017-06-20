@@ -232,7 +232,7 @@ Calls in order:
      :name "Data Specs"
      :permission (:update :delete :search)
      :for-everyone t 
-     (:data-spec :name "Data Spec")))
+     (:data-spec :name data-spec)))
   
   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
@@ -240,7 +240,7 @@ Calls in order:
      :name "Context Specs"
      :permission (:update :delete)
      :for-everyone t 
-     (:data-spec :name "Context Spec"))))
+     (:data-spec :name context-spec))))
 
 	    
   

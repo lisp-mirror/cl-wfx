@@ -139,11 +139,11 @@
 
 	      (when renderer
 		  ;;  (enable-notifications)
-		  (json:encode-json-to-string
-		   (list (render-to-string* renderer 
-					   :id id :from-ajax t)
-			 ;;(deferred-js)
-			 )))))
+		(json:encode-json-to-string
+		 (list (render-to-string* renderer 
+							  :id id :from-ajax t)
+				       ;;(deferred-js)
+				       )))))
     
     ))
 

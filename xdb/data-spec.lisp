@@ -30,10 +30,6 @@
   (let ((slots))
     (dolist (field attribute-value)
       
-      (if (getf field :key)
-	  (setf (gethash 'key-fields monkey-lisp::*sexp-cache*)
-		(pushnew field (gethash 'key-fields monkey-lisp::*sexp-cache*))))
-      
       (setf (gethash 'fields monkey-lisp::*sexp-cache*)
 		(pushnew field (gethash 'fields monkey-lisp::*sexp-cache*)))
       
@@ -158,7 +154,7 @@
 				     :collection-type 
 				     (gethash 'collection-type monkey-lisp::*sexp-cache*)
 				     :script sexp)))
-    (setf (key-fields data-spec) (gethash 'key-fields monkey-lisp::*sexp-cache*))
+   
     (setf (fields data-spec) (gethash 'fields monkey-lisp::*sexp-cache*))
     
     (unless *system*
@@ -191,17 +187,13 @@
       (:name collection-name
 	     :initarg :collection-name
 	     :accessor collection-name
-	     :initform nil
-	    )
+	     :initform nil)
       (:name script
 	     :initarg :script
 	     :accessor script
 	     :initform nil
 	     :db-type script)
-      (:name key-fields
-	     :initarg :key-fields
-	     :accessor key-fields
-	     :initfrom nil)
+ 
       (:name fields
 	     :initarg :fields
 	     :accessor fields

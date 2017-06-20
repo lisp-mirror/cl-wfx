@@ -15,8 +15,7 @@
      ,@body))
 
 (defun render-to-string* (renderer &rest args)
-  (with-html-string
-    (let* ((splits (split-sequence:split-sequence #\: renderer))
+  (let* ((splits (split-sequence:split-sequence #\: renderer))
 	   
 	   (renderer-package (if (second splits)
 				 (intern (string-upcase (id-string (first splits))) 
@@ -24,10 +23,15 @@
 				 :cl-wfx))
 	   (renderer* (if (second splits)
 			  (second splits)
-			  (first splits))))
-
-      (apply #'render (intern (string-upcase (id-string renderer*)) 
-			      (find-package renderer-package)) args))))
+			  (first splits)))
+	   (render-macro (intern (string-upcase (id-string renderer*)) 
+				 (find-package renderer-package)))
+	   )
+     ;; (break "to string* poes")
+      (eval
+	      `(monkey-html-lisp:with-html 
+		 (,render-macro
+		  ,@args)))))
 
 (defmacro with-debugging (&body body)
   ;; Using this as debugging tool because hunchentoot

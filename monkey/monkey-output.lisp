@@ -40,10 +40,15 @@
      while pos))
 
 (defun emit/no-newlines (ip string &key (start 0) end)
-  (indent-if-necessary ip)
-  (write-sequence string (out ip) :start start :end end)
-  (unless (zerop (- (or end (length string)) start))
-    (setf (beginning-of-line-p ip) nil)))
+  (when string
+    (let ((string (if (stringp string)
+		      string
+		      (format nil "~A" string)
+		      )))
+      (indent-if-necessary ip)
+      (write-sequence string (out ip) :start start :end end)
+      (unless (zerop (- (or end (length string)) start))
+	(setf (beginning-of-line-p ip) nil)))))
 
 (defun emit-newline (ip)
   (write-char #\Newline (out ip))
@@ -110,6 +115,7 @@
      while pos))
 
 (defun optimize-static-output (ops)
+ ;; (break "ops ~A" ops)
   (let ((new-ops (make-op-buffer)))
     (with-output-to-string (buf)
       (flet ((add-op (op) 
@@ -131,14 +137,14 @@
 	(compile-buffer buf new-ops)
 ;;	(break "b ~A" new-ops)
         ))
+;;     (break "new ops ~A" ops)
     new-ops))
 
 ;;TODO: figure out optomize shit
 (defun output-codegen (ops)
   `(progn ,@(output-generate-code ;;ops 
-				  (optimize-static-output ops)
-				  
-				  ) nil))
+	     (optimize-static-output ops))
+	  nil))
   
 (defun sexp-ops (body &optional processor-class)
   (let ((*processor* (create-processor processor-class)))

@@ -13,6 +13,7 @@
 	      (call-next-method)))))
 
 (defun js-render (renderer id &rest args-scripts)
+ ;; (break "huh")
   (format nil "ajax_render(~s, ~s, ~s~@[, [~{~a~^,~}]~])"
           (hunchentoot:script-name*)
           renderer

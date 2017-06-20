@@ -139,11 +139,13 @@
 
 (define-output-operator :embed-code
     (:output-op-code 
-     (lambda (code)  
-       `,code) 
+     
+     (lambda (code)         
+       `(output-op-emit :raw-string (eval ,code))) 
      :output-op-emit 
-     (lambda (code)      
-       code)))
+     (lambda (code)
+      ;; (break "?? ~A" (eval code))
+      code)))
 
 (define-language-operator 'html-processor :print
     (lambda (processor value)
@@ -155,13 +157,17 @@
       (declare (ignore processor))
       (output-op-code :raw-string `(format nil ,@args))))
 
+
 (defun emit-attributes (processor attributes)
   (loop for (k v) on attributes by #'cddr do
+       
        (output-op-code :raw-string (format nil " ~(~a~)='" k))
        (let ((*escapes* *attribute-escapes*))
-         (process processor (if (eql v t) 
+
+	 (process processor (if (eql v t) 
 				(string-downcase k) 
-				v)))
+				v))
+	 )
        (output-op-code :raw-string "'")))
 
 (defun emit-open-tag (processor tag body-p attributes)
@@ -210,9 +216,15 @@
 
 ;;;;%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^%^
 
+(defvar *emit-output-htm* *standard-output*)
+
 (defmacro htm (&body body)
-  `(monkey-output (:processor-class html-processor)
-     ,@body))
+ ` (let ((*emit-output-htm* (make-string-output-stream )))
+     
+    (monkey-output (:processor-class html-processor)
+       ,@body)
+    (get-output-stream-string *emit-output-htm*))
+  )
 
 (defmacro with-html (&body body)   
   `(let ((monkey-output-lisp::*emit-output* (make-string-output-stream )))
