@@ -43,7 +43,6 @@
 				&key &allow-other-keys)
   
   ;;TODO: why checking for ajax?
-  (break "process-sys-request")
   (unless (ajax-request-p (request-object request))
     ;;synq data
     ;;fire events
@@ -51,11 +50,13 @@
     ))
 
 
+(defmethod system-request ((acceptor hunch-system) (request hunch-request) 
+			   &key &allow-other-keys)
+  (process-sys-request *context* request))
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
-
   (with-debugging
-     (hunchentoot:start-session)
+    (hunchentoot:start-session)
     (let* ((*request* (make-instance 'hunch-request :request-object request))
 	   (*system* acceptor)
 	   (*session* (start-session acceptor))
@@ -64,14 +65,8 @@
 	   (*module* (if *context* (module *context*)))
 	   )
       (declare (special *system* *context* *session* *request*))
-      (call-next-method)
-
-      )
-    )
-  )
-
-
-
+      (system-request acceptor *request*)
+      (call-next-method))))
 
 (defvar *widget-parameters*)
 
@@ -114,8 +109,6 @@
       (and error
 	   (bad-request *request*))))
 
-
-
 (defun load-default-ajax (system)
 ;;  (nid-ajax system)
 ;;  (rid-ajax system)
@@ -143,12 +136,9 @@
 		 (list (render-to-string* renderer 
 							  :id id :from-ajax t)
 				       ;;(deferred-js)
-				       )))))
-    
-    ))
+				       )))))))
 
 (defmethod load-context-specs :after ((system hunch-system) &key &allow-other-keys)
-  (load-default-ajax system)
-  )
+  (load-default-ajax system))
 
 

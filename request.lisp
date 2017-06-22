@@ -27,10 +27,10 @@
 (defgeneric process-sys-request (processor request &key &allow-other-keys)
   (:documentation "Processes a system request using the passed processor."))
 
-
-(defmethod process-sys-request ((context context) request &key &allow-other-keys)
-  
-  )
+#|
+(defmethod process-sys-request (context request &key &allow-other-keys)
+  (break "process-sys-request needs to be implemented"))
+|#
 
 (defgeneric system-request (system request &key &allow-other-keys)
   (:documentation "Processes system requests."))

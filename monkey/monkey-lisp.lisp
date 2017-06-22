@@ -226,6 +226,12 @@ process takes care of this????
     ;;  (break "~A" *processor*)
       (process *processor* ',body))))
 
+(defun monkey-lisp* (&key processor-class body)
+  (let ((*processor* (make-instance (or processor-class 'processor))))
+    ;;  (break "~A" *processor*)
+      (process *processor* body))
+  )
+
 #|
 
 (defmacro monkey-lisp (&whole whole (&key processor-class) 
