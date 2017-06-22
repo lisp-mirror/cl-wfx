@@ -30,9 +30,6 @@
   (let ((slots))
     (dolist (field attribute-value)
       
-      (setf (gethash 'fields monkey-lisp::*sexp-cache*)
-		(pushnew field (gethash 'fields monkey-lisp::*sexp-cache*)))
-      
       (setf slots (pushnew `(,(getf field :name) 
 			     :initarg ,(getf field :initarg)
 			     :accessor ,(getf field :accessor)
@@ -155,8 +152,6 @@
 				     (gethash 'collection-type monkey-lisp::*sexp-cache*)
 				     :script sexp)))
    
-    (setf (fields data-spec) (gethash 'fields monkey-lisp::*sexp-cache*))
-    
     (unless *system*
       ;;Put data specs in temp store for loading into db on startup.
       (pushnew data-spec *data-specs*))
@@ -192,12 +187,7 @@
 	     :initarg :script
 	     :accessor script
 	     :initform nil
-	     :db-type script)
- 
-      (:name fields
-	     :initarg :fields
-	     :accessor fields
-	     :initform nil))
+	     :db-type script))
      
      :after-persist #'(lambda (doc)	
 			(when doc
@@ -207,7 +197,6 @@
      :metaclass xdb2:storable-versioned-class
      :collection-name "data-specs"
      :collection-type :merge
-     :default-initargs (:top-level t)
-     ))
+     :default-initargs (:top-level t)))
 
 

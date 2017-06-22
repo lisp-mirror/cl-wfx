@@ -19,8 +19,8 @@
                                  (hunchentoot:script-name request)))
 
 (defmethod request-context ((request hunch-request) &key &allow-other-keys)
-  (let ((script-name (hunchentoot:script-name (request-object request)))
-	(ajax (ajax-request-p (request-object request)))
+  (let ((script-name (or (parameter "context-uri") 
+			 (hunchentoot:script-name (request-object request))))
 	(sys-mod))
     
     (let* ((split
@@ -31,11 +31,10 @@
       (declare (ignore sys))
       
       (setf sys-mod (get-module-short mod))
-      (and (not ajax)
-	   sys-mod
-	   (start-context sys-mod *session* context
-			  :id (or (parameter "i") (parameter "context-id"))
-			  :request request)))))
+      
+      (start-context sys-mod *session* context
+		     :id (or (parameter "i") (parameter "contextid"))
+		     :request request))))
 
 
 (defmethod process-sys-request ((context context) 
@@ -54,19 +53,44 @@
 			   &key &allow-other-keys)
   (process-sys-request *context* request))
 
+
+(defun dont-process (request)
+  (let ((script-name (hunchentoot:script-name request)))
+    (or (search ".js" script-name)
+	(search ".css" script-name)
+	(search ".jpg" script-name)
+	(search ".png" script-name)
+	(search ".gif" script-name)
+	(search ".ico" script-name)
+	))
+  )
+
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
-  (with-debugging
-    (hunchentoot:start-session)
-    (let* ((*request* (make-instance 'hunch-request :request-object request))
-	   (*system* acceptor)
-	   (*session* (start-session acceptor))
-	   (*context* (request-context *request*))
-	   ;;TODO: is this the right way to get module
-	   (*module* (if *context* (module *context*)))
+ (with-debugging
+   (let ((dont (dont-process request)))
+     (hunchentoot:start-session)
+     (if (not dont)
+           
+       (let* ((*request* (make-instance 'hunch-request :request-object request))
+	      (*system* acceptor)
+	      (*session* (start-session acceptor))
+	      (*context* (request-context *request*))
+	      ;;TODO: is this the right way to get module
+	      (*module* (if *context* (module *context*))))
+	 (declare (special *system* *context* *session* *request*))
+	 (unless *context*
+	   (bad-request *request*))
+	 
+	 (when *context*
+	   (system-request acceptor *request*))	 
+	 (call-next-method))
+       (call-next-method)
+       )
+     
+     
+     ))
+  
 	   )
-      (declare (special *system* *context* *session* *request*))
-      (system-request acceptor *request*)
-      (call-next-method))))
 
 (defvar *widget-parameters*)
 
@@ -134,9 +158,9 @@
 		  ;;  (enable-notifications)
 		(json:encode-json-to-string
 		 (list (render-to-string* renderer 
-							  :id id :from-ajax t)
-				       ;;(deferred-js)
-				       )))))))
+					  :id id :from-ajax t)
+		       ;;(deferred-js)
+		       )))))))
 
 (defmethod load-context-specs :after ((system hunch-system) &key &allow-other-keys)
   (load-default-ajax system))

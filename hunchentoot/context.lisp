@@ -25,6 +25,7 @@
 	 (:div ,id ,from-ajax)))
 
 (monkey-lisp::define-monkey-macro render-page (&body body)
+  
   `(:html
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
 	
@@ -47,7 +48,6 @@
 	(:body 
 	 (:input :type "hidden" :id "contextid" :value (context-id *context*))
 	 (:div :class "container"
-
 	       ,@body)
 	 
 	 (:input :type "hidden" :id "huh" :value "shit fuch")
@@ -66,11 +66,10 @@
 			    
 			     )
 		  "Render Shit")
-	 
 
 	 (:script ,(frmt	      
-		   "
-function ajax_call(func, callback, args, widget_args) {
+"function ajax_call(func, callback, args, widget_args) {
+
     var uri = '~Aajax/' + encodeURIComponent(func);
     var post_parameters = '&contextid=' + contextid.value;
     var i;
@@ -86,16 +85,14 @@ function ajax_call(func, callback, args, widget_args) {
     if (widget_args && widget_args.length > 0) {
         for (i = 0; i < widget_args.length; ++i) {
             var arg = widget_args[i]
-
             post_parameters += '&' + encodeURIComponent(arg[0]) + '='
                 + encodeURIComponent(arg[1]);
         }
     }
+
     fetchURI(uri, callback, post_parameters);
 
-}
-
-" (site-url *system*))))))
+}" (site-url *system*))))))
 
 (defun render-grid-edit (item)
   (monkey-html-lisp:htm
@@ -347,9 +344,8 @@ function ajax_call(func, callback, args, widget_args) {
 
 
 (defun render-grid (&key id from-ajax permissions)
-  
-  (let* (
-	 (data (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*)))
+  (declare (ignore id) (ignore from-ajax) )
+  (let* ((data (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*)))
 	 (data-count (length data))	 
 	 (how-many-pages nil)
 	 (how-many-rem 0)
@@ -379,54 +375,54 @@ function ajax_call(func, callback, args, widget_args) {
     (monkey-html-lisp:with-html	       
       (:div :id "grid-table"
 	    
-	    (:div :class "row"	  
-		  (:div :class "col"
-			(:input :type "text" :name "pages" :id "pages"
-				:value (if (parameter "pages")
-					   (parameter "pages")
-					   10)
-				:onkeydown
-				;;fires ajax call on enter (13)
-				(js-render-event-key 
-				 "pages"
-				 13					   
-				 "cl-wfx:ajax-grid"
-				 "grid-table"
-				 (js-pair "data-spec"
-					  "data-spec")
+	    
+
+	    (:div :class "card"
+		  (:div :class "card-header"
+			(:div :class "row"	
+			      
+			      (dolist (slot (gethash 'fields monkey-lisp::*sexp-cache*))
 				
-				 (js-pair "page" "1")
-				 (js-pair "grid-name" 
-					  (frmt "~A" 
-						(gethash 'data-spec-name 
-							 monkey-lisp::*sexp-cache*)))
-				 (js-pair "action" "grid-sizing"))
-				)))
-	    ;;   (break "shit 444")
-	    
-	    (:div :class "row table-active"	
-		 
-		  (dolist (slot (gethash 'fields monkey-lisp::*sexp-cache*))
-		 
-		    (let* ((name (getf slot :name))
-			   (label (getf slot :label)))
-		    
-		      (monkey-html-lisp:htm
-			(:div :class "col"
-			      (:h6 (if label
-				       label
-				       (format nil "~A" name)))))))
+				(let* ((name (getf slot :name))
+				       (label (getf slot :label)))
+				  
+				  (monkey-html-lisp:htm
+				    (:div :class "col"
+					  (:h6 (if label
+						   label
+						   (format nil "~A" name)))))))
+			      
+			      (:div :class "col" ;;column spacing for buttons
+				    (:div :class "row"	  
+					  (:div :class "col"
+						(:input :type "text" :name "pages" :id "pages"
+							:value (if (parameter "pages")
+								   (parameter "pages")
+								   10)
+							:onkeydown
+							;;fires ajax call on enter (13)
+							(js-render-event-key 
+							 "pages"
+							 13
+							 "cl-wfx:ajax-grid"
+							 "grid-table"
+							 (js-pair "data-spec"
+								  "data-spec")
+				
+							 (js-pair "page" "1")
+							 (js-pair "grid-name" 
+								  (frmt "~A" 
+									(gethash 'data-spec-name 
+										 monkey-lisp::*sexp-cache*)))
+							 (js-pair "action" "grid-sizing"))))))))
 		  
-		  (:div :class "col" ;;column spacing for buttons
-			""))
-	    
-	    (let ((page-data (subseq data start-count end-count )))
-	      (render-grid-data page-data permissions active-page))
-			     
-			     
-	    (:div :class "row"	  
-		  (:div :class "col"					 
-			(render-grid-paging active-page how-many-rem how-many-pages)))))))
+		  (let ((page-data (subseq data start-count end-count )))
+		    (render-grid-data page-data permissions active-page))
+		  
+		  (:div :class "card-footer"
+			(:div :class "row"	  
+			      (:div :class "col"					 
+				    (render-grid-paging active-page how-many-rem how-many-pages)))))))))
 
 
 

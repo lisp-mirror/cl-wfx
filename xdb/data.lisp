@@ -48,7 +48,7 @@
 
 (defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
   (let ((keys))
-    (dolist (field (fields data-spec))
+    (dolist (field (getf (cdr (first (script data-spec))) :data-fields))
       (if (getf field :key)
 	  (pushnew (slot-value item (getf field :name)) keys)))))
 

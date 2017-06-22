@@ -13,19 +13,18 @@
 	      (call-next-method)))))
 
 (defun js-render (renderer id &rest args-scripts)
- ;; (break "huh")
   (format nil "ajax_render(~s, ~s, ~s~@[, [~{~a~^,~}]~])"
-          (hunchentoot:script-name*)
+          (or (parameter "context-uri") (hunchentoot:script-name*))
           renderer
 	  id
           args-scripts))
 
 (defun js-render-event-key (source-id event-key renderer id &rest args-scripts)
-  (format nil "ajax_render_event_key(event, ~s, ~s, ~s, ~s, ~s~@[, [~{~a~^,~}]~])"
+  (format nil "ajax_render_event_key(~s, ~s, ~s, ~s, ~s~@[, [~{~a~^,~}]~])"
+	  (or (parameter "context-uri") (hunchentoot:script-name*))
+	  renderer
 	  source-id
-	  event-key
-          (hunchentoot:script-name*)
-          renderer
+	  event-key         
 	  id
           args-scripts))
 
