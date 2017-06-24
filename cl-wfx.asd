@@ -46,6 +46,7 @@
 			 :components
 			 ((:file "common")
 			  (:file "ajax")
+			  (:file "grid")
 			  (:file "context")
 			  (:file "system")			  
 			  (:file "request")

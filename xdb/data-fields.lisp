@@ -31,11 +31,17 @@
 	 (*read-eval* nil)
 	 (final-val))
     
-    (setf final-val (read-from-string value))
+    (if value
+	(if (stringp value)
+	    (setf final-val (read-from-string value))
+	    (setf final-val value))
+	(setf final-val value))
     
-    (if (apply type-test (list final-val))
-	(setf (slot-value item name) final-val)
-	(error (frmt read-error final-val)))))
+    (if final-val
+	(if  (apply type-test (list final-val))
+	     (setf (slot-value item name) final-val)
+	     (error (frmt read-error final-val)))
+	(setf (slot-value item name) final-val))))
 
 (defmethod set-item-val ((type (eql 'symbol)) item-def item value  
 			 &key &allow-other-keys)

@@ -1,5 +1,8 @@
 (in-package :cl-wfx)
 
+(defclass hunch-request (request)
+  ((request-object :initarg :request-object
+		   :accessor request-object)))
 
 (defgeneric render (renderer &key &allow-other-keys))
 

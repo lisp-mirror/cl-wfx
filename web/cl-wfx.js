@@ -191,8 +191,9 @@ function get_form_values(form_id, disabled) {
         //tinyMCE.triggerSave();
         save_scripts();
         var result = [];
-        for (var i = 0; i < input_types.length; i++)
+        for (var i = 0; i < input_types.length; i++){
             result = result.concat(get_values(widget, input_types[i], disabled));
+	}
         return result;
     }
 }
