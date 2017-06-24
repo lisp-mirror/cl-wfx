@@ -197,7 +197,7 @@ Calls in order:
 	   (get-context-spec "Context Specs")
 	 ;;  (get-context-spec "report")
 	  ;; (get-context-spec "report-view")
-	  ;; (get-context-spec "module")
+	  (get-context-spec "Modules")
 	  ;; (get-context-spec "license")
 	  ;; (get-context-spec "user")
 	  ;; (get-context-spec "import-data")
@@ -240,7 +240,15 @@ Calls in order:
      :name "Context Specs"
      :permission (:update :delete)
      :for-everyone t 
-     (:data-spec :name context-spec))))
+     (:data-spec :name context-spec)))
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
+     :name "Modules"
+     :permission (:update :delete)
+     :for-everyone t 
+     (:data-spec :name module)))
+  )
 
 	    
   

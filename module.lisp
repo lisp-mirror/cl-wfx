@@ -79,23 +79,33 @@
 	   :initarg :module-name
 	   :accessor module-name
 	   :initform nil
-	   :db-type string)
+	   :db-type string
+	   :display t
+	   :editable t
+	   )
     (:name module-short
 	   :initarg :module-short
 	   :accessor module-short
 	   :initform nil
 	   :db-type string
-	   :key t)
+	   :key t
+	   :display t
+	   :editable t
+	   )
     (:name contexts
 	   :initarg :contexts
 	   :accessor contexts
 	   :initform nil
-	   :db-type (data-group context-spec :key-accessor context-name))
+	   ;; :db-type (data-group context-spec :key-accessor context-name)
+	   )
     (:name menu 
 	   :initarg :menu
 	   :accessor menu
 	   :initform nil
-	   :db-type (list menu))
+	   :db-type (list menu)
+	   :display t
+	   :editable t
+	   )
     ;;(help)
     )
    :metaclass xdb2:storable-versioned-class

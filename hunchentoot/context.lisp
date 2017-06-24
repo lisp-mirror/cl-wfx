@@ -1,28 +1,150 @@
 (in-package :cl-wfx)
 
-(defgeneric item-val (type item-def data)
-  (:documentation "Retrieves and wrap for display data according to item definition."))
-
-
-(defmethod item-val ((type (eql 'string)) item-def item)
-  (let* ((name (getf item-def :name)))
-    (slot-value item name)))
-
-(defmethod item-val ((type (eql 'script)) item-def item)
-  (let* ((name (getf item-def :name))
-	(def (car (slot-value item name))))
-    ;;(break "def ~A ~A" (second def) (third def))
-    def))
-
-
-
-(defclass context-data-spec-processor (monkey-lisp:processor)
-  ()
-  )
 
 (monkey-lisp::define-monkey-macro shit-shat (&key id from-ajax)
   `(:div "No idea wtf?????????????????"
 	 (:div ,id ,from-ajax)))
+
+
+(defun print-item-val-s* (field item)
+  (let ((*print-case* :downcase))
+    (frmt "~S"
+	  (item-val (field-data-type field) 
+		    field 
+		    item))))
+
+(defun print-item-val-a* (field item)
+  (let ((*print-case* :downcase))
+    (frmt "~A"
+	  (item-val (field-data-type field) 
+		    field 
+		    item))))
+
+(defmethod print-item-val ((type (eql 'symbol)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql 'keyword)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql 'script)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql 'string)) field item &key &allow-other-keys)
+   (print-item-val-a* field item))
+
+(defmethod print-item-val ((type (eql 'list)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql 'boolean)) field item &key &allow-other-keys)
+  (if (item-val (field-data-type field) 
+		field 
+		item)
+      "checked"
+      ""
+      ))
+
+
+(defgeneric render-input-val (type field item &key &allow-other-keys))
+
+(defun render-input-val* (type field item)
+  (let ((name (getf field :name)))
+    (if (not (getf field :editable))
+	(monkey-html-lisp:htm
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "text"	     
+		  :value
+		  (print-item-val 
+		   type
+		   field 
+		   item
+		  )
+		  :disabled "disabled"))
+	(monkey-html-lisp:htm
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "text"	     
+		  :value
+		  (print-item-val 
+		   type
+		   field 
+		   item))))))
+
+(defmethod render-input-val ((type (eql 'symbol)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'keyword)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'string)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'list)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'boolean)) field item &key &allow-other-keys)
+  (let ((name (getf field :name))
+	(print-val (item-val type field item)))
+    
+    (monkey-html-lisp:htm
+      (:div :class "form-check" 
+	    (if (not (getf field :editable))
+		(monkey-html-lisp:htm (:div :class "form-check-label"
+					    (:input
+					     :class "form-check-input"
+					     :type "checkbox"
+					     :id name
+					     :name name
+					     :value (item-val 
+						     type
+						     field 
+						     item)
+					     :checked print-val
+					     :aria-label "..."
+					     :disabled "disabled"
+					     )))
+		(monkey-html-lisp:htm (:div :class "form-check-label"
+					    (:input
+					     :class "form-check-input"
+					     :type "checkbox"
+					     :id name
+					     :name name
+					     :value (item-val 
+						     type
+						     field 
+						     item)
+					     :checked print-val
+					     :aria-label "..."
+					   
+					     )))
+		)))))
+
+(defmethod render-input-val ((type (eql 'script)) field item &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    (if (not (getf field :editable))
+	(monkey-html-lisp:htm
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (print-item-val 
+	    type
+	    field 
+	    item)))
+	(monkey-html-lisp:htm
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 50 :rows 10
+	
+	   (print-item-val 
+	    type
+	    field 
+	    item)))
+	)))
 
 (monkey-lisp::define-monkey-macro render-page (&body body)
   
@@ -94,46 +216,67 @@
 
 }" (site-url *system*))))))
 
-(defun render-grid-edit (item)
+(defun render-grid-edit (spec-name item active-page)
   (monkey-html-lisp:htm
     (:div :class "card"
 	  (:div :class "card-header"
-		"Edit")
-	  (:div :class "row"
-				     
-		(dolist (slot (gethash 'fields monkey-lisp::*sexp-cache*))
-		  (let* ((name (getf slot :name))
-			 (label (getf slot :label)))
-					 
-		    (monkey-html-lisp:htm
-					   
-		      (:div :class "col-sm-1"
-			    (if label
-				label
-				(frmt "~A" name)))
-		      (:div :class "col-sm-5"
-			    (cond
-			      ((equalp (getf slot :db-type) 'string)
-			       (monkey-html-lisp:htm
-				 (:input :name name :type "text"
-					 :value
-					 (frmt "~S" (item-val (getf slot :db-type) 
-							      slot 
-							      item)))))
-			      ((equalp (getf slot :db-type) 'script)
-			       (monkey-html-lisp:htm
-				 (:textarea 
-				  :name name :cols 50 :rows 5
-				  (frmt "~S" (slot-value item name)))))
-			      (t
-			       (monkey-html-lisp:htm
-				 (:textarea 
-				  :name name :cols 50 :rows 5
-				  (frmt "~S" (slot-value item name)))))))))))
+		"Editing...")
+	  (:div :class "card-block"
+		(:div :class "row" 
+		      :id (frmt "~A" 
+				(gethash 'data-spec-name 
+					 monkey-lisp::*sexp-cache*))
+		      (:div :class "col"
+			    (dolist (field (gethash 'fields monkey-lisp::*sexp-cache*))
+			      (let* ((name (getf field :name))
+				     (label (getf field :label)))
+				
+				(when (getf field :display)
+				  
+				  (monkey-html-lisp:htm
+				    
+				    (:div :class (if (getf field :editable)
+						     "form-group row"
+						     "form-group row disabled"
+						     )
+					  (:label :for name :class "col-sm-2 col-form-label" 
+						  (if label
+						      label
+						      (string-capitalize (frmt "~A" name))))
+					  (:div :class "col"
+						(render-input-val 
+						 (field-data-type field) 
+						 field item))))))))))
 	  (:div :class "card-footer"
-		(:a :href "#" :class "card-link" "Save")))))
+		(:button ;;:tabindex -1 ;;when disabled
+		 :name "save" 
+		
+		 :type "submit" 
+		 :class "btn btn-outline-primary btn-sm"
+		  
+		 :onclick 
+		 (js-render-form-values "cl-wfx:ajax-grid"
+					"grid-table"
+					(frmt "~A" 
+					      (gethash 'data-spec-name 
+						       monkey-lisp::*sexp-cache*))
+					(js-pair "data-spec"
+						 (frmt "~S" spec-name))
+					(js-pair "data-id"
+						 (xdb2::id item))
+					(js-pair "pages"
+						 (or (parameter "pages") 10))
+					(js-pair "page"
+						 active-page)
+					(js-pair "action" "save")
+					       
+					)
+		 
+		  
+	
+		 "Save")))))
 
-(defun render-grid-buttons (item permissions active-page)
+(defun render-grid-buttons (spec-name item permissions active-page)
   (dolist (permission permissions)
     (cond ((equalp permission :update)
 	   (monkey-html-lisp:htm
@@ -158,13 +301,15 @@
 	      (js-render "cl-wfx:ajax-grid"
 			 "grid-table"
 			 (js-pair "data-spec"
-				  "data-spec")
+				  (frmt "~S" spec-name))
 			 (js-pair "item-id"
 				  (xdb2::id item))
 			 (js-pair "pages"
 				  (or (parameter "pages") 10))
 			 (js-pair "page"
 				  active-page)
+			 (js-pair "search"
+				  (parameter "search"))
 			 (js-pair "grid-name" 
 				  (frmt "~A" 
 					(gethash 'data-spec-name 
@@ -191,13 +336,15 @@
 	      (js-render "cl-wfx:grid"
 			 "grid-table"
 			 (js-pair "data-spec"
-				  "Data Spec")
+				  (frmt "~S" spec-name))
 			 (js-pair "item-id"
 				  (xdb2::id item))
 			 (js-pair "pages"
 				  (or (parameter "pages") 10))
 			 (js-pair "page"
 				  active-page)
+			 (js-pair "search"
+				  (parameter "search"))
 			 (js-pair "grid-name" 
 				  (frmt "~A" 
 					(gethash 'data-spec-name 
@@ -205,52 +352,35 @@
 			 (js-pair "action" "delete"))
 	      "Delete"))))))
 
-(defun render-grid-data (page-data permissions active-page)
+(defun render-grid-data (spec-name page-data permissions active-page)
   (dolist (item page-data)
 		(monkey-html-lisp:htm
 		  (:div :class "row"
-			(dolist (slot (gethash 'fields monkey-lisp::*sexp-cache*))
-			
-			  (let* ((name (getf slot :name)))
+		
+			(dolist (field (gethash 'fields monkey-lisp::*sexp-cache*))
+			  (when (getf field :display)
 			    (monkey-html-lisp:htm 
-			     
+			      
 			      (:div :class "col"
-				    (cond
-				      ((getf slot :db-type)
-				       
-				       (let ((val (if (equalp (getf slot :db-type) :script)
-						      (frmt "~S"
-							    (item-val (getf slot :db-type) 
-								      slot item))
-						      (frmt "~A"
-							    (item-val (getf slot :db-type) 
-								      slot item))
-						      )))
-					 (if (> (length val) 50 )
-					     (if (equalp (getf slot :db-type) :script)
-						 (frmt "~S ..." (subseq val 0 50))
-						 (frmt "~A ..." (subseq val 0 50)))
-					     val)
-					 ))
-				      (t
-				       (let ((val (frmt "~A"
-							(slot-value item name))))
-					 (if (> (length val) 50 )
-					     (frmt "~A ..." (subseq val 0 50))
-					     val)
-					 )
-				       ))))))
+				  
+				    (let ((val (print-item-val 
+						(field-data-type field) field item)))
+				      (if (> (length val) 100 )
+					  (frmt "~A ..." (subseq val 0 100))
+					  val)
+				      )
+				    ))))
 		
 			(:div :class "col"
-			      (render-grid-buttons item permissions active-page )
+			      (render-grid-buttons spec-name item permissions active-page )
 			      ))
 
 
 		  (if (and (parameter "item-id")
 			   (string-equal (parameter "item-id") (frmt "~A" (xdb2:id item))))
-		      (render-grid-edit item)))))
+		      (render-grid-edit spec-name item active-page)))))
 
-(defun render-grid-paging (active-page how-many-rem how-many-pages)
+(defun render-grid-paging (spec-name active-page how-many-rem how-many-pages)
   (monkey-html-lisp:htm
     (:nav
      (:ul :class "pagination justify-content-end"
@@ -268,7 +398,7 @@
 		(js-render "cl-wfx:ajax-grid"
 			   "grid-table"
 			   (js-pair "data-spec"
-				    "data-spec")
+				    (frmt "~S" spec-name))
 			   (js-pair "pages"
 				    (or (parameter "pages") 10))
 			   (js-pair "page"
@@ -299,7 +429,7 @@
 		      (js-render "cl-wfx:ajax-grid"
 				 "grid-table"
 				 (js-pair "data-spec"
-					  "data-spec")
+					  (frmt "~S" spec-name))
 				 (js-pair "pages"
 					  (or (parameter "pages") 10))
 				 (js-pair "page"
@@ -326,7 +456,7 @@
 		    (js-render "cl-wfx:ajax-grid"
 			       "grid-table"
 			       (js-pair "data-spec"
-					"data-spec")
+					(frmt "~S" spec-name))
 			       (js-pair "pages"
 					(or (parameter "pages") 10))
 			       (js-pair "page"
@@ -342,10 +472,92 @@
 		    "Next"))))))))
 
 
+(defun render-grid-sizing (spec-name)
+  (monkey-html-lisp:htm
+    (:input :type "text" :name "pages" 
+	    :size 2
+	    :id "pages"
+	    :value (if (parameter "pages")
+		       (parameter "pages")
+		       10)
+	    :onkeydown
+	    ;;fires ajax call on enter (13)
+	    (js-render-event-key 
+	     "pages"
+	     13
+	     "cl-wfx:ajax-grid"
+	     "grid-table"
+	     (js-pair "data-spec"
+		      (frmt "~S" spec-name))
+	     (js-pair "page" "1")
+	     (js-pair "search"
+		      (parameter "search"))
+	     (js-pair
+	      "grid-name" 
+	      (frmt "~A" 
+		    (gethash 
+		     'data-spec-name 
+		     monkey-lisp::*sexp-cache*)))
+	     (js-pair "action" "grid-sizing")))))
+
+(defun render-grid-search (spec-name)
+  (monkey-html-lisp:htm
+    (:input :type "text" 
+	    :name "search" 	   
+	    :id "search"
+	    :value (if (parameter "search")
+		       (parameter "search")
+		       "")
+	    :onkeydown
+	    ;;fires ajax call on enter (13)
+	    (js-render-event-key 
+	     "search"
+	     13
+	     "cl-wfx:ajax-grid"
+	     "grid-table"
+	     (js-pair "data-spec"
+		      (frmt "~S" spec-name))
+	     (js-pair "page" "1")
+	     
+	     (js-pair
+	      "grid-name" 
+	      (frmt "~A" 
+		    (gethash 
+		     'data-spec-name 
+		     monkey-lisp::*sexp-cache*)))
+	     (js-pair "action" "grid-search"))))
+  )
+
+(defun fetch-grid-data ()
+  (if (or (not (parameter "search")) 
+	  (< (length (string-trim (list #\Space)  (parameter "search"))) 1))
+      
+      (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*))
+      (fetch-items  
+       (gethash 'collection-name monkey-lisp::*sexp-cache*)
+       :test (lambda (item)
+	       
+	       (let ((found nil))
+		 (dolist (field (gethash 'fields monkey-lisp::*sexp-cache*))
+		   (let ((val (print-item-val (field-data-type field) field item)))
+		     
+		     (when (search (parameter "search") 
+				   val
+				   :test #'string-equal
+				   )
+		       (unless found
+			 (setf found t))
+		       )
+		     )
+		   )
+		 (if found
+		     item))))))
 
 (defun render-grid (&key id from-ajax permissions)
   (declare (ignore id) (ignore from-ajax) )
-  (let* ((data (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*)))
+
+  (let* ((data (fetch-grid-data))
+	 (spec-name (gethash 'data-spec-name monkey-lisp::*sexp-cache*))
 	 (data-count (length data))	 
 	 (how-many-pages nil)
 	 (how-many-rem 0)
@@ -374,95 +586,47 @@
     
     (monkey-html-lisp:with-html	       
       (:div :id "grid-table"
-	    
-	    
-
 	    (:div :class "card"
+
 		  (:div :class "card-header"
+			
 			(:div :class "row"	
 			      
-			      (dolist (slot (gethash 'fields monkey-lisp::*sexp-cache*))
-				
-				(let* ((name (getf slot :name))
-				       (label (getf slot :label)))
-				  
-				  (monkey-html-lisp:htm
-				    (:div :class "col"
-					  (:h6 (if label
-						   label
-						   (format nil "~A" name)))))))
+			      (dolist (field (gethash 'fields monkey-lisp::*sexp-cache*))
+			
+				(when (getf field :display)
+				  (let* ((name (getf field :name))
+					 (label (getf field :label)))
+				    
+				    (monkey-html-lisp:htm
+				      (:div :class "col"
+					    (:h6 (if label
+						     label
+						     (format nil "~A" name))))))))
 			      
 			      (:div :class "col" ;;column spacing for buttons
 				    (:div :class "row"	  
 					  (:div :class "col"
-						(:input :type "text" :name "pages" :id "pages"
-							:value (if (parameter "pages")
-								   (parameter "pages")
-								   10)
-							:onkeydown
-							;;fires ajax call on enter (13)
-							(js-render-event-key 
-							 "pages"
-							 13
-							 "cl-wfx:ajax-grid"
-							 "grid-table"
-							 (js-pair "data-spec"
-								  "data-spec")
-				
-							 (js-pair "page" "1")
-							 (js-pair "grid-name" 
-								  (frmt "~A" 
-									(gethash 'data-spec-name 
-										 monkey-lisp::*sexp-cache*)))
-							 (js-pair "action" "grid-sizing"))))))))
-		  
-		  (let ((page-data (subseq data start-count end-count )))
-		    (render-grid-data page-data permissions active-page))
+						(render-grid-search spec-name)
+						(render-grid-sizing spec-name)
+						)))))
+		  (:div :class "card-block"
+			(let ((page-data (subseq data start-count end-count )))
+			  (render-grid-data spec-name page-data permissions active-page)))
 		  
 		  (:div :class "card-footer"
 			(:div :class "row"	  
 			      (:div :class "col"					 
-				    (render-grid-paging active-page how-many-rem how-many-pages)))))))))
-
-
-
-
-(defmethod monkey-lisp:process-attribute ((processor context-data-spec-processor) 
-					  (tag (eql :data-spec)) 
-					  (attribute-tag (eql :name))
-					  attribute-value)
-  (setf (gethash 'data-spec-name monkey-lisp::*sexp-cache*) 
-	attribute-value))
-
-
-(defmethod monkey-lisp:process-attribute ((processor context-data-spec-processor) 
-					  (tag (eql :data-spec)) 
-					  (attribute-tag (eql :collection-name))
-					  attribute-value)
-  ;;(break "collection-name")
-  (setf (gethash 'collection-name monkey-lisp::*sexp-cache*) attribute-value))
-
-(defmethod monkey-lisp:process-attribute ((processor context-data-spec-processor) 
-					  (tag (eql :data-spec)) 
-					  (attribute-tag (eql :data-fields))
-					  attribute-value)
-  
-  (setf (gethash 'fields monkey-lisp::*sexp-cache*) attribute-value))
-
-(defmethod monkey-lisp:post-process-monkey-sexp ((processor context-data-spec-processor) 
-						sexp
-						(tag (eql :data-spec)) 
-						 attributes body)
-  (render-grid :permissions '(:update :delete)))
+				    (render-grid-paging spec-name active-page how-many-rem how-many-pages)))))))))
 
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  (let ((data-spec (get-data-spec (parameter "data-spec"))))
+  (let ((data-spec (get-data-spec (read-symbol-from-string (parameter "data-spec")))))
     (monkey-lisp::monkey-lisp* 
      :processor-class 'cl-wfx::context-data-spec-processor
      :body
-     (first (script data-spec)))))
+     (data-spec-script data-spec))))
 
 (defmethod setup-context ((module module) (spec context-spec) system)  
   (eval
@@ -482,12 +646,12 @@
 						       ))  
 				       :allow-other-keys t) ,(args spec)
       
-     ;; (break "~S~%~S~%~S" ,spec ,(get-data-spec (third (first (script spec)))) ',(third (first (script spec))))
-      
+          
       (let* ((shit (monkey-lisp:monkey-lisp 
 		       (:processor-class cl-wfx::context-data-spec-processor)
-		     ,(first (script (get-data-spec (third (first (script spec)))))))))
-	
+		     ,(data-spec-script (get-data-spec (getf 
+							(cdr (context-spec-script spec))
+							:name))))))
 	(monkey-html-lisp:with-html
 	  "<!doctype html>"
 	  (render-page shit))))))

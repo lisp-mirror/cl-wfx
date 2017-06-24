@@ -72,7 +72,7 @@ Used: stop-sys :before"))
 
 (defun fetch-items (collection &key test result-type)  
   (if (and *system* (data *system*) )      
-      (funcall 'fetch-item* 
+      (funcall 'fetch-items* 
 	       (data *system*) 
 	       collection 
 	       :test test
@@ -186,3 +186,13 @@ Used: stop-sys :before"))
 	     (when (funcall test item)
 	       (return-from data-from-items item)))
 	   items))))
+
+
+(defgeneric set-item-val (type item-def item value &key &allow-other-keys)
+  (:documentation "Sets item data value according to definition."))
+
+(defgeneric item-val (type item-def data &key &allow-other-keys)
+  (:documentation "Retrieves data according to item definition."))
+
+(defgeneric print-item-val (type item-def data &key &allow-other-keys)
+  (:documentation "Retrieves and wrap for display data according to item definition."))

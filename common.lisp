@@ -74,3 +74,9 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
 				   'ies))
 	  (t
 	   (alexandria:symbolicate name 's)))))
+
+
+
+(defun read-symbol-from-string (string)
+  (let ((*read-eval* nil))
+    (read-from-string string)))

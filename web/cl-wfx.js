@@ -184,7 +184,6 @@ function add_scripts(script) {
 }
 
 function get_form_values(form_id, disabled) {
-    alert("huh");
     var widget = find_widget(form_id);
     var input_types = ['input', 'select', 'textarea'];
 

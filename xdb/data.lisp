@@ -48,7 +48,7 @@
 
 (defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
   (let ((keys))
-    (dolist (field (getf (cdr (first (script data-spec))) :data-fields))
+    (dolist (field (data-spec-fields data-spec))
       (if (getf field :key)
 	  (pushnew (slot-value item (getf field :name)) keys)))))
 
@@ -115,11 +115,13 @@
   (let ((docs (fetch-all* data collection :test test :result-type result-type)))
     
     (if test
-	(map
-	 (or result-type 'list)
-	 (lambda (doc)
-	   (funcall test doc))
-	 docs))))
+	(remove-if 
+	 #'not 
+	 (map
+	  (or result-type 'list)
+	  (lambda (doc)
+		      (funcall test doc))
+	  docs)))))
 
 (defmethod fetch-item* ((data xdb-data) collection &key test result-type &allow-other-keys)
   (let ((docs (fetch-all* data collection :test test :result-type result-type)))
@@ -256,10 +258,10 @@
     (system-collection "licenses")))
 
 (defmethod xdb2:doc-collection ((doc data-spec))
-
   (if (xdb2:top-level doc)    
     (system-collection "data-specs")))
 
 (defmethod xdb2:doc-collection ((doc xdb2:storable-object))
   (if (xdb2:top-level doc)    
     (collection-from-doc doc)))
+

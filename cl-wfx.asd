@@ -19,8 +19,11 @@
 	       (:file "script")
 	       (:file "data")
 	       (:file "data-spec")
+	       
 	       (:file "xdb/common")
 	       (:file "xdb/data-spec")
+	       (:file "context-spec")
+	       (:file "xdb/context-spec")
 	       
 	       
 	       (:file "context")
@@ -35,6 +38,7 @@
 			 :serial t
 			 :components
 			 ((:file "data")
+			  (:file "data-fields")
 			  (:file "system")))
 	       
 	       (:module "hunchentoot"

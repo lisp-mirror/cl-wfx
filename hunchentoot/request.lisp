@@ -36,11 +36,38 @@
 		     :id (or (parameter "i") (parameter "contextid"))
 		     :request request))))
 
+(defgeneric action-handler (action context request
+				&key &allow-other-keys))
+
+(defmethod action-handler ((action (eql :save)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  (let* ((data-spec (get-data-spec (parameter "data-spec")))
+	 (fields (data-spec-fields data-spec)))
+    
+    (when fields
+      
+      (let ((item (fetch-item (collection-name data-spec)
+		  :test (lambda (item)
+			  (equalp (parse-integer (parameter "data-id")) 
+				  (xdb2::id item))))))
+	(dolist (field fields)
+	  (if (getf field :db-type)
+	      (set-item-val (getf field :db-type) field item 
+			    (parameter (getf field :name)))))
+	
+	(persist-data item)))))
 
 (defmethod process-sys-request ((context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
-  
+  (if (equalp (parameter "action") "save")
+      (action-handler (intern (string-upcase (parameter "action")) :keyword)
+		      context
+		      request
+		      )
+      )
   ;;TODO: why checking for ajax?
   (unless (ajax-request-p (request-object request))
     ;;synq data

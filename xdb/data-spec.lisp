@@ -128,15 +128,14 @@
 						(tag (eql :data-spec)) 
 						attributes body)
   
-;;    (break "dataspec ~A~%~A" attributes body)
-  
   (let* ((name (gethash 'name monkey-lisp::*sexp-cache*))
 	 (data-spec (fetch-item "data-specs"
 				:test (lambda (doc)
 					(equalp (slot-value doc 'name) name)))))
     
+  
     (when data-spec
-      (setf (slot-value data-spec 'script) sexp)
+      (set-data-spec-script data-spec sexp)
       (setf (collection-name data-spec)
 	    (gethash 'collection-name monkey-lisp::*sexp-cache*)
 	    )
@@ -150,8 +149,10 @@
 				     (gethash 'collection-name monkey-lisp::*sexp-cache*)
 				     :collection-type 
 				     (gethash 'collection-type monkey-lisp::*sexp-cache*)
-				     :script sexp)))
-   
+				     :script (if (consp (first sexp))
+						 (first sexp)
+						 sexp))))
+    
     (unless *system*
       ;;Put data specs in temp store for loading into db on startup.
       (pushnew data-spec *data-specs*))
@@ -160,6 +161,8 @@
       (persist-data data-spec))
     )
   )
+
+
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
     
@@ -173,21 +176,30 @@
 	     :accessor name
 	     :label "Name"
 	     :key t
-	     :db-type string)
+	     :db-type symbol
+	     :display t
+	     :editable nil)
       (:name collection-type
 	     :initarg :collection-type
 	     :accessor collection-type
 	     :initform nil
-	    )
+	     :db-type keyword
+	     :display t
+	     :editable t)
       (:name collection-name
 	     :initarg :collection-name
 	     :accessor collection-name
-	     :initform nil)
+	     :initform nil
+	     :db-type string
+	     :display t
+	     :editable nil)
       (:name script
 	     :initarg :script
 	     :accessor script
 	     :initform nil
-	     :db-type script))
+	     :db-type script
+	     :display t
+	     :editable t))
      
      :after-persist #'(lambda (doc)	
 			(when doc
@@ -200,3 +212,29 @@
      :default-initargs (:top-level t)))
 
 
+(defgeneric data-spec-script (data-spec))
+
+(defmethod data-spec-script ((spec data-spec))
+  (if spec
+      (script spec)))
+
+(defgeneric set-data-spec-script (data-spec sexp))
+
+(defmethod set-data-spec-script ((spec data-spec) sexp)
+  (setf (script spec) (if (consp (first sexp))
+			  (first sexp)
+			  sexp)))
+
+(defgeneric data-spec-fields (data-spec))
+
+(defmethod data-spec-fields ((spec data-spec))
+  (if spec
+      (getf (cdr (script spec)) :data-fields)))
+
+(defun field-data-type (field)
+  (let ((type
+	 (getf field :db-type)))
+    (when type
+      (if (consp type)
+	  (first type)
+	  type))))
