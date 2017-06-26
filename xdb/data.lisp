@@ -113,7 +113,6 @@
 (defmethod fetch-items* ((data xdb-data) collection &key test result-type 
 						      &allow-other-keys)
   (let ((docs (fetch-all* data collection :test test :result-type result-type)))
-    
     (if test
 	(remove-if 
 	 #'not 

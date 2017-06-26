@@ -6,6 +6,97 @@
 	 (:div ,id ,from-ajax)))
 
 
+(defun render-login ()
+  (monkey-html-lisp:htm
+    (:div :class "card"
+
+     (:img :class "card-image-top" :src "/images/insite-logo.png")
+     (:div :class "card-block"
+                 (:h4 :class "card-title"
+		      "Login")
+                 (:form :method "post"
+                        :action ""
+                     
+                        (:input :type "hidden" :id "contextid" 
+				:value (context-id *context*))
+                        (:div :class "form-group"
+                              (:label :for "email" "Email")
+                              (:input :type "email" 
+                                            :class "form-control"
+                                            :name "email"
+                                            :id "email"
+					    :value ""))
+                        (:div :class "form-group"
+                              (:label :for "password" "Password")
+                              (:input :type "password" 
+                                            :class "form-control"
+                                            :name "password"
+                                            :id "password"
+					    :placeholder "Password"
+                                            :value ""))
+                        (:button :name "action"
+                                :class "btn btn-primary"
+                                :type "submit"
+				:value "login"
+				"Login"
+				)))
+     (:div :class "card-footer"
+	   (gethash :login-error (cache *context*))
+	   )
+     )))
+
+
+
+(defmethod on-success (user)
+  
+  (when (current-user)
+;;    (break "Shit user")
+    ;;(remhash  (sfx-session-id *sfx-session*) (sessions *sfx-system*))
+    ;;(hunchentoot:remove-session *session*)
+    )
+  
+  (let ((active-user (fetch-item "active-users"
+				:test (lambda (doc)
+					(equal (parameter "user") (user doc))))))
+    (unless active-user
+      (setf active-user (persist-data (make-instance 'active-user
+						:user user))))
+
+    (setf (user *session*) active-user))
+  
+  ;;(init-user-session user)
+
+;;  (log-login "Login" (email login) "Passed" "Login passed.")
+
+  (hunchentoot:redirect "/cl-wfx/sys/data-specs" ;;(default-context *system*)
+   ))
+
+(defmethod on-failure ()
+ ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
+  (setf (gethash :login-error (cache *context*)) "User name or password incorrect.")
+  )
+
+(defun validate-user (email password)
+  (let ((user (get-user email)))
+    (unless (and user (check-password user password))      
+      (setf user nil)
+      ;;(setf (message widget) "Email or password incorrect")
+      )
+    user))
+
+(defmethod action-handler ((action (eql :login)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  
+  (when (and (parameter "email") (parameter "password"))
+    (let ((user (validate-user (parameter "email") (parameter "password"))))
+      
+        (if user
+          (on-success user)
+          (on-failure )))))
+
+
 
 (monkey-lisp::define-monkey-macro render-page (&body body)
   
@@ -33,23 +124,6 @@
 	 (:div :class "container"
 	       ,@body)
 	 
-	 (:input :type "hidden" :id "huh" :value "shit fuch")
-	 (:div :id "shit-id"
-	       "fuck " "fuck"
-	       )
-	 (:button :id "testbutton" 
-		  :class "btn-submit btn"
-		  :type "submit"
-		  :onclick
-		  (js-render "cl-wfx:shit-shat"
-			     "shit-id"
-			     (js-value "huh")
-			     (js-pair "grid-name" "fuck-knows")
-			     (js-pair "action" "copy-scripts")
-			    
-			     )
-		  "Render Shit")
-
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {
 
@@ -96,7 +170,6 @@
 						       ))  
 				       :allow-other-keys t) ,(args spec)
       
-          
       (let* ((shit (monkey-lisp:monkey-lisp 
 		       (:processor-class cl-wfx::context-data-spec-processor)
 		     ,(data-spec-script (get-data-spec (getf 
@@ -105,4 +178,27 @@
 	(monkey-html-lisp:with-html
 	  "<!doctype html>"
 	  (render-page shit))))))
+
+(defmethod setup-context-login ((module module) (spec context-spec) system)  
+  (eval
+   `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
+					(string-upcase (id-string (name spec))) 
+					'-page)  
+				       :uri ,(frmt "~A~A/~A" (site-url system) 
+						   (string-downcase 
+						    (id-string (if module
+								   (module-short module)
+								   "sys"
+								   )))
+						   (if (url spec)
+						       (url spec)
+						       (string-downcase 
+							(id-string (name spec)))
+						       ))  
+				       :allow-other-keys t) ,(args spec)
+      
+      (monkey-html-lisp:with-html
+	  "<!doctype html>"
+	  (render-page 
+	   (render-login))))))
 

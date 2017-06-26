@@ -38,12 +38,11 @@
 (defmethod process-sys-request ((context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
-  (if (find (parameter "action") (list "save" ) :test #'string-equal)
+  (if (find (parameter "action") (list "save" "login") :test #'string-equal)
       (action-handler (intern (string-upcase (parameter "action")) :keyword)
 		      context
-		      request
-		      )
-      )
+		      request))
+  
   ;;TODO: why checking for ajax?
   (unless (ajax-request-p (request-object request))
     ;;synq data

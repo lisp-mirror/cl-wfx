@@ -190,7 +190,7 @@ Calls in order:
     (setf (contexts sys-mod)
 	  (list
 	 ;;  (get-context-spec "theme")
-	  ;; (get-context-spec "allsort")
+	  (get-context-spec "Allsorts")
 	  ;; (get-context-spec "script")
 	  ;; (get-context-spec "repl")
 	   (get-context-spec "Data Specs")
@@ -198,11 +198,13 @@ Calls in order:
 	 ;;  (get-context-spec "report")
 	  ;; (get-context-spec "report-view")
 	  (get-context-spec "Modules")
-	  ;; (get-context-spec "license")
-	  ;; (get-context-spec "user")
+	  (get-context-spec "Licenses")
+	  (get-context-spec "Users")
 	  ;; (get-context-spec "import-data")
 	  
 	   ))
+    
+    (setup-context-login sys-mod (get-context-spec "Login") *system*)
     
     (dolist (spec (contexts sys-mod))
             ;;TODO: sort out module shit
@@ -227,6 +229,14 @@ Calls in order:
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
 	    
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
+     :name "Login"
+     :permission (:update :delete)
+     :for-everyone t 
+     ))
+  
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     
     (:context-spec
      :name "Data Specs"
@@ -248,6 +258,29 @@ Calls in order:
      :permission (:update :delete)
      :for-everyone t 
      (:data-spec :name module)))
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
+     :name "Licenses"
+     :permission (:update :delete)
+     :for-everyone t 
+     (:data-spec :name license)))
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
+     :name "Users"
+     :permission (:update :delete)
+     :for-everyone t 
+     (:data-spec :name user)))
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
+     :name "Allsorts"
+     :permission (:update :delete)
+     :for-everyone t 
+     (:data-spec :name allsort)))
+  
+
   )
 
 	    

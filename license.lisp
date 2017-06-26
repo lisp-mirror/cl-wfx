@@ -10,13 +10,18 @@
 	   :accessor license-code
 	   :initform nil
 	   :db-type string
-	   :key t)
+	   :key t
+	   :display t
+	   :editable t
+	   )
     (:name license-holder 
 	   :initarg :license-holder
 	   :accessor license-holder
 	   :initform nil
 	   :db-type string
-	   :header t)
+	   :display t
+	   :editable t	   
+	   )
     (:name payment-detail 
 	   :initarg :payment-details
 	   :accessor payment-details
@@ -25,12 +30,18 @@
 	   :initarg :license-modules
 	   :accessor license-modules
 	   :initform nil
-	   :db-type (data-group module :key-accessor module-name))
+	   :db-type (data-group :data-spec module :key-accessor module-name)
+	   :display t
+	   :editable t
+	   )
     (:name license-entities 
 	   :initarg :license-entities
 	   :accessor license-entities
 	   :db-type (list entity)
-	   :initform nil)
+	   :initform nil
+	   :display t
+	   :editable t
+	   )
     (:name license-date 
 	   :initarg :license-date
 	   :accessor license-date
@@ -43,7 +54,8 @@
 	   :initform :demo 
 	   :documentation "(:demo :suspended :active)"
 	   :db-type string
-	   :header t)
+	   :display t
+	   :editable t)
     (:name super-user-access-p 
      :initarg :super-user-access-p
      :accessor super-user-access-p

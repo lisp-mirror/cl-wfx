@@ -165,7 +165,6 @@
 
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-    
     (:data-spec
      :name data-spec
      :label "Data Spec"
@@ -230,6 +229,11 @@
 (defmethod data-spec-fields ((spec data-spec))
   (if spec
       (getf (cdr (script spec)) :data-fields)))
+
+
+(defmethod data-spec-label ((spec data-spec))
+  (if spec
+      (getf (cdr (script spec)) :label)))
 
 (defun field-data-type (field)
   (let ((type

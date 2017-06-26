@@ -22,8 +22,12 @@ because hunchentoot does not have vhosts by default.")
 		    :accessor image-processor
 		    :initform nil)   
    (image-url :initarg :image-url
-	      :accessor :image-url
-	      :initform "/images")))
+	      :accessor image-url
+	      :initform "/images")
+   (default-context :initarg :default-context
+	      :accessor default-context
+	      :initform nil)
+   ))
 
 (defmacro define-ajax (system name lambda-list &body body)
    `(ht-simple-ajax:defun-ajax ,name ,lambda-list ((ajax-processor ,system))

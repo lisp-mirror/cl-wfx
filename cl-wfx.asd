@@ -33,7 +33,7 @@
 	       (:file "system")
 	       (:file "session")
 	       (:file "request")
-	       
+	       (:file "allsorts")
 	       (:module "xdb"
 			 :serial t
 			 :components

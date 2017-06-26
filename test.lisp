@@ -15,7 +15,7 @@
 			;;	   :login-url "/cl-wfx/login"
 			;;	   :debug-errors-p t
 				   :message-log-destination *standard-output*
-				  ;; :default-context "/cl-wfx/users"
+				   :default-context "Data Specs"
 				   ))
 
 (defmethod load-context-specs ((system hunch-system) &key &allow-other-keys)

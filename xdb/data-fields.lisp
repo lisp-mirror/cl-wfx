@@ -10,10 +10,12 @@
 (defmethod item-val ((type (eql 'keyword)) item-def item &key &allow-other-keys)
    (item-val* item-def item))
 
-(defmethod item-val ((type (eql 'list)) item-def item &key &allow-other-keys)
-   (item-val* item-def item))
+
 
 (defmethod item-val ((type (eql 'string)) item-def item &key &allow-other-keys)
+  (item-val* item-def item))
+
+(defmethod item-val ((type (eql 'email)) item-def item &key &allow-other-keys)
   (item-val* item-def item))
 
 (defmethod item-val ((type (eql 'script)) item-def item &key &allow-other-keys)
@@ -21,6 +23,17 @@
 
 (defmethod item-val ((type (eql 'boolean)) item-def item &key &allow-other-keys)
   (item-val* item-def item))
+
+
+(defmethod item-val ((type (eql 'list)) item-def item &key &allow-other-keys)
+   (item-val* item-def item))
+
+(defmethod item-val ((type (eql 'data-group)) item-def item &key &allow-other-keys)
+   (item-val* item-def item))
+
+(defmethod item-val ((type (eql 'number)) item-def item &key &allow-other-keys)
+   (item-val* item-def item))
+
 
 (defun set-item-val* (item-def item value)
   (let* ((name (getf item-def :name)))
@@ -58,9 +71,21 @@
    (let* ((name (getf item-def :name)))
        (setf (slot-value item name) (frmt "~A" value))))
 
+(defmethod set-item-val ((type (eql 'email)) item-def item value  &key &allow-other-keys)
+   (let* ((name (getf item-def :name)))
+       (setf (slot-value item name) (frmt "~A" value))))
+
 (defmethod set-item-val ((type (eql 'script)) item-def item value  &key &allow-other-keys)
   (set-item-val-read* item-def item value #'consp  "~S is not a cons!"))
 
 (defmethod set-item-val ((type (eql 'boolean)) item-def item value  
 			 &key &allow-other-keys)
   (set-item-val* item-def item value))
+
+(defmethod set-item-val ((type (eql 'data-group)) item-def item value  
+			 &key &allow-other-keys)
+  (set-item-val-read* item-def item value #'listp "~R is not a list!"))
+
+(defmethod set-item-val ((type (eql 'data-group)) item-def item value  
+			 &key &allow-other-keys)
+  (set-item-val-read* item-def item value #'numberp "~R is not a number!"))

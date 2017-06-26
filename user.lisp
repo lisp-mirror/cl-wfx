@@ -25,11 +25,15 @@ system settings.")))
 	   :initarg :name
 	   :initform nil
 	   :accessor name
-	   :db-type string) 
+	   :db-type string
+	   :display t
+	   :editable t) 
       (:name context-permissions 
 	     :initarg :context-permissions
 	     :accessor context-permissions
-	     :initform nil))
+	     :initform nil
+	     :db-type (data-group :data-spec user-permission)
+	     ))
    :metaclass xdb2:storable-versioned-class
    :collection-name "user-profiles"
    :collection-type :license
@@ -73,24 +77,28 @@ to role or some other criteria."))
 	     :accessor email
 	     :key t
 	     :db-type email
+	     :display t
+	     :editable t
 	     :documentation	     
 	     "User email address used as unique identifier for a user, 
 must be valid email to enable confirmation.")
       (:name password 
        :initarg :password
 		:accessor password
-		;;  :db-type number
+		:db-type number
 		)
       (:name salt 
 	     :initarg :salt
 	    :accessor salt
-	    ;;	 :db-type string
+	    :db-type string
 	    )
       (:name permissions 
 	     :initarg :permissions
 		   :accessor permissions
 		   :initform nil
 		   :db-type (list user-permission)
+		   :display t
+		   :editable t
 		   :documentation "Context permissions for the user.")
       (:name accessible-entities 
 	     :initarg :accessible-entities
@@ -114,7 +122,10 @@ must be valid email to enable confirmation.")
 	     :initarg :preferences
 		   :accessor preferences
 		   :initform nil
-		   :db-type (list user-preference)) 
+		   :db-type (list user-preference)
+		   :display t
+		   :editable t
+		   ) 
       (:name super-user-p 
 	     :initarg :super-user-p
 		    :accessor super-user-p

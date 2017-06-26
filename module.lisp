@@ -96,7 +96,9 @@
 	   :initarg :contexts
 	   :accessor contexts
 	   :initform nil
-	   ;; :db-type (data-group context-spec :key-accessor context-name)
+	   :db-type (data-group :data-spec context-spec :key-accessor context-name)
+	  ;; :display t
+	   :editable t
 	   )
     (:name menu 
 	   :initarg :menu
