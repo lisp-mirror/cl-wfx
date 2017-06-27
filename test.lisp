@@ -12,7 +12,7 @@
 			;;	   :system-package *package*
 				   :site-url "/cl-wfx/"
 				   :ajax-url "/cl-wfx/ajax/"
-			;;	   :login-url "/cl-wfx/login"
+			;;	   :login-url "login"
 			;;	   :debug-errors-p t
 				   :message-log-destination *standard-output*
 				   :default-context "Data Specs"

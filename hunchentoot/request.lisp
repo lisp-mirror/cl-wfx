@@ -80,19 +80,15 @@
 	      ;;TODO: is this the right way to get module
 	      (*module* (if *context* (module *context*))))
 	 (declare (special *system* *context* *session* *request*))
+	
 	 (unless *context*
 	   (bad-request *request*))
 	 
 	 (when *context*
 	   (system-request acceptor *request*))	 
+	 
 	 (call-next-method))
-       (call-next-method)
-       )
-     
-     
-     ))
-  
-	   )
+       (call-next-method)))))
 
 (defvar *widget-parameters*)
 
@@ -147,8 +143,7 @@
     (setf (hunchentoot:content-type*) "text/json")
  
 	;;(setf (slot-value *request* 'script-name) script-name)
-	(let ((*context* (find-request-context)
-	       ))
+	(let ((*context* (find-request-context)))
 	    (declare (special *context*))
 	    (with-debugging
 

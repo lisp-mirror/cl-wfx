@@ -45,7 +45,22 @@
 	   )
      )))
 
-
+(defun context-url (spec)
+  (let ((spec (or spec (get-context-spec (default-context *system*)))))
+    (frmt "~A~A/~A" (site-url *system*) 
+	  (string-downcase 
+	   (id-string (if *module*
+			  (module-short *module*)
+			  "sys"
+			  )))
+	  (if (and spec (url spec))
+	      (url spec)
+	      (string-downcase 
+	       (id-string (if spec
+			      (name spec)
+			      (default-context *system*))))
+	      )))
+  )
 
 (defmethod on-success (user)
   
@@ -68,8 +83,7 @@
 
 ;;  (log-login "Login" (email login) "Passed" "Login passed.")
 
-  (hunchentoot:redirect "/cl-wfx/sys/data-specs" ;;(default-context *system*)
-   ))
+  (hunchentoot:redirect (context-url nil)))
 
 (defmethod on-failure ()
  ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
@@ -98,7 +112,15 @@
 
 
 
-(monkey-lisp::define-monkey-macro render-page (&body body)
+
+(defun user-menu ()
+  (let ((sys-mod (fetch-item 'module
+			      :test (lambda (doc)
+				      (string-equal "System Admin" (module-name doc))))))
+    (if sys-mod
+	(menu-items (first (menu sys-mod))))))
+
+(monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
   `(:html
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
@@ -119,10 +141,50 @@
 <link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 "
+	
 	(:body 
 	 (:input :type "hidden" :id "contextid" :value (context-id *context*))
-	 (:div :class "container"
-	       ,@body)
+	
+	 (if ,(not menu-p)	 
+	     (monkey-html-lisp:htm
+	       (:div :class "container"
+		     ,@body))
+	     (monkey-html-lisp:htm
+	       (:div :class "container"
+		     
+		     (:nav 
+		      :class "navbar navbar-fixed-top navbar-light bg-faded justify-content-end hidden-print"
+		      
+		      (:div 
+		       (:a :class "navbar-brand" :href "#" (system-name *system*))
+		       
+		       ;;(:span :class "navbar-text float-md-right" (str (email (current-user))))
+		       (:div :class "float-md-right"
+			(:ul :class "navbar-nav mr-auto"
+			     (:li :class "nav-item dropdown"
+				  
+				  (:a :class "nav-link dropdown-toggle" 
+				      :href ""
+				      :id "userDropdown" 
+				      :data-toggle "dropdown" 
+				      :aria-haspopup="true"
+				      :aria-expanded "false" 
+				      (if (current-user) 
+					  (monkey-html-lisp:htm (email (current-user)))))
+				  (:div :class "dropdown-menu" 
+					:aria-labelledby "userDropdown"
+					
+					(:nav :class "nav nav-pills flex-column"
+					      (dolist (item (user-menu))
+						(monkey-html-lisp:htm
+						  (:a :class 
+						      "nav-link ~A"
+						      :href (context-url 
+							     (context-spec item))
+						      (item-name item)))))))))))
+		     ,@body)))
+	 
+	
 	 
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {
@@ -151,7 +213,12 @@
 
 }" (site-url *system*))))))
 
-
+(defun check-user-access ()
+  (unless (current-user)
+	     
+	     (hunchentoot:redirect "/cl-wfx/sys/login")
+	     )
+  )
 (defmethod setup-context ((module module) (spec context-spec) system)  
   (eval
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
@@ -175,9 +242,10 @@
 		     ,(data-spec-script (get-data-spec (getf 
 							(cdr (context-spec-script spec))
 							:name))))))
+	(check-user-access)
 	(monkey-html-lisp:with-html
 	  "<!doctype html>"
-	  (render-page shit))))))
+	  (render-page t shit))))))
 
 (defmethod setup-context-login ((module module) (spec context-spec) system)  
   (eval
@@ -199,6 +267,6 @@
       
       (monkey-html-lisp:with-html
 	  "<!doctype html>"
-	  (render-page 
+	  (render-page nil
 	   (render-login))))))
 

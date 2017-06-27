@@ -61,7 +61,7 @@
    (modules :initarg :modules
 	    :accessor system-modules
 	    :initform nil)
-      (sessions :initarg :sessions
+   (sessions :initarg :sessions
 	     :accessor sessions
 	     :initform (make-hash-table :test #'equalp))
    (debug-errors-p :initarg :debug-errors-p
