@@ -10,7 +10,9 @@
   (monkey-html-lisp:htm
     (:div :class "card"
 
-     (:img :class "card-image-top" :src "/images/insite-logo.png")
+  
+     (:img :class "card-image-top" :src "../web/images/plus.png")
+  
      (:div :class "card-block"
                  (:h4 :class "card-title"
 		      "Login")
@@ -267,7 +269,7 @@
 (defun check-user-access ()
   (unless (current-user)
 	     
-	     (hunchentoot:redirect "/cl-wfx/sys/login")
+    (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*)))
 	     )
   )
 (defmethod setup-context ((module module) (spec context-spec) system)  

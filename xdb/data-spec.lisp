@@ -165,50 +165,50 @@
 
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-    (:data-spec
-     :name data-spec
-     :label "Data Spec"
-     :super-classes (license-doc)
-     :data-fields
-     ((:name name
-	     :initarg :name
-	     :accessor name
-	     :label "Name"
-	     :key t
-	     :db-type symbol
-	     :display t
-	     :editable nil)
-      (:name collection-type
-	     :initarg :collection-type
-	     :accessor collection-type
-	     :initform nil
-	     :db-type keyword
-	     :display t
-	     :editable t)
-      (:name collection-name
-	     :initarg :collection-name
-	     :accessor collection-name
-	     :initform nil
-	     :db-type string
-	     :display t
-	     :editable nil)
-      (:name script
-	     :initarg :script
-	     :accessor script
-	     :initform nil
-	     :db-type script
-	     :display t
-	     :editable t))
+  (:data-spec
+   :name data-spec
+   :label "Data Spec"
+   :super-classes (license-doc)
+   :data-fields
+   ((:name name
+	   :initarg :name
+	   :accessor name
+	   :label "Name"
+	   :key t
+	   :db-type symbol
+	   :display t
+	   :editable nil)
+    (:name collection-type
+	   :initarg :collection-type
+	   :accessor collection-type
+	   :initform nil
+	   :db-type keyword
+	   :display t
+	   :editable t)
+    (:name collection-name
+	   :initarg :collection-name
+	   :accessor collection-name
+	   :initform nil
+	   :db-type string
+	   :display t
+	   :editable nil)
+    (:name script
+	   :initarg :script
+	   :accessor script
+	   :initform nil
+	   :db-type script
+	   :display t
+	   :editable t))
      
-     :after-persist #'(lambda (doc)	
-			(when doc
-			  `(read-sexp (script doc))		
-			  ;;(create-context-definition doc (name doc))
-			  ))
-     :metaclass xdb2:storable-versioned-class
-     :collection-name "data-specs"
-     :collection-type :merge
-     :default-initargs (:top-level t)))
+   :after-persist #'(lambda (doc)	
+		      (when doc
+			`(read-sexp (script doc))		
+			;;(create-context-definition doc (name doc))
+			))
+   :metaclass xdb2:storable-versioned-class
+   :collection-name "data-specs"
+   :collection-type :merge
+   :default-initargs (:top-level t)))
 
 
 (defgeneric data-spec-script (data-spec))

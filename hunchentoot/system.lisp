@@ -37,9 +37,9 @@ because hunchentoot does not have vhosts by default.")
 (defun %image-processor ()
   (let ((uri (hunchentoot:url-decode (hunchentoot:request-uri*))))
     (cond ((and
-            (alexandria:starts-with-subseq "/umage/images" uri)
+            (alexandria:starts-with-subseq (frmt "~Aimages" (site-url *system*)) uri)
             (hunchentoot:handle-static-file 
-	     (merge-pathnames (subseq uri (length "/umage/")) *tmp-directory*))))
+	     (merge-pathnames (subseq uri (site-url *system*)) *tmp-directory*))))
           (t
            (setf (hunchentoot:return-code*) hunchentoot:+http-not-found+)
            (hunchentoot:abort-request-handler)))))
@@ -86,20 +86,22 @@ because hunchentoot does not have vhosts by default.")
   (assert-ends-with-/ (site-url system))
     
   (hunchentoot:start system)
-  
+
   (let* ((ajax-processor
 	  (make-instance 'ht-simple-ajax:ajax-processor
 			 :server-uri (frmt "~Aajax" (site-url system))))
 	 (ajax-prefix-dispatcher
 	  (create-ajax-dispatcher system ajax-processor))
+	 
 	 (image-processor (hunchentoot:create-prefix-dispatcher 
 			   (frmt "~Aimages" (site-url system)) #'%image-processor))
+	 
 	 (file-dispatcher-web (hunchentoot:create-folder-dispatcher-and-handler
 			       (frmt "~Aweb/" (site-url system)) 
 			       (web-folder system)))
 	 (file-dispatcher-sys-web (hunchentoot:create-folder-dispatcher-and-handler
-				   (frmt "~Asys-web/" (site-url system)) 
-				   (web-folder system))))
+				   (frmt "~Aweb/" (site-url system)) 
+				   (system-web-folder system))))
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
     (pushnew image-processor hunchentoot:*dispatch-table*)

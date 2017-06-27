@@ -278,7 +278,7 @@ a user logs in again.")))
 	  (*session* 
 	   (make-instance 'session
 			  :user (make-instance 
-				 active-user
+				 'cl-wfx::active-user
 				 :user *user*))))
      (when *user*
        ,@body)))
@@ -290,7 +290,7 @@ a user logs in again.")))
 	  (*session* 
 	   (make-instance 'session
 			  :user (make-instance 
-				 active-user
+				 'cl-wfx::active-user
 				 :user *user*))))
      (when *user*
        ,@body)))

@@ -33,6 +33,7 @@
 	       (:file "system")
 	       (:file "session")
 	       (:file "request")
+	       (:file "xdb/entity")
 	       (:file "allsorts")
 	       (:module "xdb"
 			 :serial t

@@ -82,7 +82,11 @@ with a ui have the same basic structure/needs."))
 (defclass web-system (system) 
   ((web-folder :initarg :web-folder
 	       :accessor web-folder
-	       :initform "/web/")))
+	       :initform "/web/")
+   (system-web-folder :initarg :system-web-folder
+	       :accessor system-web-folder
+	       :initform "/web/")
+   ))
 
 (defmacro with-system (system &body body)
   :documentation "Makes *system* available."
