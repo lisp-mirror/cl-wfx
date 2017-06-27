@@ -110,15 +110,17 @@
           (on-success user)
           (on-failure )))))
 
-
-
-
 (defun user-menu ()
   (let ((sys-mod (fetch-item 'module
 			      :test (lambda (doc)
 				      (string-equal "System Admin" (module-name doc))))))
     (if sys-mod
 	(menu-items (first (menu sys-mod))))))
+
+
+(defun page-body ()
+  
+  )
 
 (monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
@@ -150,39 +152,88 @@
 	       (:div :class "container"
 		     ,@body))
 	     (monkey-html-lisp:htm
-	       (:div :class "container"
-		     
-		     (:nav 
-		      :class "navbar navbar-fixed-top navbar-light bg-faded justify-content-end hidden-print"
+	       (:nav 
+		:class "navbar fixed-top navbar-light bg-faded hidden-print"
 		      
-		      (:div 
-		       (:a :class "navbar-brand" :href "#" (system-name *system*))
-		       
-		       ;;(:span :class "navbar-text float-md-right" (str (email (current-user))))
-		       (:div :class "float-md-right"
-			(:ul :class "navbar-nav mr-auto"
-			     (:li :class "nav-item dropdown"
-				  
-				  (:a :class "nav-link dropdown-toggle" 
-				      :href ""
-				      :id "userDropdown" 
-				      :data-toggle "dropdown" 
-				      :aria-haspopup="true"
-				      :aria-expanded "false" 
-				      (if (current-user) 
-					  (monkey-html-lisp:htm (email (current-user)))))
-				  (:div :class "dropdown-menu" 
-					:aria-labelledby "userDropdown"
-					
-					(:nav :class "nav nav-pills flex-column"
-					      (dolist (item (user-menu))
-						(monkey-html-lisp:htm
-						  (:a :class 
-						      "nav-link ~A"
-						      :href (context-url 
-							     (context-spec item))
-						      (item-name item)))))))))))
-		     ,@body)))
+		(:a :class "navbar-brand" :href "#" (system-name *system*))
+		(:ul :class "navbar-nav mr-auto"
+		     (:li :class "nav-item dropdown"
+							
+			  (:a :class "nav-link dropdown-toggle" 
+			      :href ""
+			      :id "userDropdown" 
+			      :data-toggle "dropdown" 
+			      :aria-haspopup="true"
+			      :aria-expanded "false" 
+			      (if (current-user) 
+				  (monkey-html-lisp:htm (email (current-user)))))
+			  (:div :class "dropdown-menu" 
+				:aria-labelledby "userDropdown"
+							      
+				(:nav :class "nav nav-pills flex-column"
+				      (dolist (item (user-menu))
+					(monkey-html-lisp:htm
+					  (:a :class 
+					      "nav-link ~A"
+					      :href (context-url 
+						     (context-spec item))
+					      (item-name item))))))))
+		(if (current-user)
+		    (monkey-html-lisp:htm 
+		      (:button :class "navbar-toggler navbar-toggler-left hidden-print"
+			       :type "button"
+			       :data-toggle "collapse"
+			       :data-target "#exNavbarLeft"
+			       :aria-controls "exNavbarLeft"
+			       :aria-expanded "true"
+			       :aria-label "Toggle menu"
+			       "&#9776;")))
+		(if (current-user)
+		    (monkey-html-lisp:htm
+		      (:button :class "navbar-toggler navbar-toggler-right"
+			       :type "button"
+			       :data-toggle "collapse"
+			       :data-target "#exNavbarRight"
+			       :aria-controls "exNavbarRight"
+			       :aria-expanded "false"
+			       :aria-label "Toggle system menu"
+			       "&#9776;")))
+		      
+		)
+	       (:br "")
+	       (:br "")
+	       (:br "")
+	       (:div :class "container-fluid"
+		     
+		     (:div :class "row"
+			   (:div :class "collapse col-md-2 col-md-auto show hidden-print"
+				 :id "exNavbarLeft"
+				 (:nav :class "nav nav-pills flex-column"
+				       (dolist (item (user-menu))
+					   (monkey-html-lisp:htm
+					     (:a :class 
+						 "nav-link ~A"
+						 :href (context-url 
+							(context-spec item))
+						 (item-name item))))))
+		    
+			   (:div  :class "col"
+				  ,@body)
+		    
+			   (:div :class "collapse col-md-2 hidden-print " 
+				 :id "exNavbarRight" :style "background-color:#FFFFFF"
+				 (:nav :class "nav nav-pills flex-column"
+				       (dolist (item (user-menu))
+					   (monkey-html-lisp:htm
+					     (:a :class 
+						 "nav-link ~A"
+						 :href (context-url 
+							(context-spec item))
+						 (item-name item)))))))
+
+		     
+		     ))
+	     )
 	 
 	
 	 
