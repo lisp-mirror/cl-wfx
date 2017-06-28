@@ -47,12 +47,12 @@
 	   )
      )))
 
-(defun context-url (spec)
+(defun context-url (spec module)
   (let ((spec (or spec (get-context-spec (default-context *system*)))))
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
-	   (id-string (if *module*
-			  (module-short *module*)
+	   (id-string (if module
+			  (module-short module)
 			  "sys"
 			  )))
 	  (if (and spec (url spec))
@@ -85,7 +85,7 @@
 
 ;;  (log-login "Login" (email login) "Passed" "Login passed.")
 
-  (hunchentoot:redirect (context-url nil)))
+  (hunchentoot:redirect (context-url nil nil)))
 
 (defmethod on-failure ()
  ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
@@ -112,10 +112,25 @@
           (on-success user)
           (on-failure )))))
 
-(defun user-menu ()
-  (let ((sys-mod (fetch-item 'module
+(defun user-mods ()
+  (fetch-items "modules"
+	       :test
+	       (lambda (doc)
+		 (if (not (string-equal "System Admin" (module-name doc)))
+		     doc
+		     ))
+	       :result-type 'list)
+  )
+
+(defun mod-menu (mod)
+  (if mod
+      (menu-items (first (menu mod)))))
+
+(defun system-menu ()
+  (let ((sys-mod (fetch-item "modules"
 			      :test (lambda (doc)
 				      (string-equal "System Admin" (module-name doc))))))
+    
     (if sys-mod
 	(menu-items (first (menu sys-mod))))))
 
@@ -173,13 +188,22 @@
 				:aria-labelledby "userDropdown"
 							      
 				(:nav :class "nav nav-pills flex-column"
-				      (dolist (item (user-menu))
-					(monkey-html-lisp:htm
-					  (:a :class 
-					      "nav-link ~A"
-					      :href (context-url 
-						     (context-spec item))
-					      (item-name item))))))))
+				      (let ((sys-mod 
+					     (fetch-item "modules"
+							 :test (lambda (doc)
+								 (string-equal
+								  "System Admin" 
+								  (module-name doc))))))
+					
+				
+					(dolist (item (menu-items (first (menu sys-mod))))
+					  (monkey-html-lisp:htm
+					    (:a :class 
+						"nav-link ~A"
+						:href (context-url 
+						       (context-spec item)
+						        sys-mod)
+						(item-name item)))))))))
 		(if (current-user)
 		    (monkey-html-lisp:htm 
 		      (:button :class "navbar-toggler navbar-toggler-left hidden-print"
@@ -211,13 +235,16 @@
 			   (:div :class "collapse col-md-2 col-md-auto show hidden-print"
 				 :id "exNavbarLeft"
 				 (:nav :class "nav nav-pills flex-column"
-				       (dolist (item (user-menu))
-					   (monkey-html-lisp:htm
-					     (:a :class 
-						 "nav-link ~A"
-						 :href (context-url 
-							(context-spec item))
-						 (item-name item))))))
+				       (dolist (mod (user-mods))
+					 (dolist (menu (menu mod))
+
+					   (dolist (item (menu-items menu))
+					     (monkey-html-lisp:htm
+					       (:a :class 
+						   "nav-link ~A"
+						   :href (url 
+							  (context-spec item))
+						   (item-name item))))))))
 		    
 			   (:div  :class "col"
 				  ,@body)
@@ -225,13 +252,23 @@
 			   (:div :class "collapse col-md-2 hidden-print " 
 				 :id "exNavbarRight" :style "background-color:#FFFFFF"
 				 (:nav :class "nav nav-pills flex-column"
-				       (dolist (item (user-menu))
-					   (monkey-html-lisp:htm
-					     (:a :class 
-						 "nav-link ~A"
-						 :href (context-url 
-							(context-spec item))
-						 (item-name item)))))))
+				       (let ((sys-mod 
+					     (fetch-item "modules"
+							 :test (lambda (doc)
+								 (string-equal
+								  "System Admin" 
+								  (module-name doc))))))
+					
+					
+					(dolist (item (menu-items (first (menu sys-mod))))
+					  (monkey-html-lisp:htm
+					    (:a :class 
+						"nav-link ~A"
+						:href (context-url 
+						       (context-spec item)
+						        sys-mod
+						       )
+						(item-name item))))))))
 
 		     
 		     ))
@@ -277,17 +314,16 @@
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
 					(string-upcase (id-string (name spec))) 
 					'-page)  
-				       :uri ,(frmt "~A~A/~A" (site-url system) 
-						   (string-downcase 
-						    (id-string (if module
-								   (module-short module)
-								   "sys"
-								   )))
-						   (if (url spec)
-						       (url spec)
-						       (string-downcase 
-							(id-string (name spec)))
-						       ))  
+				       :uri ,(if (url spec)
+						 (url spec)
+						 (frmt "~A~A/~A" (site-url system) 
+								  (string-downcase 
+								   (id-string (if module
+										  (module-short module)
+										  "sys"
+										  )))
+								  (string-downcase 
+								       (id-string (name spec)))))  
 				       :allow-other-keys t) ,(args spec)
       
       (let* ((shit (monkey-lisp:monkey-lisp 

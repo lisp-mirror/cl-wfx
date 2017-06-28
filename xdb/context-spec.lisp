@@ -54,7 +54,10 @@
       (setf (permissions context-spec) 
 	    (gethash 'permissions monkey-lisp::*sexp-cache*))
       (setf (for-everyone context-spec) 
-	    (gethash 'for-everyone monkey-lisp::*sexp-cache*)))
+	    (gethash 'for-everyone monkey-lisp::*sexp-cache*))
+      (setf (url context-spec) (gethash 'url monkey-lisp::*sexp-cache*))
+      )
+    
     
     (unless context-spec
       (setf context-spec 
@@ -63,6 +66,7 @@
 			   :script (if (consp (first body))
 				      (first body)
 				      body)
+			   :url (gethash 'url monkey-lisp::*sexp-cache*)
 			   :permissions 
 			   (gethash 'permissions monkey-lisp::*sexp-cache*)
 			   :for-everyone 

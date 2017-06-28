@@ -81,8 +81,7 @@
 	   :initform nil
 	   :db-type string
 	   :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name module-short
 	   :initarg :module-short
 	   :accessor module-short
@@ -90,26 +89,21 @@
 	   :db-type string
 	   :key t
 	   :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name contexts
 	   :initarg :contexts
 	   :accessor contexts
 	   :initform nil
 	   :db-type (data-group :data-spec context-spec :key-accessor context-name)
 	  ;; :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name menu 
 	   :initarg :menu
 	   :accessor menu
 	   :initform nil
 	   :db-type (list menu)
 	   :display t
-	   :editable t
-	   )
-    ;;(help)
-    )
+	   :editable t))
    :metaclass xdb2:storable-versioned-class
    :collection-name "modules"
    :collection-type :merge
@@ -120,6 +114,11 @@
   (fetch-item "modules"
 	     :test (lambda (doc)
 		     (string-equal module-name (module-name doc)))))
+
+(defun get-module-context (module context-name)  
+  (dolist (context (contexts module))
+    (if (string-equal (name context) context-name)
+	(return-from get-module-context context))))
 
 (defun get-module-short (module-short)  
   (fetch-item "modules"

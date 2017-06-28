@@ -124,7 +124,7 @@ This is called on initialize-instance :after for system."))
   (declare (ignore args))
   :documentation "Dont mess with this just use init-system and init-sys-data effectively."
   (let ((*system* system))
-    (init-system system)   
+    (init-system system)  
     (init-sys-data system))
   (setf (system-status system) :initialized))
 
@@ -180,9 +180,7 @@ Calls in order:
 
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
-  (let ((sys-mod (fetch-item "modules"
-			     :test (lambda (doc)
-				     (string-equal "System Admin" (module-name doc))))))
+  (let ((sys-mod (get-module "System Admin")))
     
     (unless sys-mod
       (setf sys-mod
@@ -192,21 +190,22 @@ Calls in order:
 	     :menu (list (make-instance 
 			  'menu :menu-name "System")))))
     (setf (contexts sys-mod)
-	  (list
-	 ;;  (get-context-spec "theme")
-	  (get-context-spec "Allsorts")
-	  ;; (get-context-spec "script")
-	  ;; (get-context-spec "repl")
-	   (get-context-spec "Data Specs")
-	   (get-context-spec "Context Specs")
-	 ;;  (get-context-spec "report")
-	  ;; (get-context-spec "report-view")
-	  (get-context-spec "Modules")
-	  (get-context-spec "Licenses")
-	  (get-context-spec "Users")
-	  ;; (get-context-spec "import-data")
-	  
-	   ))
+	  (remove-if #'not (list
+			    ;;  (get-context-spec "theme")
+			    (get-context-spec "Allsorts")
+			    ;; (get-context-spec "script")
+			    ;; (get-context-spec "repl")
+			    (get-context-spec "Data Specs")
+			    (get-context-spec "Context Specs")
+			    ;;  (get-context-spec "report")
+			    ;; (get-context-spec "report-view")
+			    (get-context-spec "Modules")
+			    (get-context-spec "Licenses")
+			    (get-context-spec "Users")
+			    ;; (get-context-spec "import-data")
+			    
+			    )))
+    
     
     (setup-context-login sys-mod (get-context-spec "Login") *system*)
     
@@ -300,7 +299,7 @@ Calls in order:
 (defmethod start-sys :after ((system system) &key &allow-other-keys)
   (let ((*system* system))
     (declare (special *system*))
-    
+ 
     (system-license)
     
     (load-context-specs system)

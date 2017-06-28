@@ -390,16 +390,17 @@
     
   (let ((data-spec (get-data-spec spec-name))
 	(subs))
-
+    (when (equalp page-data (list nil))
+      (break "~A" spec-name)
+      )
     (dolist (field (data-spec-fields data-spec))
       (cond ((equalp (field-data-type field) 'data-group)
 	     (pushnew field subs))))
     
     (dolist (item page-data)
-	(monkey-html-lisp:htm
+      (monkey-html-lisp:htm
 	  (:div :class "row"
 		(monkey-html-lisp:htm
-		  
 		  (:div :class "col-sm-1"
 			(render-expand-buttons subs spec-name item active-page 
 					       grid-name))
@@ -407,16 +408,12 @@
 		  (dolist (field (data-spec-fields data-spec))
 		    (when (getf field :display)
 		      (monkey-html-lisp:htm 
-			
 			(:div :class "col"
-			      
 			      (let ((val (print-item-val 
 					  (field-data-type field) field item)))
 				(if (> (length val) 100 )
 				    (frmt "~A ..." (subseq val 0 100))
-				    val)
-				)
-			      )))))
+				    val)))))))
 		
 		
 		(:div :class "col"
@@ -432,7 +429,7 @@
 		   (string-equal (parameter "item-id") (frmt "~A" (xdb2:id item))))
 	      (render-grid-edit spec-name (data-spec-fields data-spec) item active-page))
 	  
-	
+	  
 	  (when (and (parameter "expand-row-id") 
 		     (not (equalp (parameter "expand-row-id") "")))
 	    (when (equalp (parse-integer (parameter "expand-row-id")) (xdb2:id item))
@@ -459,16 +456,12 @@
 					     permissions
 					     active-page
 					     (+ sub-level 1)
-					     grid-name))))))))))
-	  
-	  
-	  ))
+					     grid-name))))))))))))
     
     (when (parameter "new-item-id")
       
       (render-grid-edit spec-name (data-spec-fields data-spec) 
-			(make-instance (name data-spec)) active-page))
-    ))
+			(make-instance (name data-spec)) active-page))))
 
 (defun render-grid-paging (spec-name active-page how-many-rem how-many-pages)
     (monkey-html-lisp:htm
@@ -623,8 +616,13 @@
   (if (or (not (parameter "search")) 
 	  (< (length (string-trim (list #\Space)  (parameter "search"))) 1))
       
-      (coerce  (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*))
-	       'list)
+      (let ((items (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*)
+			     :result-type 'list)))
+	
+	(if (and items (not (listp items)))
+	    (coerce  items 'list)
+	    items))
+      
       (fetch-items  
        (gethash 'collection-name monkey-lisp::*sexp-cache*)
        :test (lambda (item)

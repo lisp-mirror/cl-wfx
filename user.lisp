@@ -303,8 +303,11 @@ a user logs in again.")))
   (intersection (accessible-entities doc) entities))
 
 (defun relevant-entities ()
-  (or (current-entities *session*) 
-       (coerce (fetch-all* (data *system*) 'entitiy) 'list)))
+  (or (current-entities *session*)
+      (let ((items (fetch-all* (data *system*) 'entitiy)))
+	(if (and items (not (listp items)))
+	    (coerce items 'list)
+	    items))))
 
 #|
 (defun setup-permissions (user)

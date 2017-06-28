@@ -19,6 +19,13 @@
 
 (defmethod monkey-lisp:process-attribute ((processor context-spec-processor) 
 					  (tag (eql :context-spec)) 
+					  (attribute-tag (eql :url))
+					  attribute-value)
+  (setf (gethash 'url monkey-lisp::*sexp-cache*) 
+	attribute-value))
+
+(defmethod monkey-lisp:process-attribute ((processor context-spec-processor) 
+					  (tag (eql :context-spec)) 
 					  (attribute-tag (eql :permissions))
 					  attribute-value)
   (setf (gethash 'permissions monkey-lisp::*sexp-cache*) attribute-value))

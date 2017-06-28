@@ -32,8 +32,7 @@
 	   :initform nil
 	   :db-type (data-group :data-spec module :key-accessor module-name)
 	   :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name license-entities 
 	   :initarg :license-entities
 	   :accessor license-entities
@@ -81,17 +80,17 @@
 
 (defun find-license (code)
   (fetch-item "licenses"
-	     :test (lambda (doc)
-		     (equalp (license-code doc) code))))
+	      :test (lambda (doc)
+		      (string-equal (license-code doc) code))))
 
 
 (defun system-license ()
   (let ((license (find-license *sys-license-code*)))
       (unless license
-      (setf license (persist-data (make-instance 'license :license-code *sys-license-code*
-					    :license-holder "System Admin")))
-      (xdb2:persist (make-user "admin@cl-wfx.com" "admin"
-			       :super-user-p t
+	(setf license (persist-data (make-instance 'license :license-code *sys-license-code*
+						   :license-holder "System Admin")))
+	(xdb2:persist (make-user "admin@cl-wfx.com" "admin"
+				 :super-user-p t
 			       :license license)))
     license))
 

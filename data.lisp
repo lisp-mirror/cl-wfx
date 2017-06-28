@@ -93,7 +93,6 @@ Used: stop-sys :before"))
   (:documentation "Identify the key values from the data structure"))
 
 (defmethod merge-equality-function (data &key &allow-other-keys)
-
   #'get-key-value)
 
 (defgeneric system-data (data &key &allow-other-keys))
@@ -123,6 +122,7 @@ Used: stop-sys :before"))
 
 
 (defmethod license-data (data &key &allow-other-keys)
+  
   (let ((store (is-initialized-license-data data)))
     (when (not store)     
       (setf store (init-license-data data))      
@@ -137,14 +137,18 @@ Used: stop-sys :before"))
 (defun merge-items (sys-items lic-items data-spec result-type)
   (concatenate 
    (or result-type 'list) 
-   (remove-if (lambda (doc)
-		(find doc sys-items 
-		      :test (lambda (doc tdoc)
-			      (equalp (funcall (merge-equality-function 
-						(data *system*) ) doc data-spec)
-				      (funcall (merge-equality-function 
-						(data *system*) ) tdoc data-spec)))))
-	      sys-items) 
+   (if (and lic-items (> (length lic-items) 0))
+       (remove-if (lambda (doc)
+		    (find doc sys-items 
+			  :test (lambda (doc tdoc)
+				  
+				  
+				  (equalp (funcall (merge-equality-function 
+						    (data *system*) ) doc data-spec)
+					  (funcall (merge-equality-function 
+						    (data *system*) ) tdoc data-spec)))))
+		  sys-items)
+       sys-items) 
    lic-items))
 
 

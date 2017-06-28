@@ -49,8 +49,9 @@
 (defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
   (let ((keys))
     (dolist (field (data-spec-fields data-spec))
-      (if (getf field :key)
-	  (pushnew (slot-value item (getf field :name)) keys)))))
+      (when (getf field :key)
+	(pushnew (slot-value item (getf field :name)) keys)))
+    keys))
 
 (defun system-collection (collection)
   (let ((col
@@ -82,29 +83,31 @@
   (let* ((data-spec (get-data-spec collection))	
 	 (collection-type (if data-spec
 			      (collection-type data-spec)))) 
-    
-
+   
     (when data-spec
       (cond ((equalp collection-type :merge)
 	     (let ((sys-collection 
-		    (xdb2:get-collection (system-data data) (collection-name data-spec)))
+		    (system-collection (collection-name data-spec)))
 		   (lic-collection 
-		    (xdb2:get-collection (license-data data) (collection-name data-spec))))
-	       
+		    (license-collection (collection-name data-spec))))
 	       (merge-items (and sys-collection (xdb2:docs sys-collection))
 			    (and lic-collection (xdb2:docs lic-collection))
 			    data-spec
 			    result-type)))
-	    ((equalp collection-type :system)	
+	    ((equalp collection-type :system)
+	     
 	     (let ((col
-		    (xdb2:get-collection (system-data data) (collection-name data-spec))))
+		    (system-collection (collection-name data-spec))))
+	       
 	       (if col
 		   (xdb2:docs col))))
 	    ((equalp collection-type :license)
 	     (let ((col 
-		    (xdb2:get-collection (license-data data) (collection-name data-spec))))
+		    (license-collection (collection-name data-spec))))
 	       (if col
-		   (xdb2:docs col))))
+		   (if (xdb2:docs col)
+		       (progn
+			 (coerce (xdb2:docs col) result-type))))))
 	    (t
 	     (break "Collection type not set. --- data-spec ~%~A~A~A"
 		    (name data-spec) (collection-name data-spec) collection-type)
@@ -123,7 +126,9 @@
 	  docs)))))
 
 (defmethod fetch-item* ((data xdb-data) collection &key test result-type &allow-other-keys)
-  (let ((docs (fetch-all* data collection :test test :result-type result-type)))
+  (let ((docs (fetch-all* data collection :test test 
+			  :result-type (or result-type 'vector))))
+    
     (when docs
       (if test
 	  (map
@@ -149,6 +154,7 @@
 		 (remove-if (lambda (doc)
 			      (find doc lic-docs 
 				    :test (lambda (doc tdoc)
+					    
 					    (equalp (funcall merge-eql-func doc)
 						    (funcall merge-eql-func tdoc)))))
 			    sys-docs) lic-docs)))
