@@ -99,10 +99,8 @@ Used: stop-sys :before"))
 
 (defmethod system-data (data &key &allow-other-keys)
   (let ((store (is-initialized-system-data data)))
-    (when (not store)     
-      (setf store (init-system-data data))
-     ;; (break "~A" store)
-      (setup-data (data *system*)))
+    (when (not store)    
+      (setf store (init-system-data data)))
     store))
 
 (defgeneric system-data-items (collection))
@@ -124,12 +122,8 @@ Used: stop-sys :before"))
 (defmethod license-data (data &key &allow-other-keys)
   
   (let ((store (is-initialized-license-data data)))
-    (when (not store)     
-      (setf store (init-license-data data))      
-    ;;  (break "~A" store)
-      (setup-data (data *system*))
-      
-      )
+    (when (not store)  
+      (setf store (init-license-data data)))
     store))
 
 (defgeneric license-data-items (collection))

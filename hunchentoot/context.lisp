@@ -11,7 +11,7 @@
     (:div :class "card"
 
   
-     (:img :class "card-image-top" :src "../web/images/plus.png")
+     (:img :class "card-image-top" :src "../web/images/logo.png")
   
      (:div :class "card-block"
                  (:h4 :class "card-title"

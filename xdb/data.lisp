@@ -13,15 +13,22 @@
 	   (xdb2::databases data)))
 
 (defmethod is-initialized-system-data ((data xdb-data) &key &allow-other-keys)
+ 
   (xdb2:get-db (data *system*)
-	       (list (frmt "~A" (id-string (system-name *system*)))
-		     *sys-license-code*)))
+		      (list (frmt "~A" (id-string (system-name *system*)))
+			    *sys-license-code*))
+  )
 
 
 (defmethod init-system-data ((data xdb-data) &key &allow-other-keys)
-  (xdb2:add-db (data *system*) 
+  (let ((store (xdb2:add-db (data *system*) 
 	       (list (frmt "~A" (id-string (system-name *system*)))
-		     *sys-license-code*)))
+		     *sys-license-code*))))
+    (when store
+            
+      (xdb2:load-collections store)
+      (xdb2:clear-db-cache store))
+    store))
 
 
 (defmethod is-initialized-license-data ((data xdb-data) &key &allow-other-keys)
@@ -31,9 +38,14 @@
 
 
 (defmethod init-license-data ((data xdb-data) &key &allow-other-keys)
-  (xdb2:add-db (data *system*) 
+  (let ((store (xdb2:add-db (data *system*) 
 	       (list (frmt "~A" (id-string (system-name *system*)))
-		     (current-license-code))))
+		     (current-license-code)))))
+    (when store
+            
+      (xdb2:load-collections store)
+      (xdb2:clear-db-cache store))
+    store))
 
 (defmethod tear-down-data ((data xdb-data) &key &allow-other-keys))
 
