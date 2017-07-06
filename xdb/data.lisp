@@ -93,33 +93,49 @@
 (defmethod fetch-all* ((data xdb-data) collection &key (result-type 'vector) 
 						    &allow-other-keys)
   (let* ((data-spec (get-data-spec collection))	
+	 (script (if data-spec (cdr (script data-spec))))
+	 (entity-p (if script 
+		       (if (find :super-classes script :test #'equalp)
+			   (find 'entity-doc (getf script :super-classes) :test #'equalp)
+			   nil)))
 	 (collection-type (if data-spec
 			      (collection-type data-spec)))) 
    
     (when data-spec
       (cond ((equalp collection-type :merge)
-	     (let ((sys-collection 
+	     (let* ((sys-collection 
 		    (system-collection (collection-name data-spec)))
 		   (lic-collection 
-		    (license-collection (collection-name data-spec))))
-	       (merge-items (and sys-collection (xdb2:docs sys-collection))
+		    (license-collection (collection-name data-spec)))
+		   (docs (merge-items (and sys-collection (xdb2:docs sys-collection))
 			    (and lic-collection (xdb2:docs lic-collection))
 			    data-spec
-			    result-type)))
+			    result-type)))	       
+	       (if entity-p
+		   (remove-if-not #'match-context-entities docs)
+		   docs)))
 	    ((equalp collection-type :system)
 	     
 	     (let ((col
 		    (system-collection (collection-name data-spec))))
-	       
+	      
 	       (if col
-		   (xdb2:docs col))))
+		   (if entity-p
+		       (remove-if-not #'match-context-entities (xdb2:docs col))
+		       (xdb2:docs col))
+		   )))
 	    ((equalp collection-type :license)
+	     
 	     (let ((col 
 		    (license-collection (collection-name data-spec))))
+	      
 	       (if col
 		   (if (xdb2:docs col)
-		       (progn
-			 (coerce (xdb2:docs col) result-type))))))
+		       (coerce 
+			  (if entity-p
+			      (remove-if-not #'match-context-entities (xdb2:docs col))
+			      (xdb2:docs col))
+			  result-type)))))
 	    (t
 	     (break "Collection type not set. --- data-spec ~%~A~A~A"
 		    (name data-spec) (collection-name data-spec) collection-type)

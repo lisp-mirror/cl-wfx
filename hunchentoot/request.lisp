@@ -38,10 +38,17 @@
 (defmethod process-sys-request ((context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
+  
+  ;;TODO:: How to register actions?
   (if (find (parameter "action") (list "save" "login") :test #'string-equal)
       (action-handler (intern (string-upcase (parameter "action")) :keyword)
 		      context
 		      request))
+  (if (parameter "set-entities")
+      (action-handler :set-entities
+		      context
+		      request)
+      )
   
   ;;TODO: why checking for ajax?
   (unless (ajax-request-p (request-object request))

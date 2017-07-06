@@ -123,8 +123,7 @@
 	   (object (fetch-item (collection-name data-spec)
 			       :test (lambda (item)
 				       (if (equalp id (xdb2:id item))
-					   item)))))
-     
+					   item)))))    
       (if (type-of-p field object)
 	  (set-item-val* field item object)
 	  (error (frmt "~S is not of type ~A!" object (getf full-type :data-spec)))))

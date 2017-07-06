@@ -1,5 +1,14 @@
 (in-package :cl-wfx)
 
+(defclass entity-doc (doc)
+     ((entity :initarg :entity
+	       :initform nil
+	       :accessor entity
+	       :db-type (data-member :data-spec entity :key-accessor name)
+	       :key t
+	     
+	       :printer #'print-entity-name))
+     (:metaclass xdb2:storable-mixin))
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
   (:data-spec
@@ -20,6 +29,13 @@
 	   :accessor entity-type
 	   :initform nil
 	   :db-type string
+	   :display t
+	   :editable t)
+    (:name root-p
+	   :initarg :root-p
+	   :accessor root-p
+	   :initform nil
+	   :db-type boolean
 	   :display t
 	   :editable t)
     (:name children
@@ -58,16 +74,20 @@
      (tail-entity (license-entities license) name)))
 
 (defun get-entity (name)
-  (get-license-entity  (license (user (current-user)))
-		      name))
+  (get-license-entity 
+   (license (current-user))
+   name))
 
 (defun match-entity (object)
   #|(and (typep object 'entity-doc)
        (assoc (entity object) (request-page-permissions *current-page*))
        t)
   |#
-  object
-  )
+  
+  (when (active-user) 
+  ;;  (break "~A ~A" object (current-entities (active-user)))
+    (find object (current-entities (active-user)))))
 
-(defmethod match-context-entities ((doc entity))
-  (match-entity doc))
+(defmethod match-context-entities ((doc entity-doc))
+ ;; (break "~A" doc)
+  (match-entity (entity doc)))

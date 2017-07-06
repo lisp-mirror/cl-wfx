@@ -120,15 +120,86 @@
 (defun system-menu ()
   (let ((sys-mod (fetch-item "modules"
 			      :test (lambda (doc)
-				      (string-equal "System Admin" (module-name doc))))))
-    
+				      (string-equal "System Admin" (module-name doc))))))    
     (if sys-mod
 	(menu-items (first (menu sys-mod))))))
 
 
-(defun page-body ()
-  
+(defun accessible-entity (entity accessible-entities)
+  (if (find entity accessible-entities)
+      (return-from accessible-entity entity)
+      (dolist (entity (children entity))
+	(if (find entity accessible-entities)
+	    (return-from accessible-entity entity)
+	    (accessible-entity entity accessible-entities))))
   )
+
+(defun accessible-entity-roots (accessible-entities)
+  (let ((roots))
+    (dolist (entity (fetch-all "entities" :result-type 'list))
+      (when (root-p entity)
+	(when (accessible-entity entity accessible-entities)
+	  (pushnew entity roots)
+	  )))
+    roots))
+
+(defun render-entity-check (entity level accessible-entities)
+  (monkey-html-lisp:htm
+    (:div :class "row"
+	      (:div :class "form-check"
+		    
+		    (:div :class "form-check-label"
+			  (dotimes (i level)
+			    (monkey-html-lisp:htm "&nbsp;"))
+			  (if (find entity accessible-entities)
+			      (if (find entity (current-entities (active-user)))
+				  (monkey-html-lisp:htm
+				    (:input :class "form-check-input" :type "checkbox" 
+					    :name "tree-entity-id" 
+					    :value (xdb2::id entity)
+					    :checked ""))
+				  (monkey-html-lisp:htm
+				    (:input :class "form-check-input" :type "checkbox" 
+					    :name "tree-entity-id" :value (xdb2::id entity))))
+			      (monkey-html-lisp:htm
+				(:input :class "form-check-input" :type "checkbox" 
+					:disabled "")))
+			  (name entity))))
+    (if (children entity)
+	(dolist (entity (children entity))
+	  (render-entity-check entity 
+			       (+ level 1) 
+			       accessible-entities)))))
+
+(defun render-entity-tree (accessible-entities) 
+  
+  (monkey-html-lisp:htm
+    (:form
+     (dolist (entity (accessible-entity-roots accessible-entities))
+       ;; (break "~A ~A" entity (xdb2::id entity))
+       (when (root-p entity)      
+	 (render-entity-check entity 0 accessible-entities)))
+     (:button
+      :name "set-entities" 
+      :type "submit" 
+      :formmethod "post"
+      :class "btn btn-outline-success"
+      :aria-pressed "false"
+      :value "set-entities"
+      "Set"))))
+
+(defmethod action-handler ((action (eql :set-entities)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (setf (current-entities (active-user)) nil)
+  (dolist (parameter (hunchentoot:post-parameters*))
+    (when (equalp (car parameter) "tree-entity-id")
+      
+      (dolist (entity (accessible-entities (current-user)))
+	(if (string-equal (frmt "~A" (xdb2::id entity)) (cdr parameter))
+	    (pushnew entity (current-entities (active-user))))))))
 
 (monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
@@ -242,23 +313,8 @@
 		    
 			   (:div :class "collapse col-md-2 hidden-print " 
 				 :id "exNavbarRight" :style "background-color:#FFFFFF"
-				 (:nav :class "nav nav-pills flex-column"
-				       (let ((sys-mod 
-					     (fetch-item "modules"
-							 :test (lambda (doc)
-								 (string-equal
-								  "System Admin" 
-								  (module-name doc))))))
-					
-					
-					(dolist (item (menu-items (first (menu sys-mod))))
-					  (monkey-html-lisp:htm
-					    (:a :class 
-						"nav-link ~A"
-						:href (context-url 
-						       (context-spec item)
-						        sys-mod)
-						(item-name item)))))))))))
+				 (render-entity-tree 
+				  (accessible-entities (current-user))))))))
 	 
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {

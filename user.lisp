@@ -176,28 +176,28 @@ must be valid email to enable confirmation.")
    :label "Active User"
    :data-fields
    ((:name user :initarg :user
-		       :accessor user
-		       :initform nil)
-		 (:name action-history 
-			:initarg :action-history
-				 :accessor action-history
-				 :initform nil
-				 :documentation "Actions by user since logon.")
-		 (:name entities 
-			:initarg :entities
-			   :accessor current-entities
-			   :initform nil)
-		 (:name current-action 
-			:initarg :current-action
-				 :accessor current-action
-				 :initform nil
-				 :documentation "What is the user doing now?")
-		 (:name system-state 
-			:initarg :system-state
-			       :accessor system-state
-			       :initform nil
-			       :documentation "Temporary settings like date selection range?"))
-      :metaclass xdb2:storable-versioned-class
+	   :accessor user
+	   :initform nil)
+    (:name action-history 
+	   :initarg :action-history
+	   :accessor action-history
+	   :initform nil
+	   :documentation "Actions by user since logon.")
+    (:name entities 
+	   :initarg :entities
+	   :accessor current-entities
+	   :initform nil)
+    (:name current-action 
+	   :initarg :current-action
+	   :accessor current-action
+	   :initform nil
+	   :documentation "What is the user doing now?")
+    (:name system-state 
+	   :initarg :system-state
+	   :accessor system-state
+	   :initform nil
+	   :documentation "Temporary settings like date selection range?"))
+   :metaclass xdb2:storable-versioned-class
    :collection-name "active-users"
    :collection-type :license
    :default-initargs (:top-level t)
