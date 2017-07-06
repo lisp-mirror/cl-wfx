@@ -81,3 +81,114 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
   (let ((*read-eval* nil))
     (if string
 	(read-from-string string))))
+
+
+;;#####################DATES
+
+(defvar *time-zone* 0)
+
+(defun decode-iso-date (date)
+  (ppcre:register-groups-bind ((#'parse-integer year)
+                               (#'parse-integer month)
+                               (#'parse-integer day)) ("(\\d{4})-(\\d{1,2})-(\\d{1,2})" date)
+    (values year month day)))
+
+(defun trim-whitespace (string)
+  (string-trim
+   '(#\Space #\Newline #\Tab #\Return) string))
+
+
+
+(defvar *short-months*
+  #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
+
+(defvar *long-months*
+  #("January" "February" "March" "April" "May" "June" "July" "August" "September"
+    "October" "November" "December"))
+
+(defvar *short-months-afrikaans*
+  #("Jan" "Feb" "Mrt" "Apr" "Mei" "Jun" "Jul" "Aug" "Sep" "Okt" "Nov" "Des"))
+
+(defvar *long-months-afrikaans*
+  #("Januarie" "Februarie" "Maart" "April" "Mei" "Junie"
+    "Julie" "Augustus" "September" "Oktober" "November" "Desember"))
+
+
+(defun month-number (month)
+  (let ((position (or (position month *short-months*
+                                :test #'equalp)
+                      (position month *long-months*
+                                :test #'equalp)
+                      (position month *short-months-afrikaans*
+                                :test #'equalp)
+                      (position month *long-months-afrikaans*
+                                :test #'equalp))))
+    (when position
+      (1+ position))))
+
+(defun ensure-parse-integer (value &key (start 0) end)
+  (typecase value
+    (string
+     (multiple-value-bind (integer position)
+         (parse-integer value :junk-allowed t
+                        :start start :end end)
+       (when (= (length value) position)
+         integer)))
+    (integer value)))
+
+(defun decode-date-string (date)
+  (multiple-value-bind (year month day) (decode-iso-date date)
+    (if year
+        (values year month day)
+        (let ((date-split (ppcre:split "[.\\/ -]+" (trim-whitespace date))))
+          (and date-split
+               (let* ((month-raw (second date-split))
+                      (month (or (month-number month-raw)
+                                 (ensure-parse-integer month-raw)))
+                      (year (ensure-parse-integer (third date-split)))
+                      (day (ensure-parse-integer (first date-split))))
+                 (values year month day)))))))
+
+
+
+(defun decode-date (date &key time-zone)
+  (etypecase date
+    (string
+     (decode-date-string date))
+    (integer
+     (multiple-value-bind (a b c day month year)
+         (decode-universal-time date (or time-zone *time-zone*))
+       (declare (ignore a b c))
+       (values year month day)))))
+
+(defvar *month-days* #(31 28 31 30 31 30 31 31 30 31 30 31))
+
+(defun leap-year-p (year)
+  (cond
+    ((zerop (rem year 400)) t)
+    ((zerop (rem year 100)) nil)
+    ((zerop (rem year 4)) t)))
+
+
+(defun check-date (date month year)
+  ;; Technically, there can be a 31 dec 1899 date, if the time-zone is
+  ;; west of GMT, but it's not particularly important.
+  (when (and (typep year '(integer 1900))
+             (typep month '(integer 1 12))
+             (plusp date))
+    (let ((days (svref *month-days* (1- month))))
+      (cond ((and (= month 2)
+                  (leap-year-p year))
+             (<= date 29))
+            (t
+             (<= date days))))))
+
+(defun parse-date (date &key time-zone)
+  (etypecase date
+    (integer date)
+    (string
+     (multiple-value-bind (year month date) (decode-date-string date)
+       (when (check-date date month year)
+         (encode-universal-time 0 0 0 date month year
+                                (or time-zone *time-zone*)))))
+    (null nil)))

@@ -158,9 +158,7 @@
       (pushnew data-spec *data-specs*))
     
     (when *system*      
-      (persist-data data-spec))
-    )
-  )
+      (persist-data data-spec))))
 
 
 
@@ -182,7 +180,7 @@
 	   :initarg :collection-type
 	   :accessor collection-type
 	   :initform nil
-	   :db-type keyword
+	   :db-type (list-item :type keyword :list (:system :license :merge))
 	   :display t
 	   :editable t)
     (:name collection-name

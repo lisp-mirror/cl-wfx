@@ -189,12 +189,14 @@ Used: stop-sys :before"))
 	       (return-from data-from-items item)))
 	   items))))
 
+(defgeneric validate-item-val (type field item value &key &allow-other-keys)
+  (:documentation "Validates item data value according to field specification."))
 
-(defgeneric set-item-val (type item-def item value &key &allow-other-keys)
-  (:documentation "Sets item data value according to definition."))
+(defgeneric set-item-val (type field item value &key &allow-other-keys)
+  (:documentation "Sets item data value according to field specification."))
 
-(defgeneric item-val (type item-def data &key &allow-other-keys)
-  (:documentation "Retrieves data according to item definition."))
+(defgeneric item-val (type field data &key &allow-other-keys)
+  (:documentation "Retrieves data according to item field specification."))
 
-(defgeneric print-item-val (type item-def data &key &allow-other-keys)
-  (:documentation "Retrieves and wrap for display data according to item definition."))
+(defgeneric print-item-val (type field data &key &allow-other-keys)
+  (:documentation "Retrieves and wrap for display data according to item field specification."))

@@ -96,12 +96,15 @@ because hunchentoot does not have vhosts by default.")
 	 (image-processor (hunchentoot:create-prefix-dispatcher 
 			   (frmt "~Aimages" (site-url system)) #'%image-processor))
 	 
-	 (file-dispatcher-web (hunchentoot:create-folder-dispatcher-and-handler
-			       (frmt "~Aweb/" (site-url system)) 
-			       (web-folder system)))
+	 
 	 (file-dispatcher-sys-web (hunchentoot:create-folder-dispatcher-and-handler
 				   (frmt "~Aweb/" (site-url system)) 
-				   (system-web-folder system))))
+				   (system-web-folder system)))
+	 
+	 (file-dispatcher-web (hunchentoot:create-folder-dispatcher-and-handler
+			       (frmt "~Asys/web/" (site-url system)) 
+			       (web-folder system)))
+	 )
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
     (pushnew image-processor hunchentoot:*dispatch-table*)

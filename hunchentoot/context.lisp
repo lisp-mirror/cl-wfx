@@ -1,6 +1,5 @@
 (in-package :cl-wfx)
 
-
 (monkey-lisp::define-monkey-macro shit-shat (&key id from-ajax)
   `(:div "No idea wtf?????????????????"
 	 (:div ,id ,from-ajax)))
@@ -8,44 +7,40 @@
 
 (defun render-login ()
   (monkey-html-lisp:htm
-    (:div :class "card"
-
-  
-     (:img :class "card-image-top" :src "../web/images/logo.png")
-  
-     (:div :class "card-block"
-                 (:h4 :class "card-title"
-		      "Login")
-                 (:form :method "post"
-                        :action ""
-                     
-                        (:input :type "hidden" :id "contextid" 
-				:value (context-id *context*))
-                        (:div :class "form-group"
-                              (:label :for "email" "Email")
-                              (:input :type "email" 
-                                            :class "form-control"
-                                            :name "email"
-                                            :id "email"
-					    :value ""))
-                        (:div :class "form-group"
-                              (:label :for "password" "Password")
-                              (:input :type "password" 
-                                            :class "form-control"
-                                            :name "password"
-                                            :id "password"
-					    :placeholder "Password"
-                                            :value ""))
-                        (:button :name "action"
-                                :class "btn btn-primary"
-                                :type "submit"
-				:value "login"
-				"Login"
-				)))
-     (:div :class "card-footer"
-	   (gethash :login-error (cache *context*))
-	   )
-     )))
+    (:div :class "row"
+	  (:div :class "card col-5"
+		(:img :class "card-image-top" :src "../sys/web/images/logo.png")
+		
+		(:div :class "card-block"
+		      (:h4 :class "card-title"
+			   "Login")
+		      (:form :method "post"
+			     :action ""
+			     
+			     (:input :type "hidden" :id "contextid" 
+				     :value (context-id *context*))
+			     (:div :class "form-group"
+				   (:label :for "email" "Email")
+				   (:input :type "email" 
+					   :class "form-control"
+					   :name "email"
+					   :id "email"
+					   :value ""))
+			     (:div :class "form-group"
+				   (:label :for "password" "Password")
+				   (:input :type "password" 
+					   :class "form-control"
+					   :name "password"
+					   :id "password"
+					   :placeholder "Password"
+					   :value ""))
+			     (:button :name "action"
+				      :class "btn btn-primary"
+				      :type "submit"
+				      :value "login"
+				      "Login")))
+		(:div :class "card-footer"
+		      (gethash :login-error (cache *context*)))))))
 
 (defun context-url (spec module)
   (let ((spec (or spec (get-context-spec (default-context *system*)))))
@@ -60,9 +55,7 @@
 	      (string-downcase 
 	       (id-string (if spec
 			      (name spec)
-			      (default-context *system*))))
-	      )))
-  )
+			      (default-context *system*))))))))
 
 (defmethod on-success (user)
   
@@ -117,10 +110,8 @@
 	       :test
 	       (lambda (doc)
 		 (if (not (string-equal "System Admin" (module-name doc)))
-		     doc
-		     ))
-	       :result-type 'list)
-  )
+		     doc))
+	       :result-type 'list))
 
 (defun mod-menu (mod)
   (if mod
@@ -266,15 +257,8 @@
 						"nav-link ~A"
 						:href (context-url 
 						       (context-spec item)
-						        sys-mod
-						       )
-						(item-name item))))))))
-
-		     
-		     ))
-	     )
-	 
-	
+						        sys-mod)
+						(item-name item)))))))))))
 	 
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {
@@ -311,26 +295,27 @@
   )
 (defmethod setup-context ((module module) (spec context-spec) system)  
   (eval
-   `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
-					(string-upcase (id-string (name spec))) 
-					'-page)  
-				       :uri ,(if (url spec)
-						 (url spec)
-						 (frmt "~A~A/~A" (site-url system) 
-								  (string-downcase 
-								   (id-string (if module
-										  (module-short module)
-										  "sys"
-										  )))
-								  (string-downcase 
-								       (id-string (name spec)))))  
-				       :allow-other-keys t) ,(args spec)
+   `(hunchentoot:define-easy-handler 
+	(,(alexandria:symbolicate 
+	   (string-upcase (id-string (name spec))) 
+	   '-page)  
+	  :uri ,(if (url spec)
+		    (url spec)
+		    (frmt "~A~A/~A" (site-url system) 
+			  (string-downcase 
+			   (id-string (if module
+					  (module-short module)
+					  "sys"
+					  )))
+			  (string-downcase 
+			   (id-string (name spec)))))  
+	  :allow-other-keys t) ,(args spec)
       
       (let* ((shit (monkey-lisp:monkey-lisp 
 		       (:processor-class cl-wfx::context-data-spec-processor)
-		     ,(data-spec-script (get-data-spec (getf 
-							(cdr (context-spec-script spec))
-							:name))))))
+		     ,(data-spec-script 
+		       (get-data-spec 
+			(getf (cdr (context-spec-script spec)) :name))))))
 	(check-user-access)
 	(monkey-html-lisp:with-html
 	  "<!doctype html>"
@@ -345,13 +330,11 @@
 						   (string-downcase 
 						    (id-string (if module
 								   (module-short module)
-								   "sys"
-								   )))
+								   "sys")))
 						   (if (url spec)
 						       (url spec)
 						       (string-downcase 
-							(id-string (name spec)))
-						       ))  
+							(id-string (name spec)))))  
 				       :allow-other-keys t) ,(args spec)
       
       (monkey-html-lisp:with-html
