@@ -201,6 +201,7 @@ Calls in order:
 			    ;; (get-context-spec "report-view")
 			    (get-context-spec "Modules")
 			    (get-context-spec "Licenses")
+			    (get-context-spec "Entities")
 			    (get-context-spec "Users")
 			    ;; (get-context-spec "import-data")
 			    
@@ -234,7 +235,7 @@ Calls in order:
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
      :name "Login"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      ))
   
@@ -243,7 +244,7 @@ Calls in order:
     
     (:context-spec
      :name "Data Specs"
-     :permission (:update :delete :search)
+     :permissions (:update :delete :search)
      :for-everyone t 
      (:data-spec :name data-spec)))
   
@@ -251,35 +252,42 @@ Calls in order:
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
      :name "Context Specs"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      (:data-spec :name context-spec)))
   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
      :name "Modules"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      (:data-spec :name module)))
   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
      :name "Licenses"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      (:data-spec :name license)))
   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
+     :name "Entities"
+     :permissions (:update :delete)
+     :for-everyone t 
+     (:data-spec :name entity)))
+  
+  (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
+    (:context-spec
      :name "Users"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      (:data-spec :name user)))
   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     (:context-spec
      :name "Allsorts"
-     :permission (:update :delete)
+     :permissions (:update :delete)
      :for-everyone t 
      (:data-spec :name allsort)))
   
@@ -299,7 +307,9 @@ Calls in order:
 (defmethod start-sys :after ((system system) &key &allow-other-keys)
   (let ((*system* system))
     (declare (special *system*))
- 
+    
+;;    (init-system-data (data system))
+    
     (system-license)
     
     (load-context-specs system)

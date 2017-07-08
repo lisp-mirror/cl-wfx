@@ -196,16 +196,159 @@
 	       (:option :value (frmt "~S" (xdb2::id option)) 
 		    (frmt "~A" (slot-value option (getf full-type :key-accessor))))))))))))
 
-(defun render-grid-edit (spec-name fields item active-page)
+
+
+
+
+
+(defun grid-js-render-form-values (renderer spec-name form-id 
+				   &key widget-id action item-id )
+  (let ((active-page (get-context-data-spec-attribute 
+		      spec-name :active-page)))
+    (js-render-form-values 
+     renderer
+     (or widget-id "grid-table")
+     form-id
+     (js-pair "data-spec"
+	      (frmt "~S" spec-name))
+     
+     (js-pair "action" (or action ""))
+     
+     (js-pair "item-id" (or item-id
+			    (get-context-data-spec-attribute 
+			     spec-name :item-id)
+			    ""))
+    
+     
+     (js-pair "pages"
+	      (or (parameter "pages") 10))
+     (js-pair "page"
+	      (or active-page 1))
+     
+    		      
+     ))
+  )
+
+(defun grid-js-render (renderer spec-name &key widget-id action item-id)
+  (let ((active-page (get-context-data-spec-attribute 
+		      spec-name :active-page)))
+
+    (js-render renderer
+	       (or widget-id "grid-table")
+	      
+	       (js-pair "data-spec"
+			(frmt "~S" spec-name))
+	       (js-pair "action"
+			(or action ""))
+	       (js-pair "item-id" (or item-id ""))
+	      
+	       (js-pair "pages"
+			(or (parameter "pages") 10))
+	       (js-pair "page"
+			(or active-page 1)))))
+
+
+
+(defun render-expand-buttons (subs spec-name item)
+;;  (break "subs ~A" subs)
+  (if subs
+      (if (equalp (ensure-parse-integer 
+		   (get-context-data-spec-attribute spec-name
+						    :expand-id)) 
+		  (xdb2:id item))
+	  (monkey-html-lisp:htm
+	    (:button
+	     :name "expand" :type "submit" 
+	     :class "btn btn-outline-primary btn-sm active"				 
+	     :aria-pressed "true"
+	     :onclick (grid-js-render "cl-wfx:ajax-grid" spec-name
+				      :action "unexpand"
+				    ;;  :item-id (xdb2::id item)
+				      )
+	     "-"))
+	  (monkey-html-lisp:htm
+	    (:button ;;:tabindex -1 ;;when disabled
+	     :name "expand" :type "submit" 
+	     :class "btn btn-outline-primary btn-sm border-0"
+	     :aria-pressed "false"
+	     :onclick (grid-js-render "cl-wfx:ajax-grid" spec-name
+				      :action "expand"
+				      :item-id (xdb2::id item))
+	     "+")))))
+
+
+(defun render-grid-buttons (spec-name item)
+  (let ((permissions (permissions (context-spec *context*))))
+  ;;  (break "permissions ~A" (context-spec *context*))
+    (dolist (permission permissions)
+      (cond ((equalp permission :update)
+	     (monkey-html-lisp:htm
+	       
+	       (:button ;;:tabindex -1 ;;when disabled
+		:name "edit" :type "submit" 
+		:class
+		(if (and (parameter "item-id")
+			 (string-equal 
+			  (parameter "item-id") 
+			  (frmt "~A" (xdb2:id item))))
+		    "btn btn-outline-primary btn-sm active"
+		    "btn btn-outline-primary btn-sm")
+		:aria-pressed 
+		(if (and (parameter "item-id")
+			 (string-equal 
+			  (parameter "item-id") 
+			  (frmt "~A" (xdb2:id item))))
+		    "true"
+		    "false")
+		:onclick 
+		(grid-js-render "cl-wfx:ajax-grid" spec-name
+				:action "edit"
+				:item-id (xdb2::id item)
+				
+				)
+		"Edit")))
+	    ((equalp permission :delete)
+	     (monkey-html-lisp:htm
+	       (:button ;;:tabindex -1 ;;when disabled
+		:name "edit" :type "submit" 
+		:class (if (and (parameter "item-id")
+				(string-equal 
+				 (parameter "item-id") 
+				 (frmt "~A" (xdb2:id item))))
+			   "btn btn-outline-primary btn-sm active"
+			   "btn btn-outline-primary btn-sm")
+		:aria-pressed (if (and (parameter "item-id")
+				       (string-equal 
+					(parameter "item-id") 
+					(frmt "~A" (xdb2:id item))))
+				  "true"
+				  "false")
+		:onclick 
+		(grid-js-render "cl-wfx:ajax-grid" spec-name
+				:action "delete"
+				:item-id (xdb2::id item)
+				)
+		"Delete")))))))
+
+
+(defun render-grid-edit (spec-name fields item parent-item)
+  
+  (set-context-data-spec-attribute spec-name :edit-item item)
+  (set-context-data-spec-attribute spec-name :parent-item parent-item)
+  
+  (set-context-data-spec-attribute (parameter "data-spec")
+				   :item-id (xdb2::id item))
+  
   (monkey-html-lisp:htm
-    (:div :class "card"
+    (:div :class "card" :id (string-downcase (frmt "grid-edit-~A"  spec-name))
 	  (:div :class "card-header"
 		(frmt "Editing... ~A" (string-capitalize spec-name)))
 	  (:div :class "card-block"
 		(:div :class "row" 
 		      :id (frmt "~A" 
 				spec-name)
-		      (:div :class "col"
+		      (:div :class "col" 
+			    
 			    (dolist (field fields)
 			      (let* ((name (getf field :name))
 				     (label (getf field :label)))
@@ -214,8 +357,7 @@
 					   (not (equalp (field-data-type field)
 							'data-group)))
 					
-				  (monkey-html-lisp:htm
-					  
+				  (monkey-html-lisp:htm					  
 				    (:div :class (if (getf field :editable)
 						     "form-group row"
 						     "form-group row disabled")
@@ -253,219 +395,91 @@
 			     :type "submit" 
 			     :class "btn btn-outline-primary btn-sm"
 			     :onclick 
-			     (js-render-form-values
-			      "cl-wfx:ajax-grid"
-			      "grid-table"
-			      (frmt "~A" 
-				    (gethash 'data-spec-name 
-					     monkey-lisp::*sexp-cache*))
-			      (js-pair "data-spec"
-				       (frmt "~S" spec-name))
-			      (js-pair "data-id"
-				       (if (xdb2::id item)
-					   (xdb2::id item)
-					   "0"))
-			      (js-pair "pages"
-				       (or (parameter "pages") 10))
-			      (js-pair "page"
-				       active-page)
-			      (js-pair "action" "save"))
+			     (grid-js-render-form-values
+			      "cl-wfx:ajax-grid" 
+			      spec-name
+			      (string-downcase  (frmt "grid-edit-~A"  spec-name))
+			      :widget-id nil 
+			      :action "save"
+			      
+			      )
 			     "Save")
 			    (:button ;;:tabindex -1 ;;when disabled
 			     :name "cancel" 				   
 			     :type "submit" 
 			     :class "btn btn-outline-primary btn-sm float-right"
 			     :onclick 
-			     (js-render-form-values
-			      "cl-wfx:ajax-grid"
-			      "grid-table"
-			      (frmt "~A" 
-				    (gethash 'data-spec-name 
-					     monkey-lisp::*sexp-cache*))
-			      (js-pair "data-spec"
-				       (frmt "~S" spec-name))
-
-			      (js-pair "pages"
-				       (or (parameter "pages") 10))
-			      (js-pair "page"
-				       active-page)
-			      (js-pair "action" "cancel"))
+			     (grid-js-render "cl-wfx:ajax-grid" spec-name
+					     :widget-id nil
+					     :action "cancel"
+					     )
 			     "Cancel")))))))
 
-(defun render-grid-buttons (spec-name item permissions active-page
-			    expand-row-spec expand-row-id grid-name)
-  (dolist (permission permissions)
-    (cond ((equalp permission :update)
-	   (monkey-html-lisp:htm
-					 
-	     (:button ;;:tabindex -1 ;;when disabled
-	      :name "edit" :type "submit" 
-	      :class
-	      (if (and (parameter "item-id")
-		       (string-equal 
-			(parameter "item-id") 
-			(frmt "~A" (xdb2:id item))))
-		  "btn btn-outline-primary btn-sm active"
-		  "btn btn-outline-primary btn-sm")
-	      :aria-pressed 
-	      (if (and (parameter "item-id")
-		       (string-equal 
-			(parameter "item-id") 
-			(frmt "~A" (xdb2:id item))))
-		  "true"
-		  "false")
-	      :onclick 
-	      (js-render "cl-wfx:ajax-grid"
-			 "grid-table"
-			 (js-pair "data-spec"
-				  (frmt "~S" spec-name))
-			 (js-pair "item-id"
-				  (xdb2::id item))
-			 
-			 (js-pair "pages"
-				  (or (parameter "pages") 10))
-			 (js-pair "page"
-				  active-page)
-			 (js-pair "search"
-				  (if (parameter "search")
-				      (parameter "search")
-				      ""))
-			 (js-pair "grid-name" 
-				  (frmt "~S" 
-					(or grid-name spec-name)))
-			 (js-pair "expand-row-id"
-				  (if expand-row-id
-				      (frmt "~A" expand-row-id)
-				      ""
-				      ))
-			 (js-pair "expand-row-spec"
-				  (if expand-row-spec
-				      (frmt "~A" expand-row-spec)
-				      ""
-				      ))
-			 (js-pair "action" "edit"))
-	      "Edit")))
-	  ((equalp permission :delete)
-	   (monkey-html-lisp:htm
-	     (:button ;;:tabindex -1 ;;when disabled
-	      :name "edit" :type "submit" 
-	      :class (if (and (parameter "item-id")
-			      (string-equal 
-			       (parameter "item-id") 
-			       (frmt "~A" (xdb2:id item))))
-			 "btn btn-outline-primary btn-sm active"
-			 "btn btn-outline-primary btn-sm")
-	      :aria-pressed (if (and (parameter "item-id")
-				     (string-equal 
-				      (parameter "item-id") 
-				      (frmt "~A" (xdb2:id item))))
-				"true"
-				"false")
-	      :onclick 
-	      (js-render "cl-wfx:grid"
-			 "grid-table"
-			 (js-pair "data-spec"
-				  (frmt "~S" spec-name))
-			 (js-pair "item-id"
-				  (xdb2::id item))
-			 
-			 (js-pair "pages"
-				  (or (parameter "pages") 10))
-			 (js-pair "page"
-				  active-page)
-			 (js-pair "search"
-				  (if (parameter "search")
-				      (parameter "search")
-				      ""))
-			 (js-pair "grid-name" 
-				  (frmt "~S" 
-					(or grid-name spec-name)))
-			 (js-pair "expand-row-id"
-				  (if expand-row-id
-				      (frmt "~A" expand-row-id)
-				      ""
-				      ))
-			 (js-pair "action" "delete"))
-	      "Delete"))))))
 
-
-(defun render-expand-buttons (subs spec-name item active-page grid-name)
-  (if subs
-      (if (and (parameter "expand-row-id") (not (equalp (parameter "expand-row-id") ""))
-	       (equalp (parse-integer (parameter "expand-row-id")) 
-		       (xdb2:id item)))
-	  (monkey-html-lisp:htm
-	    (:button ;;:tabindex -1 ;;when disabled
-	     :name "expand" :type "submit" 
-	     :class "btn btn-outline-primary btn-sm active"
-				 
-	     :aria-pressed "true"
-				 
-	     :onclick 
-	     (js-render "cl-wfx:ajax-grid"
-			"grid-table"
-			(js-pair "data-spec"
-				 (frmt "~S" spec-name))
-					   
-			(js-pair "pages"
-				 (or (parameter "pages") 10))
-			(js-pair "page"
-				 active-page)
-			(js-pair "search"
-				 (if (parameter "search")
-				     (parameter "search")
-				     ""))
-			(js-pair "grid-name" 
-				 (frmt "~S" (or grid-name spec-name))))
-	     "-"))
-	  (monkey-html-lisp:htm
-	    (:button ;;:tabindex -1 ;;when disabled
-	     :name "expand" :type "submit" 
-	     :class "btn btn-outline-primary btn-sm border-0"
-				  
-	     :aria-pressed "false"
-				
-	     :onclick 
-	     (js-render "cl-wfx:ajax-grid"
-			"grid-table"
-			(js-pair "data-spec"
-				 (frmt "~S" spec-name))
-			(js-pair "expand-row-id"
-				 (xdb2::id item))
-			(js-pair "expand-row-spec"
-				 (frmt "~S" spec-name))
-			(js-pair "pages"
-				 (or (parameter "pages") 10))
-			(js-pair "page"
-				 active-page)
-			(js-pair "search"
-				 (if (parameter "search")
-				     (parameter "search")
-				     ""))
-			(js-pair "grid-name" 
-				 (frmt "~S" (or grid-name spec-name))))
-	     "+")))))
-
-(defun render-grid-data (spec-name page-data permissions active-page sub-level grid-name)
+(defun render-grid-header (spec-name fields sub-p)
+  (let ((subs))
     
-  (let ((data-spec (get-data-spec spec-name))
-	(subs))
-    (when (equalp page-data (list nil))
-      (break "render-grid-data nil ~A" spec-name)
-      )
-    (dolist (field (data-spec-fields data-spec))
-      (cond ((equalp (field-data-type field) 'data-group)
-	     (pushnew field subs))))
+    (dolist (field fields)
+	(cond ((equalp (field-data-type field) 'data-group)
+	       (pushnew field subs))))
     
-    (dolist (item page-data)
-      (monkey-html-lisp:htm
+    (monkey-html-lisp:htm
+      (:div :class "row"	
+	    (when subs
+	      (monkey-html-lisp:htm
+		(:div :class "col-sm-1"
+		      " ")))
+	    
+	    (dolist (field fields)
+	      
+	      (when (and (getf field :display) 
+			 (not (equalp (field-data-type field)
+				      'data-group)))
+		(let* ((name (getf field :name))
+		       (label (getf field :label)))
+		  
+		  (monkey-html-lisp:htm
+		    (:div :class "col"
+			  (:h6 (if label
+				   label
+				   (string-capitalize 
+				    (substitute #\Space  (character "-")  
+						(format nil "~A" name) 
+						:test #'equalp)))))))))
+	    (unless sub-p
+	      (monkey-html-lisp:htm	      
+		(:div :class "col" ;;column spacing for buttons
+		      (:div :class "row"	  
+			    (:div :class "col"
+				  (render-grid-search spec-name)
+				  (render-grid-sizing spec-name))))))))))
+
+(defun render-grid-data (spec-name page-items sub-level parent-item)
+  
+  (let ((sub-level-p (not (equalp spec-name 
+				  (gethash :root-data-spec 
+					   (cache *context*))))))
+    
+    (when sub-level-p
+      (parse-data-spec-for-grid spec-name))  
+    
+    (let ((fields (get-context-data-spec-attribute spec-name :data-fields))
+	  (subs))
+      
+      (dolist (field (get-context-data-spec-attribute spec-name :data-fields))
+	(cond ((equalp (field-data-type field) 'data-group)
+	       (pushnew field subs))))
+      
+      (dolist (item page-items)
+	(monkey-html-lisp:htm
 	  (:div :class "row"
 		(monkey-html-lisp:htm
-		  (:div :class "col-sm-1"
-			(render-expand-buttons subs spec-name item active-page 
-					       grid-name))
+		  (if subs
+		      (monkey-html-lisp:htm
+			(:div :class "col-sm-1"
+			      (render-expand-buttons subs spec-name item))))
 		  
-		  (dolist (field (data-spec-fields data-spec))
+		  (dolist (field fields)
 		    (when (and (getf field :display) 
 			       (not (equalp (field-data-type field)
 					    'data-group)))
@@ -479,13 +493,10 @@
 
 		(:div :class "col"
 		      (:div :class "btn-group"
-			    (render-grid-buttons 
-			     spec-name item permissions active-page 
-			     (parameter "expand-row-spec")
-			     (parameter "expand-row-id")
-			     grid-name))))
-	 
-	  (if (and (or (parameter "item-id") 
+			    (render-grid-buttons spec-name item ))))
+	  
+	  (if (and (or (and (equalp (parameter "action") "edit")
+			    (parameter "item-id")) 
 		       (gethash :validation-error-item-id
 				(cache *context*)))
 		   (string-equal (parameter "data-spec") (frmt "~S" spec-name))
@@ -493,14 +504,21 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (xdb2:id item))))
-	      (render-grid-edit spec-name (data-spec-fields data-spec) item active-page))
+	      (render-grid-edit	spec-name fields item parent-item))
 	  
-	  (when (and (parameter "expand-row-id") 
-		     (not (equalp (parameter "expand-row-id") "")))
-	    (when (equalp (parse-integer (parameter "expand-row-id")) (xdb2:id item))
+	  (when (equalp (ensure-parse-integer 
+					  (get-context-data-spec-attribute spec-name
+									   :expand-id)) (xdb2:id item))
+	      
+	      
+	      
 	      (dolist (sub subs)
 		(let* ((attributes (cdr (getf sub :db-type)))
-		       (data-spec (get-data-spec (getf attributes :data-spec))))
+		      (sub-data-spec (getf attributes :data-spec))
+		      )
+		  
+		  (parse-data-spec-for-grid sub-data-spec)
+		  
 		  (monkey-html-lisp:htm
 		    (:div :class "row"
 			  (:div :class "col"
@@ -509,25 +527,172 @@
 					   (frmt "~A" (string-capitalize
 						       (getf sub :name))))
 				      (:div :class "card-header"
-					    (render-grid-header 
-					     (data-spec-fields data-spec) 
-					     (getf attributes :data-spec)
+					    (render-grid-header
+					     sub-data-spec
+					     (get-context-data-spec-attribute 
+					      sub-data-spec :data-fields)
+					     
 					     t))
 				      (:div :clss "card-block"
 					    (render-grid-data 
-					     (getf attributes :data-spec) 
+					     sub-data-spec
 					     (item-val (field-data-type sub) sub item) 
-					     permissions
-					     active-page
 					     (+ sub-level 1)
-					     grid-name))))))))))))
-    
-    (when (parameter "new-item-id")
+					     item
+					     )))))))))))
       
-      (render-grid-edit spec-name (data-spec-fields data-spec) 
-			(make-instance (name data-spec)) active-page))))
+      (when (equalp (parameter "action") "new")
+	(render-grid-edit spec-name fields (make-instance spec-name) parent-item)))))
 
-(defun render-grid-paging (spec-name active-page how-many-rem how-many-pages)
+(defun render-grid-sizing (spec-name)
+  (monkey-html-lisp:htm
+    (:input :type "text" :name "pages" 
+	    :size 2
+	    :id "pages"
+	    :value (if (parameter "pages")
+		       (parameter "pages")
+		       10)
+	    :onkeydown
+	    ;;fires ajax call on enter (13)
+	    (js-render-event-key 
+	     "pages"
+	     13
+	     "cl-wfx:ajax-grid"
+	     "grid-table"
+	     (js-pair "data-spec"
+		      (frmt "~S" spec-name))
+	     (js-pair "page" "1")
+	     (js-pair "search"
+		      (if (parameter "search")
+			  (parameter "search")
+			  ""))
+	     (js-pair
+	      "grid-name" 
+	      (frmt "~A" spec-name))
+	     (js-pair "action" "grid-sizing")))))
+
+(defun render-grid-search (spec-name)
+  (monkey-html-lisp:htm
+    (:input :type "text" 
+	    :name "search" 	   
+	    :id "search"
+	    :value (if (parameter "search")
+		       (parameter "search")
+		       "")
+	    :onkeydown
+	    ;;fires ajax call on enter (13)
+	    (js-render-event-key 
+	     "search"
+	     13
+	     "cl-wfx:ajax-grid"
+	     "grid-table"
+	     (js-pair "data-spec"
+		      (frmt "~S" spec-name))
+	     (js-pair "page" "1")
+	     
+	     (js-pair
+	      "grid-name" 
+	      (frmt "~A" 
+		    (frmt "~A" spec-name)))
+	     (js-pair "action" "grid-search")))))
+
+
+
+
+
+
+(defun fetch-grid-page-data (spec-name items)
+  (set-context-data-spec-attribute spec-name :data-count (length items))
+    
+  (set-context-data-spec-attribute spec-name :show-pages-count 
+				   (if (parameter "pages")
+				       (parse-integer (parameter "pages"))
+				       10))
+    
+  (set-context-data-spec-attribute spec-name :active-page
+				   (if (parameter "page")
+				       (parse-integer (parameter "page"))
+				       1))
+
+
+  (multiple-value-bind (page-count rem)
+      (floor (get-context-data-spec-attribute spec-name :data-count) 
+	     (get-context-data-spec-attribute spec-name :show-pages-count))
+     
+    (set-context-data-spec-attribute spec-name :page-count page-count)
+    (set-context-data-spec-attribute spec-name :page-count-remaining rem))
+    
+  (set-context-data-spec-attribute 
+   spec-name :start-page-count 
+   (- (* (get-context-data-spec-attribute 
+	  spec-name :active-page) 
+	 (get-context-data-spec-attribute 
+	  spec-name :show-pages-count)) 
+      (get-context-data-spec-attribute 
+       spec-name :show-pages-count)))
+    
+  (set-context-data-spec-attribute 
+   spec-name :end-page-count 
+   (if (< (* (get-context-data-spec-attribute 
+	      spec-name :active-page)
+	     (get-context-data-spec-attribute 
+	      spec-name :show-pages-count)) 
+	  (get-context-data-spec-attribute 
+	   spec-name :data-count))
+       (* (get-context-data-spec-attribute 
+	   spec-name :active-page)
+	  (get-context-data-spec-attribute 
+	   spec-name :show-pages-count))))
+  
+  (when items
+    (subseq items 
+	    (get-context-data-spec-attribute spec-name :start-page-count) 
+	    (get-context-data-spec-attribute spec-name :end-page-count))))
+
+(defun fetch-grid-data (spec-name)
+  (let ((items)
+	(collection-name (get-context-data-spec-attribute 
+			  spec-name :collection-name))
+	(search-p (and (parameter "search") 
+		       (< (length (string-trim (list #\Space) 
+					       (parameter "search")))
+			  1))))
+    (unless search-p
+      (setf items (fetch-all collection-name
+			     :result-type 'list)))
+    
+    (when search-p
+      (setf items
+	    (fetch-items  
+	     collection-name
+	     :test (lambda (item)
+			   
+		     (let ((found nil))
+		       (dolist (field (get-context-data-spec-attribute 
+				       spec-name 
+				       :data-fields))
+			 (when (getf field :db-type)
+			   (let ((val (print-item-val (field-data-type field) field item)))
+			     (when (search (parameter "search") 
+					   val
+					   :test #'string-equal)
+			       (unless found
+				 (setf found t))))))
+		       (if found
+			   item)))
+	     :result-type 'list)))
+    
+    (fetch-grid-page-data spec-name items)))
+
+(defun render-grid-paging (spec-name)
+  
+  (let ((active-page (get-context-data-spec-attribute 
+		      spec-name :active-page))
+	(how-many-rem (get-context-data-spec-attribute 
+		       spec-name :page-count-remaining))
+	(how-many-pages (get-context-data-spec-attribute 
+		       spec-name :page-count)))
+    
     (monkey-html-lisp:htm
       (:nav
        (:ul :class "pagination justify-content-end"
@@ -553,9 +718,7 @@
 					  (- active-page 1)))
 			     (js-pair "grid-name" 
 				      (frmt "~A" 
-					    (gethash 
-					     'data-spec-name 
-					     monkey-lisp::*sexp-cache*)))
+					    spec-name))
 			     (js-pair "action" "page-previous"))
 		  "Previous"))
 	    
@@ -584,9 +747,7 @@
 				   (js-pair "grid-name" 
 					    (frmt
 					     "~A" 
-					     (gethash 
-					      'data-spec-name 
-					      monkey-lisp::*sexp-cache*)))
+					     spec-name))
 				   (js-pair "action" "page"))
 			(+ i 1)))))
 	      
@@ -612,171 +773,40 @@
 				 (js-pair "grid-name" 
 					  (frmt
 					   "~A" 
-					   (gethash 
-					    'data-spec-name 
-					    monkey-lisp::*sexp-cache*)))
+					   spec-name))
 				 (js-pair "action" "page-next"))
-		      "Next"))))))))
+		      "Next")))))))))
 
-(defun render-grid-sizing (spec-name)
-  (monkey-html-lisp:htm
-    (:input :type "text" :name "pages" 
-	    :size 2
-	    :id "pages"
-	    :value (if (parameter "pages")
-		       (parameter "pages")
-		       10)
-	    :onkeydown
-	    ;;fires ajax call on enter (13)
-	    (js-render-event-key 
-	     "pages"
-	     13
-	     "cl-wfx:ajax-grid"
-	     "grid-table"
-	     (js-pair "data-spec"
-		      (frmt "~S" spec-name))
-	     (js-pair "page" "1")
-	     (js-pair "search"
-		      (if (parameter "search")
-			  (parameter "search")
-			  ""))
-	     (js-pair
-	      "grid-name" 
-	      (frmt "~A" 
-		    (gethash 
-		     'data-spec-name 
-		     monkey-lisp::*sexp-cache*)))
-	     (js-pair "action" "grid-sizing")))))
-
-(defun render-grid-search (spec-name)
-  (monkey-html-lisp:htm
-    (:input :type "text" 
-	    :name "search" 	   
-	    :id "search"
-	    :value (if (parameter "search")
-		       (parameter "search")
-		       "")
-	    :onkeydown
-	    ;;fires ajax call on enter (13)
-	    (js-render-event-key 
-	     "search"
-	     13
-	     "cl-wfx:ajax-grid"
-	     "grid-table"
-	     (js-pair "data-spec"
-		      (frmt "~S" spec-name))
-	     (js-pair "page" "1")
-	     
-	     (js-pair
-	      "grid-name" 
-	      (frmt "~A" 
-		    (gethash 
-		     'data-spec-name 
-		     monkey-lisp::*sexp-cache*)))
-	     (js-pair "action" "grid-search"))))
-  )
-
-(defun fetch-grid-data ()
-  (if (or (not (parameter "search")) 
-	  (< (length (string-trim (list #\Space)  (parameter "search"))) 1))
-      
-      (let ((items (fetch-all (gethash 'collection-name monkey-lisp::*sexp-cache*)
-			     :result-type 'list)))
-	
-	(if (and items (not (listp items)))
-	    (coerce  items 'list)
-	    items))
-      
-      (fetch-items  
-       (gethash 'collection-name monkey-lisp::*sexp-cache*)
-       :test (lambda (item)
-	       
-	       (let ((found nil))
-		 (dolist (field (gethash 'fields monkey-lisp::*sexp-cache*))
-		   (when (getf field :db-type)
-		       (let ((val (print-item-val (field-data-type field) field item)))
-			 
-			 (when (search (parameter "search") 
-				       val
-				       :test #'string-equal)
-			   (unless found
-			     (setf found t))))))
-		 (if found
-		     item)))
-       :result-type 'list
-       )))
-
-(defun render-grid-header (fields spec-name sub-p)
-  (monkey-html-lisp:htm
-    (:div :class "row"	
-			      
-	  (dolist (field fields)
-				
-	    (when (getf field :display)
-	      (let* ((name (getf field :name))
-		     (label (getf field :label)))
-				    
-		(monkey-html-lisp:htm
-		  (:div :class "col"
-			(:h6 (if label
-				 label
-				 (string-capitalize 
-				  (substitute #\Space  (character "-")  
-					      (format nil "~A" name) 
-					      :test #'equalp)))))))))
-	  (unless sub-p
-	    (monkey-html-lisp:htm	      
-	      (:div :class "col" ;;column spacing for buttons
-		    (:div :class "row"	  
-			  (:div :class "col"
-				(render-grid-search spec-name)
-				(render-grid-sizing spec-name)
-				)))))))
-  )
-
-(defun render-grid (&key id from-ajax permissions)
-  (declare (ignore id) (ignore from-ajax) )
-
-  (let* ((data (fetch-grid-data))
-	 (spec-name (gethash 'data-spec-name monkey-lisp::*sexp-cache*) )
-	 (data-count (length data))	 
-	 (how-many-pages nil)
-	 (how-many-rem 0)
-	 (active-page (if (parameter "page")
-			  (parse-integer (parameter "page"))
-			  1
-			  ))
-	 (pages (if (parameter "pages")
-		    (parse-integer (parameter "pages"))
-		    10))
-	 (start-count)
-	 (end-count))
-   
+(defun render-grid (spec-name) 
+  
+  (parse-data-spec-for-grid spec-name)
+  
+  (setf (gethash :root-data-spec (cache *context*)) spec-name)
+  
+  
+  (when (equalp (parameter "action") "expand")
+    (set-context-data-spec-attribute (parameter "data-spec")
+				     :expand-id (parameter "item-id")))
+  
+  (when (equalp (parameter "action") "unexpand")    
+    (set-context-data-spec-attribute (parameter "data-spec")
+				     :expand-id nil))
+ 
+  
+  (let ((page-items (fetch-grid-data spec-name)))
     
-    (multiple-value-bind (page-count rem)
-	(floor data-count
-	       pages)
-     
-      (setf how-many-pages page-count)
-      (setf how-many-rem rem)
-      
-      (setf start-count (- (* active-page pages) pages))
-      (setf end-count (if (< (* active-page pages) data-count)
-			  (* active-page pages))))
-    
-    (monkey-html-lisp:with-html	       
-      (:div :id "grid-table"
-	    (:div :class "card"
-		  
+    (monkey-html-lisp:with-html	  
+      (:div :class "card"
 		  (:h4 :class "card-title"
 		       (frmt "~A" (name (context-spec *context*))))
 		  (:div :class "card-header"
-			(render-grid-header (gethash 'fields monkey-lisp::*sexp-cache*)
-					    spec-name nil))
+			(render-grid-header spec-name
+					    (get-context-data-spec-attribute 
+					     spec-name 
+					     :data-fields)
+					    nil))
 		  (:div :class "card-block"
-			(let ((page-data (subseq data start-count end-count )))
-			  (render-grid-data spec-name page-data permissions active-page 0
-					    spec-name)))
+			(render-grid-data spec-name page-items 0 nil))
 	
 		  (:div :class "card-footer"
 			(:div :class "row"	  
@@ -788,41 +818,17 @@
 				     :aria-pressed "false"
 				
 				     :onclick 
-				     (js-render "cl-wfx:ajax-grid"
-						"grid-table"
-						(js-pair "data-spec"
-							 (frmt "~S" spec-name))
-					
-						(js-pair "pages"
-							 (or (parameter "pages") 10))
-						(js-pair "page"
-							 active-page)
-						(js-pair "search"
-							 (if (parameter "search")
-							     (parameter "search")
-							     ""))
-						(js-pair "new-item-id" "0")
-						(js-pair
-						 "grid-name" 
-						 (frmt "~S" 
-						       (or (read-symbol-from-string
-							    (parameter "grid-name")) 
-							   spec-name)))
-						(js-pair "action" "new"))
+				     (grid-js-render "cl-wfx:ajax-grid" spec-name 
+						     :widget-id spec-name
+						     :action "new")
 				     "+")
-				    (render-grid-paging spec-name active-page 
-							how-many-rem how-many-pages)))))))))
+				    (render-grid-paging spec-name)))))
+      )))
 
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  (let ((data-spec (get-data-spec 
-		    (read-symbol-from-string (or (parameter "grid-name") 
-						 (parameter "data-spec"))))))  
-    (monkey-lisp::monkey-lisp* 
-     :processor-class 'cl-wfx::context-data-spec-processor
-     :body
-     (data-spec-script data-spec))))
+  (render-grid (gethash :root-data-spec (cache *context*))))
 
 
 (defmethod action-handler ((action (eql :save)) 
@@ -830,37 +836,46 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (let* ((data-spec (get-data-spec (read-symbol-from-string (parameter "data-spec"))))
-	 (fields (data-spec-fields data-spec)))
+  (let* ((spec-name (read-symbol-from-string (parameter "data-spec")))
+	 
+	 (fields (get-context-data-spec-attribute 
+		  spec-name
+		  :data-fields)))
+    
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
+    
     (when fields
-      
-      (let ((item (fetch-item (collection-name data-spec)
-		  :test (lambda (item)
-			  (equalp (parse-integer (parameter "data-id")) 
-				  (xdb2::id item))))))
+ 
+      (let ((item (get-context-data-spec-attribute 
+			 spec-name
+			 :edit-item))
+	    (parent-item (get-context-data-spec-attribute 
+			  spec-name
+			  :parent-item))
+	)
 	
 	(unless item
-	  (setf item (make-instance (name data-spec))))
+	  (setf item (make-instance spec-name)))
 	
 	(dolist (field fields)
-	  (when (getf field :editable)
-	    (when (getf field :db-type)
-	      (let ((valid (if (equalp (field-data-type field) 'list-item)
-			       (validate-item-val (field-data-type field) 
-						  field 
-						  item 
-						  (parameter (getf field :name)))
-			       (list t nil))))
-		(unless (first valid)
-		  (pushnew 
-		   (list (getf field :name) (second valid))
-		   (gethash :validation-errors (cache *context*))))
-		
-		(when (first valid)
-		  (set-item-val (field-data-type field) field item 
-				(parameter (getf field :name))))))))
+	  (when (and (getf field :editable)
+			 (getf field :db-type)
+			 (not (equalp (field-data-type field) 'data-group)))
+		(let ((valid (if (equalp (field-data-type field) 'list-item)
+				 (validate-item-val (field-data-type field) 
+						    field 
+						    item 
+						    (parameter (getf field :name)))
+				 (list t nil))))
+		  (unless (first valid)
+		    (pushnew 
+		     (list (getf field :name) (second valid))
+		     (gethash :validation-errors (cache *context*))))
+		  
+		  (when (first valid)
+		    (set-item-val (field-data-type field) field item 
+				  (parameter (getf field :name)))))))
 	
 	;;Doing this to keep edit window open.
 	(when (gethash :validation-errors (cache *context*))
@@ -871,11 +886,22 @@
 	(unless (gethash :validation-errors (cache *context*))
 	  
 	  (dolist (field fields)
-	    (when (getf field :editable)
-	      (when (getf field :db-type)
+	    (when (and (getf field :editable)
+			 (getf field :db-type)
+			 (not (equalp (field-data-type field) 'data-group)))
 		(set-item-val (field-data-type field) field item 
-			      (parameter (getf field :name))))))
+			      (parameter (getf field :name)))))
 	  
-	  (persist-data item))))))
+	  (when (xdb2::top-level item)
+	    (persist-data item))
+	  
+	  (when parent-item
+	    (when (xdb2::top-level parent-item)
+	      (persist-data parent-item)))
+	  
+	  (set-context-data-spec-attribute spec-name :parent-item nil)
+	  (set-context-data-spec-attribute spec-name :edit-item nil)
+	  (set-context-data-spec-attribute spec-name :item-id nil)
+	  )))))
 
 

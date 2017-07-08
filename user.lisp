@@ -104,20 +104,8 @@ must be valid email to enable confirmation.")
 	     :initarg :accessible-entities
 			   :accessor accessible-entities
 			   :initform nil
-			   :db-type 
-			   (data-tree entity 
-				      :tree-func #'(lambda (info)
-						     (if (license 
-							  (value-info-row info))
-							 (license-entities 
-							  (license 
-							   (value-info-row info)))))
-				      :selected (or 
-						 (current-entities *session*)
-						 (current-entities (active-user)))
-				      :child-func children
-				      :value-func entity-name
-				      :check-func check-entity-access))
+			   :db-type (data-group :data-spec entity :accessor-key name)
+			   )
       (:name preferences 
 	     :initarg :preferences
 		   :accessor preferences
@@ -136,11 +124,14 @@ must be valid email to enable confirmation.")
 	     :initarg :status
 	      :accessor :status
 	      :initform nil
-	      :db-type (values :active :suspended :locked :disabled)
+	      :db-type (list-item :type cl-wfx::keyword 
+				  :list (:active :suspended :locked :disabled))
+	      :display t
+	      :editable t
 	      :documentation "Active, Suspended, Locked Out, Disabled"))
    :metaclass xdb2:storable-versioned-class
    :collection-name "users"
-   :collection-type :system
+   :collection-type :merge
    :default-initargs (:top-level t)
  
    (:documentation

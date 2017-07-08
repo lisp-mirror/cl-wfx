@@ -2,6 +2,34 @@
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
   (:data-spec
+   :name license-code
+   :label "License Codes"
+   :data-fields
+   ((:name license-code
+	   :initarg :license-code
+	   :accessor license-code
+	   :initform nil
+	   :db-type string
+	   :key t
+	   :display t
+	   :editable t)
+    (:name user-names
+	   :initarg :user-names
+	   :accessor user-names
+	   :initform nil
+	   :db-type (list :type 'string)
+	   :display t
+	   :editable t))
+
+   :metaclass xdb2:storable-versioned-class
+   :collection-name "license-codes"
+   :collection-type :system
+   :default-initargs (:top-level t))
+  
+  )
+
+(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
+  (:data-spec
    :name license
    :label "License"
    :data-fields
@@ -36,7 +64,7 @@
     (:name license-entities 
 	   :initarg :license-entities
 	   :accessor license-entities
-	   :db-type (list entity)
+	   :db-type (data-group :data-spec entity :key-accessor name)
 	   :initform nil
 	   :display t
 	   :editable t
@@ -63,7 +91,7 @@
 
    :metaclass xdb2:storable-versioned-class
    :collection-name "licenses"
-   :collection-type :system
+   :collection-type :merge
    :default-initargs (:top-level t)
    :after-persist #'(lambda (doc)
 		      (add-db (system-data *system*)

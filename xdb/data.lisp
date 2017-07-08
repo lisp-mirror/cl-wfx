@@ -15,8 +15,8 @@
 (defmethod is-initialized-system-data ((data xdb-data) &key &allow-other-keys)
  
   (xdb2:get-db (data *system*)
-		      (list (frmt "~A" (id-string (system-name *system*)))
-			    *sys-license-code*))
+	       (list (frmt "~A" (id-string (system-name *system*)))
+		     *sys-license-code*))
   )
 
 
@@ -25,7 +25,9 @@
 	       (list (frmt "~A" (id-string (system-name *system*)))
 		     *sys-license-code*))))
     (when store
-            
+      (dolist (data-spec (fetch-all "data-specs" :result-type 'list))
+	(when (equalp (collection-type data-spec) :system)
+	  (license-collection (collection-name data-spec))))
       (xdb2:load-collections store)
       (xdb2:clear-db-cache store))
     store))
@@ -42,7 +44,11 @@
 	       (list (frmt "~A" (id-string (system-name *system*)))
 		     (current-license-code)))))
     (when store
-            
+      (dolist (data-spec (fetch-all "data-specs" :result-type 'list))
+	(when (or
+	       (equalp (collection-type data-spec) :merge)
+	       (equalp (collection-type data-spec) :license))
+	  (license-collection (collection-name data-spec))))      
       (xdb2:load-collections store)
       (xdb2:clear-db-cache store))
     store))
@@ -99,7 +105,8 @@
 			   (find 'entity-doc (getf script :super-classes) :test #'equalp)
 			   nil)))
 	 (collection-type (if data-spec
-			      (collection-type data-spec)))) 
+			      (collection-type data-spec)))
+	 (items)) 
    
     (when data-spec
       (cond ((equalp collection-type :merge)
@@ -112,18 +119,25 @@
 			    data-spec
 			    result-type)))	       
 	       (if entity-p
-		   (remove-if-not #'match-context-entities docs)
-		   docs)))
+		   (setf items (remove-if-not #'match-context-entities docs))
+		   (setf items docs)))
+	     
+	    
+	     )
 	    ((equalp collection-type :system)
 	     
 	     (let ((col
 		    (system-collection (collection-name data-spec))))
 	      
 	       (if col
-		   (if entity-p
-		       (remove-if-not #'match-context-entities (xdb2:docs col))
-		       (xdb2:docs col))
-		   )))
+		   (setf items
+			 (coerce (if entity-p
+				     (remove-if-not #'match-context-entities 
+						    (xdb2:docs col))
+				     (xdb2:docs col))
+				 result-type))))
+	    
+	     )
 	    ((equalp collection-type :license)
 	     
 	     (let ((col 
@@ -131,15 +145,24 @@
 	      
 	       (if col
 		   (if (xdb2:docs col)
-		       (coerce 
-			  (if entity-p
-			      (remove-if-not #'match-context-entities (xdb2:docs col))
-			      (xdb2:docs col))
-			  result-type)))))
+		       (setf items
+			     (coerce 
+			      (if entity-p
+				  (remove-if-not #'match-context-entities 
+						 (xdb2:docs col))
+				  (xdb2:docs col))
+			      result-type))))
+	       
+	     )
+	     )
 	    (t
 	     (break "Collection type not set. --- data-spec ~%~A~A~A"
 		    (name data-spec) (collection-name data-spec) collection-type)
-	     (error "Collection type not set. --- data-from-class"))))))
+	     (error "Collection type not set. --- data-from-class")))
+
+      ;;TODO: Should sort be applied here?????????
+     
+      items)))
 
 (defmethod fetch-items* ((data xdb-data) collection &key test result-type 
 						      &allow-other-keys)

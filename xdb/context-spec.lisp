@@ -9,7 +9,7 @@
 					  (tag (eql :data-spec)) 
 					  (attribute-tag (eql :name))
 					  attribute-value)
-  (setf (gethash 'data-spec-name monkey-lisp::*sexp-cache*) 
+  (setf (gethash :name monkey-lisp::*sexp-cache*) 
 	attribute-value))
 
 
@@ -17,21 +17,63 @@
 					  (tag (eql :data-spec)) 
 					  (attribute-tag (eql :collection-name))
 					  attribute-value)
-  (setf (gethash 'collection-name monkey-lisp::*sexp-cache*) attribute-value))
+  (setf (gethash :collection-name monkey-lisp::*sexp-cache*) attribute-value))
+
+(defmethod monkey-lisp:process-attribute ((processor context-data-spec-processor) 
+					  (tag (eql :data-spec)) 
+					  (attribute-tag (eql :collection-type))
+					  attribute-value)
+  (setf (gethash :collection-type monkey-lisp::*sexp-cache*) attribute-value))
 
 (defmethod monkey-lisp:process-attribute ((processor context-data-spec-processor) 
 					  (tag (eql :data-spec)) 
 					  (attribute-tag (eql :data-fields))
 					  attribute-value)
-  (setf (gethash 'fields monkey-lisp::*sexp-cache*) attribute-value))
+  (setf (gethash :data-fields monkey-lisp::*sexp-cache*) attribute-value))
+
+(defun context-data-spec (spec-name)
+  (gethash spec-name (cache *context*)))
+
+(defun set-context-data-spec-attribute (spec-name attribute value)
+  (let ((spec (read-symbol-from-string spec-name)))
+    (setf (gethash attribute (gethash (frmt "~S" spec) (cache *context*)) ) value)))
+
+(defun get-context-data-spec-attribute (spec-name attribute)
+  (let ((spec (read-symbol-from-string spec-name)))
+    (when (gethash (frmt "~S" spec) (cache *context*))
+	  (gethash attribute (gethash (frmt "~S" spec) (cache *context*))))))
 
 (defmethod monkey-lisp:post-process-monkey-sexp ((processor context-data-spec-processor) 
 						sexp
 						(tag (eql :data-spec)) 
 						 attributes body)
-  (render-grid :permissions '(:update :delete)))
+  (let* ((spec-name (gethash :name monkey-lisp::*sexp-cache*))
+	 (data-spec-hash (or
+			  (gethash (frmt "~S" spec-name) (cache *context*))
+			  (make-hash-table :test #'equalp))))
+    
+    (setf (gethash :data-spec data-spec-hash ) 
+	  (get-data-spec (gethash :name monkey-lisp::*sexp-cache*)))
+    (setf (gethash :name data-spec-hash ) 
+	  (gethash :name monkey-lisp::*sexp-cache*))
+    (setf (gethash :collection-name data-spec-hash ) 
+	  (gethash :collection-name monkey-lisp::*sexp-cache*))
+    (setf (gethash :collection-type data-spec-hash ) 
+	  (gethash :collection-type monkey-lisp::*sexp-cache*))
+    (setf (gethash :data-fields data-spec-hash ) 
+	  (gethash :data-fields monkey-lisp::*sexp-cache*))
+  
+    (setf (gethash (frmt "~S" spec-name) (cache *context*)) data-spec-hash)
+
+    ))
 
 
+(defun parse-data-spec-for-grid (spec-name)
+  (monkey-lisp::monkey-lisp-immediate
+	:processor-class 'cl-wfx::context-data-spec-processor
+      :body (data-spec-script 
+       (get-data-spec 
+	spec-name))))
 
 (defmethod monkey-lisp:post-process-monkey-sexp ((processor context-spec-processor) 
 						sexp
@@ -47,9 +89,10 @@
     
     (when context-spec
      
-      (setf (script context-spec) (if (consp (first body))
-				      (first body)
-				      body) )
+      (setf (script context-spec) 
+	    (if (consp (first body))
+		(first body)
+		body) )
       
       (setf (permissions context-spec) 
 	    (gethash 'permissions monkey-lisp::*sexp-cache*))

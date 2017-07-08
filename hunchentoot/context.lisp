@@ -308,7 +308,7 @@
 							  (context-spec item))
 						   (item-name item))))))))
 		    
-			   (:div  :class "col"
+			   (:div  :class "col" :id "grid-table"
 				  ,@body)
 		    
 			   (:div :class "collapse col-md-2 hidden-print " 
@@ -367,15 +367,10 @@
 			   (id-string (name spec)))))  
 	  :allow-other-keys t) ,(args spec)
       
-      (let* ((shit (monkey-lisp:monkey-lisp 
-		       (:processor-class cl-wfx::context-data-spec-processor)
-		     ,(data-spec-script 
-		       (get-data-spec 
-			(getf (cdr (context-spec-script spec)) :name))))))
-	(check-user-access)
-	(monkey-html-lisp:with-html
+      (check-user-access)
+      (monkey-html-lisp:with-html
 	  "<!doctype html>"
-	  (render-page t shit))))))
+	  (render-page t (render-grid ',(getf (cdr (context-spec-script spec)) :name)))))))
 
 (defmethod setup-context-login ((module module) (spec context-spec) system)  
   (eval

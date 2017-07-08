@@ -49,11 +49,16 @@ key can really be anything, just document your implementation to help out others
 of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor to differentiate between getx's.
 "))
 
-;;strings #############################
+;;#############################STRINGS
 ;;FORMAT
 (declaim (inline frmt))
 (defun frmt (control-string &rest args)
   (apply #'format nil control-string args))
+
+;;STRING MANIPULATION
+(defun trim-whitespace (string)
+  (string-trim
+   '(#\Space #\Newline #\Tab #\Return) string))
 
 (defun assert-ends-with-/ (string)
   (assert (char= (alexandria:last-elt string) #\/)))
@@ -61,7 +66,6 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
 (defun id-string (id)
   (ppcre:regex-replace-all "[^A-Za-z0-9-_:.]"
                            (substitute #\- #\Space id) ""))
-
 
 (defun plural-name (name)
   (setf name (frmt "~A" name))
@@ -80,8 +84,18 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
 (defun read-symbol-from-string (string)
   (let ((*read-eval* nil))
     (if string
-	(read-from-string string))))
+	(if (stringp string)
+	    (read-from-string string)
+	    string))))
 
+
+;;#####################VALUE CHECKS
+
+(defun empty-p (value)
+  "Checks if value is null or an empty string."
+  (or (null value)
+      (equal value "")
+      (equal (trim-whitespace (princ-to-string value)) "")))
 
 ;;#####################DATES
 
@@ -93,9 +107,7 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
                                (#'parse-integer day)) ("(\\d{4})-(\\d{1,2})-(\\d{1,2})" date)
     (values year month day)))
 
-(defun trim-whitespace (string)
-  (string-trim
-   '(#\Space #\Newline #\Tab #\Return) string))
+
 
 
 

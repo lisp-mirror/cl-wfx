@@ -47,7 +47,7 @@
 	   :editable nil))
    :metaclass xdb2:storable-versioned-class
    :collection-name "entities"
-   :collection-type :license
+   :collection-type :merge
    :default-initargs (:top-level t)))
 
 (defun print-entity-name (doc)
@@ -85,7 +85,7 @@
   |#
   
   (when (active-user) 
-  ;;  (break "~A ~A" object (current-entities (active-user)))
+   ;; (break "~A ~A" object (current-entities (active-user)))
     (find object (current-entities (active-user)))))
 
 (defmethod match-context-entities ((doc entity-doc))

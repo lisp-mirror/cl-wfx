@@ -83,6 +83,7 @@ function cl_ajax_render (script_name, renderer, id, args, callback) {
 
 function find_widget(id) {
     var widget = document.getElementById(id);
+
     if (!widget) {
         alert("find_widget: There's no widget with id " + id);
         return;

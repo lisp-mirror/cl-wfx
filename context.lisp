@@ -16,15 +16,6 @@
    (url :initarg :url
 	:accessor url
 	:initform nil)
-   (new-p :initarg :new-p
-	  :accessor new-p
-	  :initform t)
-   (reuse-p :initarg :reuse-p
-	    :accessor reuse-p
-	    :initform nil)
-   (widget-sequence :initarg :widget-sequence
-		    :accessor widget-sequence
-		    :initform nil)
    (cache :initarg :cache
 	     :accessor cache
 	     :initform (make-hash-table :test #'equalp)))
