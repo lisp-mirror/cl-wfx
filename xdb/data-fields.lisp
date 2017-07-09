@@ -13,6 +13,9 @@
 (defmethod item-val ((type (eql 'string)) field item &key &allow-other-keys)
   (item-val* field item))
 
+(defmethod item-val ((type (eql 'date)) field item &key &allow-other-keys)
+  (item-val* field item))
+
 (defmethod item-val ((type (eql 'email)) field item &key &allow-other-keys)
   (item-val* field item))
 

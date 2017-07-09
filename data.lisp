@@ -139,6 +139,17 @@ Used: stop-sys :before"))
 	       (return-from data-from-items item)))
 	   items))))
 
+(defun items-from-items (items &key test )
+  (if test
+      (remove-if #'not
+		 (map
+		  'list
+		  (lambda (item)
+		    (funcall test item))
+		  items))
+      items
+      ))
+
 (defgeneric validate-item-val (type field item value &key &allow-other-keys)
   (:documentation "Validates item data value according to field specification."))
 

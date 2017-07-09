@@ -249,10 +249,7 @@
   (setf (current-entities (active-user)) nil)
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
-      
-      (pushnew (cdr parameter) (license-codes (active-user)))
-   
-      )))
+      (pushnew (cdr parameter) (license-codes (active-user))))))
 
 (monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
@@ -260,7 +257,7 @@
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
 	
 	"<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js\"></script>"
-
+	" <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
 	"<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
 	
 	"<script src=\"../web/codemirror/lib/codemirror.js\"></script>

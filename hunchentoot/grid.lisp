@@ -32,6 +32,9 @@
 (defmethod print-item-val ((type (eql 'number)) field item &key &allow-other-keys)
    (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql 'date)) field item &key &allow-other-keys)
+   (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql 'boolean)) field item &key &allow-other-keys)
   (if (item-val (field-data-type field) 
 		field 
@@ -419,6 +422,29 @@
 					     )
 			     "Cancel")))))))
 
+(defun render-grid-col-filter (spec-name col-name)
+  (monkey-html-lisp:htm
+	(:input :class "w-100"
+		:type "text" 
+		:name (frmt "~A-filter" col-name) 
+
+		:id (frmt "~A-filter" col-name)
+		:value (or (parameter (frmt "~A-filter" col-name))
+			   (get-context-data-spec-attribute 
+			    spec-name (frmt "~A-filter" col-name))
+			   "")
+		:onkeydown
+		;;fires ajax call on enter (13)
+		(js-render-event-key 
+		 (frmt "~A-filter" col-name)
+		 13
+		 "cl-wfx:ajax-grid"
+		 "grid-table"
+		 (js-pair "data-spec"
+			  (frmt "~S" spec-name))
+		 
+		 
+		 (js-pair "action" "grid-col-filter")))))
 
 (defun render-grid-header (spec-name fields sub-p)
   (let ((subs))
@@ -444,12 +470,22 @@
 		  
 		  (monkey-html-lisp:htm
 		    (:div :class "col"
-			  (:h6 (if label
-				   label
-				   (string-capitalize 
-				    (substitute #\Space  (character "-")  
-						(format nil "~A" name) 
-						:test #'equalp)))))))))
+			  (:div :class "row"
+				
+				(:h6 (if label
+					 label
+					 (string-capitalize 
+					  (substitute #\Space  (character "-")  
+						      (format nil "~A" name) 
+						      :test #'equalp)))))
+			 (unless sub-p
+			   (monkey-html-lisp:htm
+			     (:div :class "row"
+				   (render-grid-col-filter spec-name name)
+				   )))
+			 
+				)
+		    ))))
 	    (unless sub-p
 	      (monkey-html-lisp:htm	      
 		(:div :class "col" ;;column spacing for buttons
@@ -513,7 +549,8 @@
 	  
 	  (when (equalp (ensure-parse-integer 
 					  (get-context-data-spec-attribute spec-name
-									   :expand-id)) (xdb2:id item))
+									   :expand-id)) 
+			(xdb2:id item))
 	      
 	      
 	      
@@ -558,9 +595,10 @@
     (:input :type "text" :name "pages" 
 	    :size 2
 	    :id "pages"
-	    :value (if (parameter "pages")
-		       (parameter "pages")
-		       10)
+	    :value (or  (parameter "pages")
+			(get-context-data-spec-attribute 
+			 spec-name :show-pages-count)
+			10)
 	    :onkeydown
 	    ;;fires ajax call on enter (13)
 	    (js-render-event-key 
@@ -570,11 +608,7 @@
 	     "grid-table"
 	     (js-pair "data-spec"
 		      (frmt "~S" spec-name))
-	     (js-pair "page" "1")
-	     (js-pair "search"
-		      (if (parameter "search")
-			  (parameter "search")
-			  ""))
+
 	     (js-pair
 	      "grid-name" 
 	      (frmt "~A" spec-name))
@@ -585,9 +619,10 @@
     (:input :type "text" 
 	    :name "search" 	   
 	    :id "search"
-	    :value (if (parameter "search")
-		       (parameter "search")
-		       "")
+	    :value (or (parameter "search")
+			     (get-context-data-spec-attribute 
+			      spec-name :search)
+			     "")
 	    :onkeydown
 	    ;;fires ajax call on enter (13)
 	    (js-render-event-key 
@@ -597,7 +632,6 @@
 	     "grid-table"
 	     (js-pair "data-spec"
 		      (frmt "~S" spec-name))
-	     (js-pair "page" "1")
 	     
 	     (js-pair
 	      "grid-name" 
@@ -607,21 +641,24 @@
 
 
 
-
-
-
 (defun fetch-grid-page-data (spec-name items)
+  
   (set-context-data-spec-attribute spec-name :data-count (length items))
-    
+   
+ 
   (set-context-data-spec-attribute spec-name :show-pages-count 
-				   (if (parameter "pages")
+				   (if (not (empty-p (parameter "pages")))
 				       (parse-integer (parameter "pages"))
-				       10))
+				       (or (get-context-data-spec-attribute 
+					    spec-name :show-pages-count)
+					   10)))
     
   (set-context-data-spec-attribute spec-name :active-page
-				   (if (parameter "page")
+				   (if (not (empty-p (parameter "page")))
 				       (parse-integer (parameter "page"))
-				       1))
+				       (or (get-context-data-spec-attribute 
+					    spec-name :active-page)
+					   1)))
 
 
   (multiple-value-bind (page-count rem)
@@ -658,38 +695,133 @@
 	    (get-context-data-spec-attribute spec-name :start-page-count) 
 	    (get-context-data-spec-attribute spec-name :end-page-count))))
 
+(defun found-nil-p (list)
+  (dolist (item list)
+    (unless item
+      (return-from found-nil-p t))))
+
+(defun filter-found-p (filter-term val)
+  (let ((terms (split-sequence:split-sequence #\| filter-term))
+	(found))
+   
+    (dolist (term terms)
+       (push (search term 
+		       val
+		       :test #'string-equal)
+	       found))
+    
+    (remove-if #'not found)))
+
+(defun filter-function (spec-name)
+  (lambda (item)
+		       
+    (let ((found nil))
+      (dolist (field (get-context-data-spec-attribute 
+		      spec-name 
+		      :filter-fields))
+	(let ((filter-term 
+	       (or
+		(parameter 
+		 (frmt "~A-filter" (getf field :name)))
+		(get-context-data-spec-attribute 
+		 spec-name (frmt "~A-filter" 
+				 (getf field :name))))))
+	  (when filter-term
+			       
+	    (when (getf field :db-type)
+	      (when (equalp (field-data-type field) 'data-group)
+		(dolist (sub-val (item-val (field-data-type field) field item))
+		  (when sub-val
+		    (let* ((full-type (cdr (getf field :db-type)))
+			   (accessor (getf full-type :key-accessor))
+			   (val (frmt "~A" (slot-value sub-val accessor))))
+		      
+		      (if (filter-found-p filter-term val)
+			  (push t found)
+			  (push nil found)
+			  )))))
+	      (let ((val (print-item-val 
+			  (field-data-type field) field item)))
+		(if (filter-found-p filter-term val)
+		    (push t found)
+		    (push nil found)))))))
+			
+						   
+      (unless (found-nil-p found)
+	item))))
+
+(defun search-function (spec-name search-term)
+  (lambda (item)
+		       
+    (let ((found nil))
+      (dolist (field (get-context-data-spec-attribute 
+		      spec-name 
+		      :data-fields))
+	(when (getf field :db-type)
+	  (when (equalp (field-data-type field) 'data-group)
+	    (dolist (sub-val (item-val (field-data-type field) field item))
+	      (when sub-val
+		(let* ((full-type (cdr (getf field :db-type)))
+		       (accessor (getf full-type :key-accessor))
+		       (val (slot-value sub-val accessor)))
+		  (when val
+		    (when (search search-term 
+				  val
+				  :test #'string-equal)
+		      (unless found		       
+					   
+			(setf found t))))))))
+	  (let ((val (print-item-val 
+		      (field-data-type field) field item)))
+	    (when val
+	      (when (search search-term 
+			    val
+			    :test #'string-equal)
+		(unless found		       				     
+		  (setf found t)))))))
+      (when found
+	item))))
+
 (defun fetch-grid-data (spec-name)
-  (let ((items)
-	(collection-name (get-context-data-spec-attribute 
-			  spec-name :collection-name))
-	(search-p (and (parameter "search") 
-		       (< (length (string-trim (list #\Space) 
-					       (parameter "search")))
-			  1))))
-    (unless search-p
+  (let* ((items)
+	 (collection-name (get-context-data-spec-attribute 
+			   spec-name :collection-name))
+	 (search-term (or (parameter "search") 
+			  (get-context-data-spec-attribute 
+			   spec-name :search)))
+	 (search-p (not (empty-p search-term)))
+	 (filter-p (get-context-data-spec-attribute 
+				   spec-name :filter)))
+    
+    
+    (unless (or search-p filter-p)
       (setf items (fetch-all collection-name
 			     :result-type 'list)))
     
-    (when search-p
-      (setf items
-	    (fetch-items  
-	     collection-name
-	     :test (lambda (item)
-			   
-		     (let ((found nil))
-		       (dolist (field (get-context-data-spec-attribute 
-				       spec-name 
-				       :data-fields))
-			 (when (getf field :db-type)
-			   (let ((val (print-item-val (field-data-type field) field item)))
-			     (when (search (parameter "search") 
-					   val
-					   :test #'string-equal)
-			       (unless found
-				 (setf found t))))))
-		       (if found
-			   item)))
-	     :result-type 'list)))
+    (when (or search-p filter-p)
+      
+      (if (get-context-data-spec-attribute 
+	   spec-name 
+	   :filter-fields)
+	  
+	  (setf items
+		(fetch-items  
+		 collection-name
+		 :test (filter-function spec-name)
+		 :result-type 'list))
+	  (setf items
+		    (fetch-items  
+		     collection-name
+		     :test (search-function spec-name search-term)
+		     :result-type 'list)))
+  
+      (when items
+	(setf items
+	      (items-from-items 
+	       items
+	       :test (search-function spec-name search-term)
+	       ;;  :result-type 'list
+	       ))))
     
     (fetch-grid-page-data spec-name items)))
 
@@ -791,6 +923,41 @@
   (parse-data-spec-for-grid spec-name)
   
   (setf (gethash :root-data-spec (cache *context*)) spec-name)
+  
+  
+  (set-context-data-spec-attribute spec-name
+				   :search (or (parameter "search")
+					       (get-context-data-spec-attribute 
+						spec-name :search)))
+  
+  (set-context-data-spec-attribute spec-name
+				     :filter t)
+  
+  
+  (when (equalp (parameter "action") "filter")
+    (set-context-data-spec-attribute spec-name
+				     :filter t))
+  
+  (when (equalp (parameter "action") "un-filter")
+    (set-context-data-spec-attribute spec-name
+				     :filter nil))
+
+  (when (equalp (parameter "action") "grid-col-filter")
+    (let ((fields (get-context-data-spec-attribute 
+		      spec-name :filter-fields)))
+      (dolist (field (get-context-data-spec-attribute 
+		      spec-name :data-fields))
+	(when (parameter (frmt "~A-filter" (getf field :name)))
+	  
+	  (pushnew field fields)
+	  
+	  
+	  (set-context-data-spec-attribute 
+	   spec-name (frmt "~A-filter" (getf field :name))
+	   (parameter (frmt "~A-filter" (getf field :name))))))
+      
+      (set-context-data-spec-attribute 
+	 spec-name :filter-fields fields)))
   
   
   (when (equalp (parameter "action") "expand")
