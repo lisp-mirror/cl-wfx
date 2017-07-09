@@ -36,7 +36,8 @@ Dont set manually use with-system macro.")
 
 (defun active-user ()
   (if (boundp '*session*)   
-      (user *session*)))
+      (if *session*
+	  (user *session*))))
 
 
 ;;Data

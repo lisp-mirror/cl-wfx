@@ -49,12 +49,15 @@
    (print-item-val-s* field item))
 
 (defmethod print-item-val ((type (eql 'data-member)) field item &key &allow-other-keys)
-  (let ((full-type (cdr (getf field :db-type))))    
-    (frmt "~A" (slot-value 
-		(item-val (field-data-type field) 
-			  field 
-			  item) 
-		(getf full-type :key-accessor)))))
+
+  (let ((full-type (cdr (getf field :db-type)))
+	 (item-val (item-val (field-data-type field) 
+			     field 
+			     item)))    
+    (when item-val
+      (frmt "~A" (slot-value 
+		  item-val
+		  (getf full-type :key-accessor))))))
 
 (defgeneric render-input-val (type field item &key &allow-other-keys))
 
@@ -331,10 +334,11 @@
 		"Delete")))))))
 
 
-(defun render-grid-edit (spec-name fields item parent-item)
+(defun render-grid-edit (spec-name fields item parent-item parent-spec)
   
   (set-context-data-spec-attribute spec-name :edit-item item)
   (set-context-data-spec-attribute spec-name :parent-item parent-item)
+  (set-context-data-spec-attribute spec-name :parent-spec parent-spec)
   
   (set-context-data-spec-attribute (parameter "data-spec")
 				   :item-id (xdb2::id item))
@@ -454,7 +458,7 @@
 				  (render-grid-search spec-name)
 				  (render-grid-sizing spec-name))))))))))
 
-(defun render-grid-data (spec-name page-items sub-level parent-item)
+(defun render-grid-data (spec-name page-items sub-level parent-item parent-spec)
   
   (let ((sub-level-p (not (equalp spec-name 
 				  (gethash :root-data-spec 
@@ -485,6 +489,7 @@
 					    'data-group)))
 		      (monkey-html-lisp:htm 
 			(:div :class "col"
+			     
 			      (let ((val (print-item-val 
 					  (field-data-type field) field item)))
 				(if (> (length val) 100 )
@@ -504,7 +509,7 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (xdb2:id item))))
-	      (render-grid-edit	spec-name fields item parent-item))
+	      (render-grid-edit	spec-name fields item parent-item parent-spec))
 	  
 	  (when (equalp (ensure-parse-integer 
 					  (get-context-data-spec-attribute spec-name
@@ -539,10 +544,14 @@
 					     (item-val (field-data-type sub) sub item) 
 					     (+ sub-level 1)
 					     item
+					     spec-name
 					     )))))))))))
       
       (when (equalp (parameter "action") "new")
-	(render-grid-edit spec-name fields (make-instance spec-name) parent-item)))))
+	(render-grid-edit spec-name fields 
+			  (make-instance spec-name) 
+			  parent-item
+			  parent-spec)))))
 
 (defun render-grid-sizing (spec-name)
   (monkey-html-lisp:htm
@@ -793,6 +802,7 @@
 				     :expand-id nil))
  
   
+  
   (let ((page-items (fetch-grid-data spec-name)))
     
     (monkey-html-lisp:with-html	  
@@ -806,7 +816,7 @@
 					     :data-fields)
 					    nil))
 		  (:div :class "card-block"
-			(render-grid-data spec-name page-items 0 nil))
+			(render-grid-data spec-name page-items 0 nil nil))
 	
 		  (:div :class "card-footer"
 			(:div :class "row"	  
@@ -893,11 +903,22 @@
 			      (parameter (getf field :name)))))
 	  
 	  (when (xdb2::top-level item)
-	    (persist-data item))
+	    (persist-data item
+			  :collection-name (get-context-data-spec-attribute 
+					    spec-name
+					    :collection-name)
+			  ))
 	  
 	  (when parent-item
 	    (when (xdb2::top-level parent-item)
-	      (persist-data parent-item)))
+	      (persist-data parent-item
+			    :collection-name (get-context-data-spec-attribute 
+					      (get-context-data-spec-attribute 
+					       spec-name
+					       :parent-spec)
+					      :collection-name)
+
+			    )))
 	  
 	  (set-context-data-spec-attribute spec-name :parent-item nil)
 	  (set-context-data-spec-attribute spec-name :edit-item nil)

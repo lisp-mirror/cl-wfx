@@ -24,9 +24,7 @@
    :metaclass xdb2:storable-versioned-class
    :collection-name "license-codes"
    :collection-type :system
-   :default-initargs (:top-level t))
-  
-  )
+   :default-initargs (:top-level t)))
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
   (:data-spec
@@ -40,8 +38,7 @@
 	   :db-type string
 	   :key t
 	   :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name license-holder 
 	   :initarg :license-holder
 	   :accessor license-holder
@@ -93,11 +90,7 @@
    :collection-name "licenses"
    :collection-type :merge
    :default-initargs (:top-level t)
-   :after-persist #'(lambda (doc)
-		      (add-db (system-data *system*)
-			      (list 
-			       (frmt "~A" (strip-name (system-name *system*)))
-			       (current-license-code)))))
+ )
   
   )
 
@@ -111,24 +104,33 @@
 	      :test (lambda (doc)
 		      (string-equal (license-code doc) code))))
 
+(defun find-system-license* ()    
+  (map
+   nil
+   (lambda (lic)
+     (when (string-equal *sys-license-code* (license-code lic))
+       (return-from find-system-license* lic)))
+   (data-items *sys-license-code*
+	       "licenses")))
+
 
 (defun system-license ()
-  (let ((license (find-license *sys-license-code*)))
+  (let ((license (find-system-license*)))
       (unless license
-	(setf license (persist-data (make-instance 'license :license-code *sys-license-code*
-						   :license-holder "System Admin")))
-	(xdb2:persist (make-user "admin@cl-wfx.com" "admin"
+	(setf license (persist-data (make-instance 'license 
+						   :license-code *sys-license-code*
+						   :license-holder "System Admin")
+				    :collection-name "licenses"
+				    :license-code *sys-license-code*))
+	(persist-data (make-user "admin@cl-wfx.com" "admin"
 				 :super-user-p t
-			       :license license)))
+				 :license-codes (list (license-code license)))
+		       :collection-name "users"
+		       :license-code *sys-license-code*
+		      ))
     license))
 
 
-
-
-(defun current-license-code ()
-  (if (and *session* (user *session*))
-      (license-code (license (user (user *session*))))
-      *sys-license-code*))
 
 (defvar *license-code-lock* (bordeaux-threads:make-lock))
 

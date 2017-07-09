@@ -73,7 +73,7 @@
   (:data-spec
    :name module
    :label "Module"
-   :super-classes (doc)
+   :super-classes (license-doc)
    :data-fields
    ((:name module-name
 	   :initarg :module-name
@@ -112,8 +112,8 @@
 
 (defun get-module (module-name)  
   (fetch-item "modules"
-	     :test (lambda (doc)
-		     (string-equal module-name (module-name doc)))))
+	      :test (lambda (doc)
+		      (string-equal module-name (module-name doc)))))
 
 (defun get-module-context (module context-name)  
   (dolist (context (contexts module))

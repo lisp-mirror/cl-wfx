@@ -6,13 +6,11 @@
 	 (data (make-instance 'xdb-data
 			      :base-path data-folder
 			      :data-folder data-folder))
-	 (db)
-	 )
+	 (db))
     (ensure-directories-exist (data-folder data))
     
     (setf db (xdb2:add-db data (list (frmt "~A" (id-string (system-name *system*)))
 			     *sys-license-code*)))
     
     (setf (data *system*) 
-	  data)
-    (setup-data data)))
+	  data)))

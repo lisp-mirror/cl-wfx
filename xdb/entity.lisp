@@ -1,14 +1,21 @@
 (in-package :cl-wfx)
 
-(defclass entity-doc (doc)
-     ((entity :initarg :entity
-	       :initform nil
-	       :accessor entity
-	       :db-type (data-member :data-spec entity :key-accessor name)
-	       :key t
-	     
-	       :printer #'print-entity-name))
-     (:metaclass xdb2:storable-mixin))
+(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
+  (:data-spec
+   :name entity-doc
+   :label "Entity Doc"
+   :super-classes (license-doc)
+   :data-fields
+   ((:name entity :initarg :entity
+	     :initform nil
+	     :accessor entity
+	     :db-type (data-member :data-spec entity :key-accessor name)
+	     :key t
+	     :display t
+	     :editable t
+	     :printer #'print-entity-name))
+   :metaclass xdb2:storable-mixin))
+
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
   (:data-spec
@@ -21,7 +28,7 @@
 	   :accessor name
 	   :label "Name"
 	   :key t
-	   :db-type symbol
+	   :db-type string
 	   :display t
 	   :editable nil)
     (:name entity-type
@@ -63,8 +70,6 @@
 (defmethod match-context-entities ((doc t))
   t)
 
-
-
 (defun get-license-entity (license name)
    (labels ((tail-entity (entities name)
 	      (dolist (entity entities)
@@ -74,9 +79,21 @@
      (tail-entity (license-entities license) name)))
 
 (defun get-entity (name)
-  (get-license-entity 
-   (license (current-user))
-   name))
+  (let ((license-codes (or (and (active-user) (license-codes (active-user)))
+			   (and (current-user) (license-codes (current-user))))))
+    
+    (dolist (code license-codes)
+      (let ((license (find-license code)))
+	(unless license
+	  (break "license not found ~A" code)
+	  )
+	(when license
+	  (let ((entity (get-license-entity 
+			 license
+			 name)))
+	    (when entity
+	      (return-from get-entity entity)))
+	)))))
 
 (defun match-entity (object)
   #|(and (typep object 'entity-doc)

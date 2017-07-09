@@ -103,11 +103,13 @@ This is called on initialize-instance :after for system."))
     ;;TODO: check for existing first
     (let ((old-spec (get-data-spec (name spec)) ))
       (unless old-spec
-	(persist-data spec))
+	(persist-data spec :collection-name "data-specs" 
+		      :license-code *sys-license-code*))
       (when old-spec 
 	(unless (equalp (script old-spec) (script spec))
 	  (setf (script old-spec) (script spec))
-	  (persist-data old-spec)))))
+	  (persist-data old-spec :collection-name "data-specs" 
+			:license-code *sys-license-code*)))))
   (setf *data-specs* nil))
 
 (defgeneric init-system (system &key &allow-other-keys)
@@ -147,36 +149,14 @@ Calls in order:
 		     (string-equal context-name (name spec)))))
 
 
-;;Not using other data fetch mechanisms because they rely on 
-;;get-data-spec so goes into infinite loop
-(defun get-data-spec (name-or-col)  
-  
-  (let ((items (concatenate 
-		'vector 
-		(remove-if (lambda (doc)
-			     (find doc (license-data-items "data-specs") 
-				   :test (lambda (doc tdoc)
-					   (string-equal (name doc) (name tdoc)))))
-			   (system-data-items "data-specs")) 
-		(license-data-items "data-specs"))))
-    
-    (map
-     nil
-     (lambda (spec)
-       (when (or (string-equal name-or-col (name spec))
-		 (string-equal name-or-col (collection-name spec))
-		 )
-		    (return-from get-data-spec spec)))
-     items)))
-
-
-
 (defun make-menu-item (name context-spec)
   (make-instance 
    'menu-item
    :item-name name
    :context-spec 
    context-spec))
+
+(defgeneric setup-context-login (module context-spec system))
 
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
@@ -214,17 +194,32 @@ Calls in order:
             ;;TODO: sort out module shit
       (setup-context sys-mod spec *system*))
     
-    (setf (menu-items (first (menu sys-mod)))
-	  (loop for spec in (contexts sys-mod)
-	       when spec
-	     collect (make-menu-item (name spec)
-				     spec
-				     )))
-
+    (let ((menu-items (loop for spec in (contexts sys-mod)
+			 when spec
+			 collect (make-menu-item (name spec)
+						 spec))))
+      
+      (setf menu-items (append menu-items
+			       (list (make-instance 
+				      'menu-item
+				      :item-name "Logout"
+				      :context-spec 
+				      (get-context-spec "Login")
+				      :context-parameters 
+				      (list  (make-instance 'context-parameter
+							    :parameter-name "action"
+							    :parameter-value "logout"))
+				      ))))
+      
+      (setf (menu-items (first (menu sys-mod)))  menu-items))
+    
     ;;TODO: Persist only if nothing has changed!!!!!This is racking up to many 
     ;; versions!!!!!
  
-    (persist-data sys-mod)))
+    (persist-data sys-mod
+		   :collection-name "modules" 
+		   :license-code *sys-license-code*
+		   )))
 
 
 
@@ -239,7 +234,7 @@ Calls in order:
      :for-everyone t 
      ))
   
-  
+   
   (monkey-lisp:monkey-lisp (:processor-class cl-wfx::context-spec-processor)
     
     (:context-spec
@@ -307,8 +302,6 @@ Calls in order:
 (defmethod start-sys :after ((system system) &key &allow-other-keys)
   (let ((*system* system))
     (declare (special *system*))
-    
-;;    (init-system-data (data system))
     
     (system-license)
     

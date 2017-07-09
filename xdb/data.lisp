@@ -5,64 +5,112 @@
 		   :accessor data-folder
 		   :initform "~~/xdb2/")))
 
-(defmethod setup-data ((data xdb-data) &key &allow-other-keys)
-  (maphash (lambda (key db)
-	     (declare (ignore key))
-	     (xdb2:load-collections db)
-	     (xdb2:clear-db-cache db))
-	   (xdb2::databases data)))
-
-(defmethod is-initialized-system-data ((data xdb-data) &key &allow-other-keys)
- 
-  (xdb2:get-db (data *system*)
-	       (list (frmt "~A" (id-string (system-name *system*)))
-		     *sys-license-code*))
-  )
+(defmethod tear-down-data ((data xdb-data) &key &allow-other-keys))
 
 
-(defmethod init-system-data ((data xdb-data) &key &allow-other-keys)
-  (let ((store (xdb2:add-db (data *system*) 
-	       (list (frmt "~A" (id-string (system-name *system*)))
-		     *sys-license-code*))))
-    (when store
-      (dolist (data-spec (fetch-all "data-specs" :result-type 'list))
-	(when (equalp (collection-type data-spec) :system)
-	  (license-collection (collection-name data-spec))))
-      (xdb2:load-collections store)
-      (xdb2:clear-db-cache store))
-    store))
+;;TODO: storable object version implementation code should be split into its own file
+(defmethod xdb2:persist ((doc xdb2:storable-versioned-object) 
+			 &key collection (set-time t))
+  (unless (xdb2:top-level doc)
+    (error "PERSIST can only be called on top-level objects."))
+  (let ((time (get-universal-time)))
+    (xdb2::with-collection-lock collection
+      (when (xdb2:read-only-p collection)
+        (warn "Collection ~s is read-only" collection)
+        (return-from xdb2:persist))
+      (setf (xdb2:collection doc) collection)
+      (when set-time
+        (setf (xdb2:stamp-date doc) time))
+      (setf (xdb2:effective-date doc) time
+            (xdb2:modified collection) time)
+      (xdb2:before-persist collection doc)
+      (xdb2::with-db-error-handling (collection)
+        (xdb2::save-doc collection doc))))
+  doc)
 
+;;;
 
-(defmethod is-initialized-license-data ((data xdb-data) &key &allow-other-keys)
-  (xdb2:get-db (data *system*)
-	       (list (frmt "~A" (id-string (system-name *system*)))
-		     (current-license-code))))
+(defmethod xdb2:persist ((doc xdb2:storable-object) &key collection)
+  (unless (xdb2:top-level doc)
+    (error "PERSIST can only be called on top-level objects."))
+  (xdb2::with-collection-lock collection 
+      (when (xdb2:read-only-p collection)
+        (warn "Collection ~s is read-only" collection)
+        (return-from xdb2:persist))
+      (setf (xdb2:collection doc) collection)
+      (xdb2:before-persist collection doc)
+      (xdb2::with-db-error-handling (collection)
+        (xdb2::save-doc collection doc))
+      (setf (xdb2:modified collection) (get-universal-time)))
+  doc)
 
-
-(defmethod init-license-data ((data xdb-data) &key &allow-other-keys)
-  (let ((store (xdb2:add-db (data *system*) 
-	       (list (frmt "~A" (id-string (system-name *system*)))
-		     (current-license-code)))))
-    (when store
+(defun license-collection (license-code collection-name)  
+  (let ((db (xdb2:get-db (data *system*)
+			 (list (frmt "~A" (id-string (system-name *system*)))
+			       license-code))))
+    (unless db
+      (setf db (xdb2:add-db (data *system*) 
+			    (list (frmt "~A" (id-string (system-name *system*)))
+				  license-code)))
+      
+      ;;TODO: Figure out loading of db files
+      #|
       (dolist (data-spec (fetch-all "data-specs" :result-type 'list))
 	(when (or
 	       (equalp (collection-type data-spec) :merge)
 	       (equalp (collection-type data-spec) :license))
-	  (license-collection (collection-name data-spec))))      
-      (xdb2:load-collections store)
-      (xdb2:clear-db-cache store))
-    store))
+	  (license-collection (collection-name data-spec))))
+      (xdb2:load-collections db)
+      (xdb2:clear-db-cache db)
+      |#
+      )
+    
+    (let ((col
+	   (xdb2:get-collection db collection-name)))
+      (unless col
+	(setf col (xdb2:add-collection db collection-name
+				       :force-load t)))
+      col)))
 
-(defmethod tear-down-data ((data xdb-data) &key &allow-other-keys))
+(defun persist (item license-code collection-name )
+  (let ((license-code license-code))
+    (unless license-code
+      (setf license-code (license-code item)))
+    
+    (let ((collection (license-collection license-code collection-name)))
+      (when (and (slot-exists-p item 'license-code)
+		 (not (license-code item)))
+	(setf (license-code item) license-code))
+      (xdb2:persist item :collection collection)))
+  )
 
-(defmethod persist-data ((doc xdb2:storable-object) &key &allow-other-keys)
-  (xdb2:persist doc) )
+(defmethod persist-data ((item xdb2:storable-object) 
+			 &key license-code collection-name 
+			   &allow-other-keys)
+  
+  (persist item license-code collection-name))
 
-(defmethod persist-data ((doc xdb2:storable-versioned-object) &key &allow-other-keys)
-  (xdb2:persist doc) )
+(defmethod persist-data ((item xdb2:storable-versioned-object) 
+			 &key license-code collection-name 
+			   &allow-other-keys)
+  (persist item license-code collection-name))
 
-(defmethod delete-data ((doc xdb2:storable-object) &key &allow-other-keys)
-  (xdb2:remove-doc doc))
+
+(defmethod remove-doc ((object xdb2:storable-object) collection &key log)
+  :documentation "Marks the document as deleted. The storable object implementation can
+ be set to load deleted docs but they do not occur in the actual collection."
+  (xdb2::with-collection-lock collection
+      (setf (xdb2:docs collection)
+            (xdb2::delete object
+			 (alexandria:copy-array (xdb2:docs collection))))
+      (xdb2::with-db-error-handling (collection)
+        (xdb2::delete-doc collection object log))
+      (setf (xdb2:modified collection) (get-universal-time))))
+
+
+(defmethod delete-data ((doc xdb2:storable-object) &key license-code collection-name &allow-other-keys)
+  (let ((collection (license-collection license-code collection-name)))
+    (remove-doc doc collection)))
 
 (defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
   (let ((keys))
@@ -71,34 +119,64 @@
 	(pushnew (slot-value item (getf field :name)) keys)))
     keys))
 
-(defun system-collection (collection)
-  (let ((col
-	 (xdb2:get-collection (system-data (data *system*)) collection)))
-    (unless col
-      (setf col (xdb2:add-collection (system-data (data *system*)) collection
-				     :force-load t)))
-    col))
 
-(defun license-collection (collection)  
-  (let ((col
-	 (xdb2:get-collection (license-data (data *system*)) collection)))
-    (unless col
-      (setf col (xdb2:add-collection (license-data (data *system*)) collection
-				     :force-load t)))
-    col))
-
-(defmethod system-data-items (collection)
-  (when (system-collection collection)
-    (xdb2:docs (system-collection collection))))
-
-(defmethod license-data-items (collection)
-  (when (license-collection collection)
-    (xdb2:docs (license-collection collection))))
+(defmethod data-items (license-code collection-name)
+  (let ((collection (license-collection license-code collection-name)))
+    (when collection
+	(xdb2:docs collection))))
 
 
-(defmethod fetch-all* ((data xdb-data) collection &key (result-type 'vector) 
-						    &allow-other-keys)
-  (let* ((data-spec (get-data-spec collection))	
+(defmethod license-items (collection-name result-type)
+  
+  (let ((license-codes 
+	 (or (and (active-user) (license-codes (active-user))) 
+	     (and (current-user) (list (first (license-codes (current-user)))))
+	     (list *sys-license-code*)))
+	(items))
+    (dolist (license-code license-codes)
+      (let ((collection (license-collection license-code collection-name)))
+	(when (and collection (xdb2:docs collection))
+	  (if items	      
+	      (concatenate result-type items (xdb2:docs collection))
+	      (setf items (coerce (xdb2:docs collection) result-type))))))
+    items))
+
+
+
+
+(defun merge-data-specs (sys-items lic-items)
+  (concatenate 
+   'list
+   (if (and lic-items (> (length lic-items) 0))
+       (remove-if (lambda (doc)
+		    (find doc lic-items 
+			  :test (lambda (doc tdoc)
+				  (equalp 
+				   (name doc)
+				   (name tdoc)))))
+		  sys-items)
+       sys-items) 
+   lic-items))
+
+;;Not using other data fetch mechanisms because they rely on 
+;;get-data-spec so goes into infinite loop
+(defun get-data-spec* (name-or-col)    
+  (map
+   nil
+   (lambda (spec)
+     (when (or (string-equal name-or-col (name spec))
+	       (string-equal name-or-col (collection-name spec)))
+       (return-from get-data-spec* spec)))
+   (merge-data-specs
+    (data-items *sys-license-code* "data-specs")
+    (license-items "data-specs" 'vector))))
+
+
+
+
+(defmethod fetch-all* ((data xdb-data) collection-name 
+		       &key (result-type 'vector) &allow-other-keys)
+  (let* ((data-spec (get-data-spec* collection-name))	
 	 (script (if data-spec (cdr (script data-spec))))
 	 (entity-p (if script 
 		       (if (find :super-classes script :test #'equalp)
@@ -108,64 +186,71 @@
 			      (collection-type data-spec)))
 	 (items)) 
    
+    
+    
     (when data-spec
       (cond ((equalp collection-type :merge)
-	     (let* ((sys-collection 
-		    (system-collection (collection-name data-spec)))
-		   (lic-collection 
-		    (license-collection (collection-name data-spec)))
-		   (docs (merge-items (and sys-collection (xdb2:docs sys-collection))
-			    (and lic-collection (xdb2:docs lic-collection))
-			    data-spec
-			    result-type)))	       
+	     
+	   
+	     
+	     (let* ((system-items 
+		     (data-items *sys-license-code*
+					 (collection-name data-spec)))
+		    (license-items 
+		     (license-items (collection-name data-spec) result-type))
+		    
+		    
+		    (docs (merge-items 
+			   system-items
+			   license-items
+			   data-spec
+			   result-type)))
+	       
+	       
 	       (if entity-p
 		   (setf items (remove-if-not #'match-context-entities docs))
-		   (setf items docs)))
-	     
+		   (setf items docs))
+	       
+	       
+	       
+	       ))
 	    
-	     )
 	    ((equalp collection-type :system)
 	     
-	     (let ((col
-		    (system-collection (collection-name data-spec))))
+	     (let ((system-items 
+		     (data-items *sys-license-code*
+					 (collection-name data-spec))))
 	      
-	       (if col
+	       (if system-items
 		   (setf items
 			 (coerce (if entity-p
 				     (remove-if-not #'match-context-entities 
-						    (xdb2:docs col))
-				     (xdb2:docs col))
-				 result-type))))
+						    system-items)
+				     system-items)
+				 result-type)))))
 	    
-	     )
 	    ((equalp collection-type :license)
 	     
-	     (let ((col 
-		    (license-collection (collection-name data-spec))))
+	     (let ((license-items (license-items (collection-name data-spec) result-type)))
 	      
-	       (if col
-		   (if (xdb2:docs col)
-		       (setf items
-			     (coerce 
-			      (if entity-p
-				  (remove-if-not #'match-context-entities 
-						 (xdb2:docs col))
-				  (xdb2:docs col))
-			      result-type))))
-	       
-	     )
-	     )
+	       (when license-items
+		 
+		   (setf items
+			 (if entity-p
+			     (remove-if-not #'match-context-entities 
+					    license-items)
+			     license-items)))))
 	    (t
 	     (break "Collection type not set. --- data-spec ~%~A~A~A"
 		    (name data-spec) (collection-name data-spec) collection-type)
-	     (error "Collection type not set. --- data-from-class")))
+	     (error "Collection type not set.")))
 
       ;;TODO: Should sort be applied here?????????
-     
+      
       items)))
 
-(defmethod fetch-items* ((data xdb-data) collection &key test result-type 
-						      &allow-other-keys)
+(defmethod fetch-items* ((data xdb-data) collection 
+			 &key test result-type &allow-other-keys)
   (let ((docs (fetch-all* data collection :test test :result-type result-type)))
     (if test
 	(remove-if 
@@ -173,13 +258,12 @@
 	 (map
 	  (or result-type 'list)
 	  (lambda (doc)
-		      (funcall test doc))
+	    (funcall test doc))
 	  docs)))))
 
 (defmethod fetch-item* ((data xdb-data) collection &key test result-type &allow-other-keys)
   (let ((docs (fetch-all* data collection :test test 
-			  :result-type (or result-type 'vector))))
-    
+			  :result-type (or result-type 'vector))))    
     (when docs
       (if test
 	  (map
@@ -187,137 +271,10 @@
 	   (lambda (doc)
 	     (when (funcall test doc)
 	       (return-from fetch-item* doc)))
-	   docs)))
-    ))
-
-(defun fetch-data-merge (function collection-name 
-			 &key (merge-eql-func #'get-key-value) 
-			  (result-type 'vector))
-  
-  (let* ((system (system-collection collection-name))
-	 (license (license-collection collection-name))
-	 (sys-docs (if system 
-		       (remove-if #'not (map result-type function (xdb2:docs system)))))
-	 (lic-docs (if license 
-		       (remove-if #'not (map result-type function (xdb2:docs license))))))
-    
-    (concatenate result-type 
-		 (remove-if (lambda (doc)
-			      (find doc lic-docs 
-				    :test (lambda (doc tdoc)
-					    
-					    (equalp (funcall merge-eql-func doc)
-						    (funcall merge-eql-func tdoc)))))
-			    sys-docs) lic-docs)))
-
-;;TODO: find all the dolist coerce and replace with find-docsx and loop?
-(defmethod fetch-data* ((db xdb-data) &key class-name test (result-type 'vector)
-				(merge-eql-func #'get-key-value))
-  
-  (let* ((class (find-class class-name))
-	 (collection-name (car (collection-name class)))
-	 (collection-type (car (collection-type class))))
-    
-    (cond ((equalp collection-type :merge)
-	   (fetch-data-merge test collection-name
-			    :merge-eql-func merge-eql-func
-			    :result-type result-type))
-	  ((equalp collection-type :system)
-	  
-	   (let* ((collection (system-collection collection-name))
-		  (docs (if collection 
-			    (xdb2:docs collection)) ))
-	     (when docs
-	       (remove-if #'not (map result-type test docs)))))
-	  ((equalp collection-type :license)
-	   
-	   
-	   (let* ((collection (license-collection collection-name))
-		  (docs (if collection 
-			    (xdb2:docs collection)) ))
-	     
-	     (when docs
-	       (remove-if #'not (map result-type test docs)) )))
-	  (t
-	   (break "Collection type not set. --- find-docsx~%~A~A~A"
-		  class collection-name collection-type)
-	   (error "Col-type not set.")))))
+	   docs)))))
 
 
-(defun data-from-class (class-name)
-  (let* ((class (find-class class-name))	
-	 (collection-name (car (collection-name class)))
-	 (collection-type (car (collection-type class)))) 
-    
-    
-    (cond ((equalp collection-type :merge)
-	   (fetch-merge-data-items collection-name))
-	  ((equalp collection-type :system)	
-	   (let ((collection 
-		  (system-collection collection-name)))
-	     (xdb2:docs collection)))
-	  ((equalp collection-type :license)
-	   (let ((collection 
-		  (license-collection collection-name)))
-	     (xdb2:docs collection)))
-	  (t
-	   (break "Collection type not set. --- data-from-class~%~A~A~A"
-		  class collection-name collection-type)
-	   (error "Collection type not set. --- data-from-class")))))
 
 
-(defun collection-from-class (doc-class)
-  (let* ((col-type (car (collection-type doc-class)))
-	 (collection-name (car (collection-name doc-class))))
-      
-      (cond ((equalp col-type :system)
-	     (system-collection collection-name))
-	    ((equalp col-type :license)
-	     (license-collection collection-name))
-	    ((equalp col-type :merge)
-	   
-	     (if (current-user)
-		 (if (and (license (current-user)) 
-			  (string-equal (license-code (license (current-user)))
-					*sys-license-code*))
-		     (system-collection collection-name)
-		     (license-collection collection-name))
-		 (system-collection collection-name))))))
 
-
-(defun collection-from-doc (doc)
-  (let* ((data-spec (get-data-spec (class-name (class-of doc))))	 
-	(col-type (collection-type data-spec))
-	(collection-name (collection-name data-spec)))
-    (cond  ((equalp col-type :system)
-	    (system-collection collection-name))
-	   ((or (equalp col-type :license) (equalp col-type :merge))
-	    (license-collection collection-name)))))
-
-(defun collection-from-data-spec (data-spec)
-  (let* (
-	 
-	(col-type (collection-type data-spec))
-	(collection-name (collection-name data-spec)))
-    
-    (cond  ((equalp col-type :system)	    
-	    (system-collection collection-name))
-	   ((equalp col-type :license)
-	    (license-collection collection-name))
-	   ((equalp col-type :merge)
-	    (license-collection collection-name))
-	   )))
-
-
-(defmethod xdb2:doc-collection ((doc license))
-  (if (xdb2:top-level doc)    
-    (system-collection "licenses")))
-
-(defmethod xdb2:doc-collection ((doc data-spec))
-  (if (xdb2:top-level doc)    
-    (system-collection "data-specs")))
-
-(defmethod xdb2:doc-collection ((doc xdb2:storable-object))
-  (if (xdb2:top-level doc)    
-    (collection-from-doc doc)))
 

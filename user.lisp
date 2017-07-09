@@ -20,6 +20,7 @@ system settings.")))
   (:data-spec 
    :name user-profile
    :label "User Profile"
+   :super-classes (license-doc)
    :data-fields
    ((:name name 
 	   :initarg :name
@@ -40,12 +41,9 @@ system settings.")))
    :default-initargs (:top-level t)
    (:documentation
       "Predetermined user settings used to set up users according 
-to role or some other criteria."))
-  
-  )
+to role or some other criteria.")))
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  
   (:data-spec 
    :name user-permission
    :label "User Permission"
@@ -61,15 +59,78 @@ to role or some other criteria."))
 	     :initarg :permissions
        :accessor permissions
        :initform nil
-       :db-type (list permission)))
+       :db-type (list :type keyword)))
    :metaclass xdb2:storable-versioned-class)
   )
 
+
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  
   (:data-spec 
    :name user
    :label "User"
+   :super-classes ()
+   :data-fields
+   ((:name email 
+	   :initarg :email
+	   :accessor email
+	   :key t
+	   :db-type email
+	   :display t
+	   :editable t
+	   :documentation	     
+	   "User email address used as unique identifier for a user, 
+must be valid email to enable confirmation.")
+    (:name password 
+	   :initarg :password
+	   :accessor password
+	   :db-type number)
+    (:name salt 
+	   :initarg :salt
+	   :accessor salt
+	   :db-type string)
+    (:name license-codes
+	   :initarg :license-codes
+	   :accessor license-codes
+	   :initform nil
+	   :db-type (list :type string)
+	   :key t
+	   :display t
+	   :editable t)
+    (:name preferences 
+	   :initarg :preferences
+	   :accessor preferences
+	   :initform nil
+	   :db-type (list user-preference)
+	   :display t
+	   :editable t) 
+    (:name super-user-p 
+	   :initarg :super-user-p
+	   :accessor super-user-p
+	   :initform nil
+	   :documentation		    
+	   "If t none of the permission security applies to the user.")
+    (:name status 
+	   :initarg :status
+	   :accessor :status
+	   :initform nil
+	   :db-type (list-item :type cl-wfx::keyword 
+			       :list (:active :suspended :locked :disabled))
+	   :display t
+	   :editable t
+	   :documentation "Active, Suspended, Locked Out, Disabled"))
+   :metaclass xdb2:storable-versioned-class
+   :collection-name "users"
+   :collection-type :system
+   :default-initargs (:top-level t)
+ 
+   (:documentation
+    "User with enough attributes to implement basic login and ui security."))
+  )
+
+(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor) 
+  (:data-spec 
+   :name license-user
+   :label "License User"
    :super-classes (license-doc)
    :data-fields
    ((:name email 
@@ -82,16 +143,7 @@ to role or some other criteria."))
 	     :documentation	     
 	     "User email address used as unique identifier for a user, 
 must be valid email to enable confirmation.")
-      (:name password 
-       :initarg :password
-		:accessor password
-		:db-type number
-		)
-      (:name salt 
-	     :initarg :salt
-	    :accessor salt
-	    :db-type string
-	    )
+
       (:name permissions 
 	     :initarg :permissions
 		   :accessor permissions
@@ -104,33 +156,9 @@ must be valid email to enable confirmation.")
 	     :initarg :accessible-entities
 			   :accessor accessible-entities
 			   :initform nil
-			   :db-type (data-group :data-spec entity :accessor-key name)
-			   )
-      (:name preferences 
-	     :initarg :preferences
-		   :accessor preferences
-		   :initform nil
-		   :db-type (list user-preference)
-		   :display t
-		   :editable t
-		   ) 
-      (:name super-user-p 
-	     :initarg :super-user-p
-		    :accessor super-user-p
-		    :initform nil
-		    :documentation		    
-		    "If t none of the permission security applies to the user.")
-      (:name status 
-	     :initarg :status
-	      :accessor :status
-	      :initform nil
-	      :db-type (list-item :type cl-wfx::keyword 
-				  :list (:active :suspended :locked :disabled))
-	      :display t
-	      :editable t
-	      :documentation "Active, Suspended, Locked Out, Disabled"))
+			   :db-type (data-group :data-spec entity :accessor-key name)))
    :metaclass xdb2:storable-versioned-class
-   :collection-name "users"
+   :collection-name "license-users"
    :collection-type :merge
    :default-initargs (:top-level t)
  
@@ -154,10 +182,7 @@ must be valid email to enable confirmation.")
    :metaclass xdb2:storable-versioned-class
    :collection-name "user-actions"
    :collection-type :license
-   :default-initargs (:top-level t)
-  )
-  
-  )
+   :default-initargs (:top-level t)))
 
 (monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
   ;;TODO: Is this not taken care of by sessions? No because it has to be persisted on a user level!
@@ -178,6 +203,14 @@ must be valid email to enable confirmation.")
 	   :initarg :entities
 	   :accessor current-entities
 	   :initform nil)
+    (:name license-codes
+	   :initarg :license-codes
+	   :accessor license-codes
+	   :initform nil
+	   :db-type (list :type string)
+	   :key t
+	   :display t
+	   :editable t)
     (:name current-action 
 	   :initarg :current-action
 	   :accessor current-action
@@ -188,7 +221,7 @@ must be valid email to enable confirmation.")
 	   :accessor system-state
 	   :initform nil
 	   :documentation "Temporary settings like date selection range?"))
-   :metaclass xdb2:storable-versioned-class
+   :metaclass xdb2:storable-class
    :collection-name "active-users"
    :collection-type :license
    :default-initargs (:top-level t)
@@ -226,20 +259,14 @@ a user logs in again.")))
    (password user)
    (hash-password password (salt user))))
 
-(defun make-user (email password &key
-				   license
-				   permissions
-				   accessible-entities
-				   super-user-p)
+(defun make-user (email password &key license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
     (make-instance 'user 
-		   :license license
+		   :license-codes license-codes
 		   :email email
 		   :password password
 		   :salt salt
-		   :permissions permissions
-		   :accessible-entities accessible-entities
 		   :super-user-p super-user-p)))
 
 (defun change-user (user new-password &key )
@@ -255,17 +282,17 @@ a user logs in again.")))
 (defun find-users (criteria)
   (if criteria
       (fetch-items      
-      "users"
-       :test  criteria)
-      (system-data-items 'user)))
+       "users"
+      :test  criteria)
+      (data-items *sys-license-code*
+		  "users")))
 
 (defparameter *user* nil)
-(defparameter *license* nil)
+
 
 (defmacro with-sys-user (system &body body)
   `(let* ((*system* ,system)	 
-	  (*user* (get-user "admin@cl-wfx.com"))
-	  (*license* (license *user*))
+	  (*user* (get-user "admin@cl-wfx.com"))	
 	  (*session* 
 	   (make-instance 'session
 			  :user (make-instance 
@@ -276,8 +303,7 @@ a user logs in again.")))
 
 (defmacro with-user (system user &body body)
   `(let* ((*system* ,system)	 
-	  (*user* (get-user ,user))
-	  (*license* (license *user*))
+	  (*user* (get-user ,user))	
 	  (*session* 
 	   (make-instance 'session
 			  :user (make-instance 
@@ -286,12 +312,21 @@ a user logs in again.")))
      (when *user*
        ,@body)))
 
-;;TODO: implement permissions from wfx permissins.lisp
+;;TODO: implement permissions from wfx permissions.lisp
 
 (defgeneric match-entities (user entities))
 
+
+(defun accessible-entities* (user)
+  (let ((license-user (cl-wfx::fetch-item "license-users"
+					  :test
+					  (lambda (doc)
+					    (string-equal (email doc)
+							  (email user))))))
+    (accessible-entities license-user)))
+
 (defmethod match-entities ((doc user) entities)
-  (intersection (accessible-entities doc) entities))
+  (intersection (accessible-entities* doc) entities))
 
 (defun relevant-entities ()
   (or (current-entities *session*)

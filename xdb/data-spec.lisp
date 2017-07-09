@@ -112,6 +112,7 @@
 	(slots (gethash 'slots monkey-lisp::*sexp-cache*))
 	(class-options (gethash 'class-options monkey-lisp::*sexp-cache*)))
      
+  
     (eval
      (if classes
 	 `(defclass ,class-name ,classes 
@@ -120,7 +121,8 @@
 	     
 	 `(defclass ,class-name ()
 	    (,@(parse-slots slots))
-	    ,@class-options)))))
+	    ,@class-options)))
+    ))
 
 
 (defmethod monkey-lisp:post-process-monkey-sexp ((processor data-spec-processor) 
@@ -144,6 +146,10 @@
     
     (unless data-spec
       (setf data-spec (make-instance 'data-spec 
+				     :license-code (if (and (active-user) 
+							    (license-codes (active-user)))
+						       (first (license-codes (active-user)))
+						       *sys-license-code*)
 				     :name name
 				     :collection-name 
 				     (gethash 'collection-name monkey-lisp::*sexp-cache*)
@@ -158,7 +164,7 @@
       (pushnew data-spec *data-specs*))
     
     (when *system*      
-      (persist-data data-spec))))
+      (persist-data data-spec :collection-name "data-specs"))))
 
 
 
@@ -166,9 +172,15 @@
   (:data-spec
    :name data-spec
    :label "Data Spec"
-   :super-classes (license-doc)
+   :super-classes ()
    :data-fields
-   ((:name name
+   ((:name license-code :initarg :license-code
+	   :initform nil
+	   :accessor license-code
+	   :db-type string		   
+	   :display t
+	   :editable t)
+    (:name name
 	   :initarg :name
 	   :accessor name
 	   :label "Name"
@@ -196,7 +208,18 @@
 	   :initform nil
 	   :db-type script
 	   :display t
-	   :editable t))
+	   :editable t)
+    (:name user :initarg :user
+	   :initform nil
+	   :accessor user
+	   :db-type string
+	   :display t)
+    (:name log-action :initarg :log-action
+	   :initform nil
+	   :accessor log-action
+	   :db-type string
+	   :display t
+	   :documentation "Inserted, updated, deleted, rolledback."))
      
    :after-persist #'(lambda (doc)	
 		      (when doc
@@ -237,6 +260,7 @@
   (let ((type
 	 (getf field :db-type)))
     (when type
+  
       (if (consp type)
 	  (first type)
 	  type))))

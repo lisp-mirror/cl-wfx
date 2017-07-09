@@ -70,7 +70,10 @@
 					(equal (parameter "user") (user doc))))))
     (unless active-user
       (setf active-user (persist-data (make-instance 'active-user
-						:user user))))
+						     :user user)
+				      :license-code *sys-license-code*
+				      :collection-name "active-users"
+				      )))
 
     (setf (user *session*) active-user))
   
@@ -104,6 +107,21 @@
         (if user
           (on-success user)
           (on-failure )))))
+
+
+(defmethod action-handler ((action (eql :logout)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  
+   
+   (setf (contexts *session*) nil)
+   (setf *session* nil)
+   (break "???")
+  (hunchentoot:remove-session hunchentoot:*session*)
+  
+  (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*))))
+
 
 (defun user-mods ()
   (fetch-items "modules"
@@ -188,6 +206,8 @@
       :value "set-entities"
       "Set"))))
 
+
+
 (defmethod action-handler ((action (eql :set-entities)) 
 			   (context context) 
 			   (request hunch-request)
@@ -197,7 +217,7 @@
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
       
-      (dolist (entity (accessible-entities (current-user)))
+      (dolist (entity (accessible-entities* (current-user)))
 	(if (string-equal (frmt "~A" (xdb2::id entity)) (cdr parameter))
 	    (pushnew entity (current-entities (active-user))))))))
 
@@ -223,6 +243,7 @@
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 "
 	
+	
 	(:body 
 	 (:input :type "hidden" :id "contextid" :value (context-id *context*))
 	
@@ -237,7 +258,7 @@
 		(:a :class "navbar-brand" :href "#" (system-name *system*))
 		(:ul :class "navbar-nav mr-auto"
 		     (:li :class "nav-item dropdown"
-							
+				
 			  (:a :class "nav-link dropdown-toggle" 
 			      :href ""
 			      :id "userDropdown" 
@@ -248,7 +269,7 @@
 				  (monkey-html-lisp:htm (email (current-user)))))
 			  (:div :class "dropdown-menu" 
 				:aria-labelledby "userDropdown"
-							      
+				
 				(:nav :class "nav nav-pills flex-column"
 				      (let ((sys-mod 
 					     (fetch-item "modules"
@@ -259,13 +280,38 @@
 					
 				
 					(dolist (item (menu-items (first (menu sys-mod))))
-					  (monkey-html-lisp:htm
-					    (:a :class 
-						"nav-link ~A"
-						:href (context-url 
+					
+					  (let ((parameters))
+				
+					    (dolist (param (context-parameters item))
+					      
+					      (setf parameters 
+						    (if parameters
+							(frmt "~A&~A=~A" 
+							      parameters
+							      (parameter-name param)
+							      (parameter-value param))
+							(frmt "~A=~A" 
+							      (parameter-name param)
+							      (parameter-value param)))))
+					    
+					    (monkey-html-lisp:htm
+					      (:a :class 
+						  "nav-link ~A"
+						  :href 
+						  (if parameters
+						      (frmt "~A?~A" 
+							    (context-url 
+							     (context-spec item)
+							     sys-mod)
+							    parameters)
+						      (context-url 
 						       (context-spec item)
-						        sys-mod)
-						(item-name item)))))))))
+						       sys-mod))
+						  (item-name item)
+						  
+						  )))))))))
+	
 		(if (current-user)
 		    (monkey-html-lisp:htm 
 		      (:button :class "navbar-toggler navbar-toggler-left hidden-print"
@@ -314,7 +360,7 @@
 			   (:div :class "collapse col-md-2 hidden-print " 
 				 :id "exNavbarRight" :style "background-color:#FFFFFF"
 				 (render-entity-tree 
-				  (accessible-entities (current-user))))))))
+				  (accessible-entities* (current-user))))))))
 	 
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {

@@ -20,8 +20,9 @@
 	       (:file "data")
 	       (:file "data-spec")
 	       
-	       (:file "xdb/common")
+	       
 	       (:file "xdb/data-spec")
+	       (:file "xdb/common")
 	       (:file "context-spec")
 	       (:file "xdb/context-spec")
 	       

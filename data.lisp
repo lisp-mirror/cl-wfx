@@ -58,33 +58,37 @@ Used : start-sys :after."))
 
 Used: stop-sys :before"))
 
-(defgeneric fetch-all* (data collection &key result-type &allow-other-keys))
+(defgeneric data-items (license-code collection-name))
 
-(defun fetch-all (collection &key result-type)  
+(defgeneric license-items (collection-name result-type))
+
+(defgeneric fetch-all* (data collection-name &key result-type &allow-other-keys))
+
+(defun fetch-all (collection-name &key result-type)  
   (if (and *system* (data *system*) )      
       (funcall 'fetch-all* 
 	       (data *system*) 
-	       collection 
+	       collection-name 
 	       :result-type result-type)))
 
 
 (defgeneric fetch-items* (data collection &key test result-type &allow-other-keys))
 
-(defun fetch-items (collection &key test result-type)  
+(defun fetch-items (collection-name &key test result-type)  
   (if (and *system* (data *system*) )      
       (funcall 'fetch-items* 
 	       (data *system*) 
-	       collection 
+	       collection-name 
 	       :test test
 	       :result-type result-type)))
 
-(defgeneric fetch-item* (data collection &key test result-type &allow-other-keys))
+(defgeneric fetch-item* (data collection-name &key test result-type &allow-other-keys))
 
-(defun fetch-item (collection &key test)    
+(defun fetch-item (collection-name &key test)    
   (if (and *system* (data *system*) )      
       (funcall 'fetch-item* 
 	       (data *system*) 
-	       collection 
+	       collection-name 
 	       :test test)))
 
 (defgeneric merge-equality-function (data &key &allow-other-keys))
@@ -95,48 +99,14 @@ Used: stop-sys :before"))
 (defmethod merge-equality-function (data &key &allow-other-keys)
   #'get-key-value)
 
-(defgeneric system-data (data &key &allow-other-keys))
-
-(defmethod system-data (data &key &allow-other-keys)
-  (let ((store (is-initialized-system-data data)))
-    (when (not store)    
-      (setf store (init-system-data data)))
-    store))
-
-(defgeneric system-data-items (collection))
-
-(defgeneric init-system-data (data &key &allow-other-keys))
-
-(defgeneric is-initialized-system-data (data &key &allow-other-keys))
-
-
-
-(defgeneric license-data (data &key &allow-other-keys))
-
-(defgeneric init-license-data (data &key &allow-other-keys))
-
-
-(defgeneric is-initialized-license-data (data &key &allow-other-keys))
-
-
-(defmethod license-data (data &key &allow-other-keys)
-  
-  (let ((store (is-initialized-license-data data)))
-    (when (not store)  
-      (setf store (init-license-data data)))
-    store))
-
-(defgeneric license-data-items (collection))
 
 (defun merge-items (sys-items lic-items data-spec result-type)
   (concatenate 
    (or result-type 'list) 
    (if (and lic-items (> (length lic-items) 0))
        (remove-if (lambda (doc)
-		    (find doc sys-items 
+		    (find doc lic-items 
 			  :test (lambda (doc tdoc)
-				  
-				  
 				  (equalp (funcall (merge-equality-function 
 						    (data *system*) ) doc data-spec)
 					  (funcall (merge-equality-function 
@@ -146,32 +116,12 @@ Used: stop-sys :before"))
    lic-items))
 
 
-
-
-
-(defgeneric persist-data (data &key &allow-other-keys)
+(defgeneric persist-data (item &key license-code collection-name &allow-other-keys)
   (:documentation "Called to perist data."))
 
-(defgeneric delete-data (data &key &allow-other-keys)
+(defgeneric delete-data (item &key license-code collection-name &allow-other-keys)
   (:documentation "Called to delete data."))
 
-
-
-(defgeneric fetch-merge-data (collection))
-
-(defgeneric merge-data-items (data &key merge-eql-func result-type))
-
-(defun fetch-merge-data-items (collection
-			       &key (result-type 'vector)
-				 merge-eql-func)
-  
-  (let* ((sys-items (system-data-items collection))
-	 (lic-items (license-data-items collection)))
-    (merge-data-items (list sys-items lic-items) 
-		      :merge-eql-func (or merge-eql-func
-					  (merge-equality-function 
-					   (data *system*) collection))
-		      :result-type result-type)))
 
 (defun data-from-items (items &key test)
   (if test
@@ -195,8 +145,8 @@ Used: stop-sys :before"))
 (defgeneric set-item-val (type field item value &key &allow-other-keys)
   (:documentation "Sets item data value according to field specification."))
 
-(defgeneric item-val (type field data &key &allow-other-keys)
+(defgeneric item-val (type field item &key &allow-other-keys)
   (:documentation "Retrieves data according to item field specification."))
 
-(defgeneric print-item-val (type field data &key &allow-other-keys)
+(defgeneric print-item-val (type field item &key &allow-other-keys)
   (:documentation "Retrieves and wrap for display data according to item field specification."))

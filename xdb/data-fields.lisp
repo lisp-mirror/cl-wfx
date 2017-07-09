@@ -116,7 +116,7 @@
 
 (defmethod set-item-val ((type (eql 'data-member)) field item value  
 			 &key &allow-other-keys)  
-  (if value
+  (if (not (empty-p value))
     (let* ((id (parse-integer value))
 	   (full-type (cdr (getf field :db-type)))
 	   (data-spec (get-data-spec (getf full-type :data-spec)))

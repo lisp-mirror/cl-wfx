@@ -3,6 +3,14 @@
 (defclass data-spec-processor (monkey-lisp:processor)
   ())
 
+(defun get-data-spec (spec-name)
+;;  (break "~A" spec-name)
+  (if (current-user)
+      (fetch-item "data-specs"
+		  :test (lambda (item)
+			  (equalp (name item) spec-name)))
+      (get-data-spec* spec-name)))
+
 #|
 ;;TODO: make data-spec-processor global?????
 (defmacro with-data-spec (&body body)   
