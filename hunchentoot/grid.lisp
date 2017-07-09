@@ -902,6 +902,7 @@
 		(set-item-val (field-data-type field) field item 
 			      (parameter (getf field :name)))))
 	  
+;;	  (break "~A ~A" item parent-item)
 	  (when (xdb2::top-level item)
 	    (persist-data item
 			  :collection-name (get-context-data-spec-attribute 

@@ -45,8 +45,7 @@
 	   :initform nil
 	   :db-type string
 	   :display t
-	   :editable t	   
-	   )
+	   :editable t)
     (:name payment-detail 
 	   :initarg :payment-details
 	   :accessor payment-details
@@ -64,8 +63,7 @@
 	   :db-type (data-group :data-spec entity :key-accessor name)
 	   :initform nil
 	   :display t
-	   :editable t
-	   )
+	   :editable t)
     (:name license-date 
 	   :initarg :license-date
 	   :accessor license-date

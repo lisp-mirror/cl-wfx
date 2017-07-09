@@ -164,25 +164,25 @@
 (defun render-entity-check (entity level accessible-entities)
   (monkey-html-lisp:htm
     (:div :class "row"
-	      (:div :class "form-check"
+	  (:div :class "form-check"
 		    
-		    (:div :class "form-check-label"
-			  (dotimes (i level)
-			    (monkey-html-lisp:htm "&nbsp;"))
-			  (if (find entity accessible-entities)
-			      (if (find entity (current-entities (active-user)))
-				  (monkey-html-lisp:htm
-				    (:input :class "form-check-input" :type "checkbox" 
-					    :name "tree-entity-id" 
-					    :value (xdb2::id entity)
-					    :checked ""))
-				  (monkey-html-lisp:htm
-				    (:input :class "form-check-input" :type "checkbox" 
-					    :name "tree-entity-id" :value (xdb2::id entity))))
+		(:div :class "form-check-label"
+		      (dotimes (i level)
+			(monkey-html-lisp:htm "&nbsp;"))
+		      (if (find entity accessible-entities)
+			  (if (find entity (current-entities (active-user)))
 			      (monkey-html-lisp:htm
 				(:input :class "form-check-input" :type "checkbox" 
-					:disabled "")))
-			  (name entity))))
+					:name "tree-entity-id" 
+					:value (xdb2::id entity)
+					:checked ""))
+			      (monkey-html-lisp:htm
+				(:input :class "form-check-input" :type "checkbox" 
+					:name "tree-entity-id" :value (xdb2::id entity))))
+			  (monkey-html-lisp:htm
+			    (:input :class "form-check-input" :type "checkbox" 
+				    :disabled "")))
+		      (name entity))))
     (if (children entity)
 	(dolist (entity (children entity))
 	  (render-entity-check entity 
@@ -204,9 +204,7 @@
       :class "btn btn-outline-success"
       :aria-pressed "false"
       :value "set-entities"
-      "Set"))))
-
-
+      "Set Entities"))))
 
 (defmethod action-handler ((action (eql :set-entities)) 
 			   (context context) 
@@ -221,15 +219,48 @@
 	(if (string-equal (frmt "~A" (xdb2::id entity)) (cdr parameter))
 	    (pushnew entity (current-entities (active-user))))))))
 
+(defun render-licence-codes ()
+  (dolist (code (license-codes (current-user)))
+			    
+    (monkey-html-lisp:htm
+      
+      (:div :class "row"
+	    (:div :class "form-check"
+		  
+		  (:div :class "form-check-label"
+			(if (find code (license-codes (active-user)) :test #'string-equal)
+			    (monkey-html-lisp:htm
+			      (:input :class "form-check-input" :type "checkbox" 
+				      :name "license-id" 
+				      :value code
+				      :checked ""))
+			    (monkey-html-lisp:htm
+			      (:input :class "form-check-input" :type "checkbox" 
+				      :name "license-id" :value code)))
+			
+			code)))))		      
+  )
+
+(defmethod action-handler ((action (eql :set-licenses)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (setf (current-entities (active-user)) nil)
+  (dolist (parameter (hunchentoot:post-parameters*))
+    (when (equalp (car parameter) "license-id")
+      
+      (pushnew (cdr parameter) (license-codes (active-user)))
+   
+      )))
+
 (monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
   `(:html
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
 	
 	"<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js\"></script>"
-	"<link rel=\"stylesheet\" href=\"https://cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css\">"
-	"<script src=\"https://cdn.datatables.net/1.10.1/js/jquery.dataTables.min.js\"></script>"
-	" <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>"
+
 	"<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
 	
 	"<script src=\"../web/codemirror/lib/codemirror.js\"></script>
@@ -253,74 +284,89 @@
 		     ,@body))
 	     (monkey-html-lisp:htm
 	       (:nav 
-		:class "navbar fixed-top navbar-light bg-faded hidden-print"
-		      
-		(:a :class "navbar-brand" :href "#" (system-name *system*))
-		(:ul :class "navbar-nav mr-auto"
-		     (:li :class "nav-item dropdown"
-				
-			  (:a :class "nav-link dropdown-toggle" 
-			      :href ""
-			      :id "userDropdown" 
-			      :data-toggle "dropdown" 
-			      :aria-haspopup="true"
-			      :aria-expanded "false" 
-			      (if (current-user) 
-				  (monkey-html-lisp:htm (email (current-user)))))
-			  (:div :class "dropdown-menu" 
-				:aria-labelledby "userDropdown"
-				
-				(:nav :class "nav nav-pills flex-column"
-				      (let ((sys-mod 
-					     (fetch-item "modules"
-							 :test (lambda (doc)
-								 (string-equal
-								  "System Admin" 
-								  (module-name doc))))))
-					
-				
-					(dolist (item (menu-items (first (menu sys-mod))))
-					
-					  (let ((parameters))
-				
-					    (dolist (param (context-parameters item))
-					      
-					      (setf parameters 
-						    (if parameters
-							(frmt "~A&~A=~A" 
-							      parameters
-							      (parameter-name param)
-							      (parameter-value param))
-							(frmt "~A=~A" 
-							      (parameter-name param)
-							      (parameter-value param)))))
-					    
-					    (monkey-html-lisp:htm
-					      (:a :class 
-						  "nav-link ~A"
-						  :href 
-						  (if parameters
-						      (frmt "~A?~A" 
-							    (context-url 
-							     (context-spec item)
-							     sys-mod)
-							    parameters)
-						      (context-url 
-						       (context-spec item)
-						       sys-mod))
-						  (item-name item)
-						  
-						  )))))))))
-	
+		:class "navbar sticky-top navbar-toggleable-md hidden-print"
+		
 		(if (current-user)
 		    (monkey-html-lisp:htm 
-		      (:button :class "navbar-toggler navbar-toggler-left hidden-print"
-			       :type "button"
+		      (:button :class "navbar-toggler navbar-toggler-left"
+			       :type "button btn-small"
+			       :data-toggle "collapse"
+			       :data-target "#menushit"
+			       :aria-controls "menushit"
+			       :aria-expanded "true"
+			       :aria-label "Toggle menu"
+			       (:span :class "navbar-toggler-icon"))))
+		
+		(:a :class "navbar-brand" :href "#" 
+		    (:img :src "../sys/web/images/logo-small.png")
+		    (system-name *system*))
+		(:div :class "collapse navbar-collapse" :id "menushit"
+		 (:span :class "navbar-text mr-auto"
+			(frmt "Entities: ~A" (current-entities (active-user))))
+		 
+		 (:div :class "nav-item dropdown"
+		       
+		       (:a :class "nav-link dropdown-toggle" 
+			   :href ""
+			   :id "userDropdown" 
+			   :data-toggle "dropdown" 
+			   :aria-haspopup="true"
+			   :aria-expanded "false" 
+			   (if (current-user) 
+			       (monkey-html-lisp:htm (email (current-user)))))
+		       (:div :class "dropdown-menu":aria-labelledby "userDropdown"
+			     
+			     (let ((sys-mod 
+					  (fetch-item "modules"
+						      :test (lambda (doc)
+							      (string-equal
+							       "System Admin" 
+							       (module-name doc))))))
+				     
+				     
+				     (dolist (item (menu-items (first (menu sys-mod))))
+				       
+				       (let ((parameters))
+					 
+					 (dolist (param (context-parameters item))
+					   
+					   (setf parameters 
+						 (if parameters
+						     (frmt "~A&~A=~A" 
+							   parameters
+							   (parameter-name param)
+							   (parameter-value param))
+						     (frmt "~A=~A" 
+							   (parameter-name param)
+							   (parameter-value param)))))
+					 
+					 (monkey-html-lisp:htm
+					   (:a :class "dropdown-item"
+					       :href 
+					       (if parameters
+						   (frmt "~A?~A" 
+							 (context-url 
+							  (context-spec item)
+							  sys-mod)
+							 parameters)
+						   (context-url 
+						    (context-spec item)
+						    sys-mod))
+					       (item-name item)
+					       
+					       )))))))
+		 
+		 ))
+	       (:nav :class "navbar"
+		(if (current-user)
+		    (monkey-html-lisp:htm 
+		      (:button :class "navbar-toggler navbar-toggler-left"
+			       :type "button btn-small"
 			       :data-toggle "collapse"
 			       :data-target "#exNavbarLeft"
 			       :aria-controls "exNavbarLeft"
 			       :aria-expanded "true"
-			       :aria-label "Toggle menu"
+			       :aria-label "Toggle application menu"
 			       "&#9776;")))
 		(if (current-user)
 		    (monkey-html-lisp:htm
@@ -332,10 +378,9 @@
 			       :aria-expanded "false"
 			       :aria-label "Toggle system menu"
 			       "&#9776;")))
-		      
+		
 		)
-	       (:br "")
-	       (:br "")
+	      
 	       (:br "")
 	       (:div :class "container-fluid"
 		     
@@ -359,8 +404,27 @@
 		    
 			   (:div :class "collapse col-md-2 hidden-print " 
 				 :id "exNavbarRight" :style "background-color:#FFFFFF"
-				 (render-entity-tree 
-				  (accessible-entities* (current-user))))))))
+				 (:form
+				  (:div :class "row bg-faded"
+					"Accessible License Codes")
+				  (render-licence-codes)				 
+				 
+				  (:button
+				   :name "set-licenses" 
+				   :type "submit" 
+				   :formmethod "post"
+				   :class "btn btn-outline-success"
+				   :aria-pressed "false"
+				   :value "set-licenses"
+				   "Set Licenses"))
+			
+				 (:div :class "row bg-faded"
+				       "Accessible Entities")
+				 (:div :class "row"
+				       (render-entity-tree 
+					(accessible-entities* (current-user))))
+				 
+				 )))))
 	 
 	 (:script ,(frmt	      
 "function ajax_call(func, callback, args, widget_args) {

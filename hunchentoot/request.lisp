@@ -48,10 +48,14 @@
       (action-handler (intern (string-upcase (parameter "action")) :keyword)
 		      context
 		      request))
-  (if (parameter "set-entities")
-      (action-handler :set-entities
-		      context
-		      request)
+  (cond ((parameter "set-licenses")
+	 (action-handler :set-licenses
+			 context
+			 request))
+	((parameter "set-entities")
+	 (action-handler :set-entities
+			 context
+			 request))
       )
   
   ;;TODO: why checking for ajax?

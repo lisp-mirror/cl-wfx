@@ -102,7 +102,7 @@
   |#
   
   (when (active-user) 
-   ;; (break "~A ~A" object (current-entities (active-user)))
+  ;; (break "~A ~A" object (current-entities (active-user)))
     (find object (current-entities (active-user)))))
 
 (defmethod match-context-entities ((doc entity-doc))

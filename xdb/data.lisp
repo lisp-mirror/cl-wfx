@@ -53,16 +53,14 @@
 			    (list (frmt "~A" (id-string (system-name *system*)))
 				  license-code)))
       
-      ;;TODO: Figure out loading of db files
-      #|
       (dolist (data-spec (fetch-all "data-specs" :result-type 'list))
 	(when (or
 	       (equalp (collection-type data-spec) :merge)
 	       (equalp (collection-type data-spec) :license))
-	  (license-collection (collection-name data-spec))))
+	  (xdb2:add-collection db (collection-name data-spec))))
       (xdb2:load-collections db)
       (xdb2:clear-db-cache db)
-      |#
+
       )
     
     (let ((col
@@ -191,14 +189,11 @@
     (when data-spec
       (cond ((equalp collection-type :merge)
 	     
-	   
-	     
 	     (let* ((system-items 
 		     (data-items *sys-license-code*
 					 (collection-name data-spec)))
 		    (license-items 
 		     (license-items (collection-name data-spec) result-type))
-		    
 		    
 		    (docs (merge-items 
 			   system-items
@@ -206,14 +201,9 @@
 			   data-spec
 			   result-type)))
 	       
-	       
 	       (if entity-p
 		   (setf items (remove-if-not #'match-context-entities docs))
-		   (setf items docs))
-	       
-	       
-	       
-	       ))
+		   (setf items docs))))
 	    
 	    ((equalp collection-type :system)
 	     
@@ -234,7 +224,9 @@
 	     (let ((license-items (license-items (collection-name data-spec) result-type)))
 	      
 	       (when license-items
-		 
+		 (when (equalp collection-name "companies")
+		 ;;  (break "~A" license-items)
+		   )
 		   (setf items
 			 (if entity-p
 			     (remove-if-not #'match-context-entities 
