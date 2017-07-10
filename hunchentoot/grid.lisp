@@ -510,16 +510,12 @@
 				  (render-grid-search spec-name)
 				  (render-grid-sizing spec-name))))))))))
 
-(defun render-grid-data (spec-name page-items sub-level sub-name parent-item parent-spec)
-  
+(defun render-grid-data (spec-name page-items sub-level sub-name parent-item parent-spec)  
   (let ((sub-level-p (or
 		   
 		      (not (equalp spec-name 
-				      (gethash :root-data-spec 
-					       (cache *context*)))))))
-    
-    
-   
+				   (gethash :root-data-spec 
+					    (cache *context*)))))))
     
     (when sub-level-p
       (parse-data-spec-for-grid spec-name))  
@@ -540,16 +536,16 @@
 		      (monkey-html-lisp:htm
 			(:div :class "col-sm-1"
 			      (render-expand-buttons subs spec-name item))))
-		  
+		    
 		  (dolist (field fields)
 		    (when (and (getf field :display) 
 			       (and (not (equalp (field-data-type field)
-						'data-group))
+						 'data-group))
 				    (not (equalp (field-data-type field)
-						'data-list))))
+						 'data-list))))
 		      (monkey-html-lisp:htm 
 			(:div :class "col"
-			     
+				
 			      (let ((val (print-item-val 
 					  (field-data-type field) field item)))
 				(if (> (length val) 100 )
@@ -559,7 +555,7 @@
 		(:div :class "col "
 		      (:div :class "btn-group float-right"
 			    (render-grid-buttons spec-name item ))))
-	  
+	 
 	  (if (and (or (and (equalp (parameter "action") "edit")
 			    (parameter "item-id")) 
 		       (gethash :validation-error-item-id
@@ -569,71 +565,69 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (xdb2:id item))))
-	      (render-grid-edit	spec-name fields item parent-item parent-spec sub-name))
-	  
+				
+	      (render-grid-edit spec-name fields item
+				parent-item parent-spec sub-name))
+	    
 	  (when (equalp (ensure-parse-integer 
 			 (get-context-data-spec-attribute spec-name
 							  :expand-id)) 
 			(xdb2:id item))
 	      
+	    (unless sub-level-p
+	      (setf (gethash :root-item (cache *context*)) item))
 	      
-	      
-	      (dolist (sub subs)
-		(let* ((attributes (cdr (getf sub :db-type)))
-		      (sub-data-spec (getf attributes :data-spec))
-		      )
+	    (dolist (sub subs)
+	      (let* ((attributes (cdr (getf sub :db-type)))
+		     (sub-data-spec (getf attributes :data-spec)))
 		  
-		  (parse-data-spec-for-grid sub-data-spec)
+		(parse-data-spec-for-grid sub-data-spec)
 		  
-		  (monkey-html-lisp:htm
-		    (:div :class "row"
-			  (:div :class "col"
-				(:div :class "card"
-				      (:h4 :class "card-title"
-					   (frmt "~A" (string-capitalize
-						       (getf sub :name))))
-				      (:div :class "card-header"
-					    (render-grid-header
-					     sub-data-spec
-					     (get-context-data-spec-attribute 
-					      sub-data-spec :data-fields)
+		(monkey-html-lisp:htm
+		  (:div :class "row"
+			(:div :class "col"
+			      (:div :class "card"
+				    (:h4 :class "card-title"
+					 (frmt "~A" (string-capitalize
+						     (getf sub :name))))
+				    (:div :class "card-header"
+					  (render-grid-header
+					   sub-data-spec
+					   (get-context-data-spec-attribute 
+					    sub-data-spec :data-fields)
 					     
-					     t))
-				      (:div :class "card-block"
-					    (render-grid-data 
-					     sub-data-spec
-					     (item-val (field-data-type sub) sub item) 
-					     (+ sub-level 1)
-					     (getf sub :name)
-					     item
-					     spec-name
-					     ))
-				      (:div :class "card-footer"
-					    (:div :class "row"	  
-			      (:div :class "col"
-				    (:button ;;:tabindex -1 ;;when disabled
-				     :name "new" :type "submit" 
-				     :class "btn btn-outline-success"
-				  
-				     :aria-pressed "false"
-				
-				     :onclick 
-				    
-				     (grid-js-render "cl-wfx:ajax-grid" 
-						     spec-name
-						     :action "new")
-				     "+")
-				    
-				    
-				    ))))))))))))
+					   t))
+				    (:div :class "card-block"
+					  (render-grid-data 
+					   sub-data-spec
+					   (item-val (field-data-type sub) sub item) 
+					   (+ sub-level 1)
+					   (getf sub :name)
+					   item
+					   spec-name
+					   ))
+				    (:div :class "card-footer"
+					  (:div :class "row"	  
+						(:div :class "col"
+						      (:button ;;:tabindex -1 ;;when disabled
+						       :name "new" :type "submit" 
+						       :class "btn btn-outline-success"
+							 
+						       :aria-pressed "false"
+							 
+						       :onclick 
+							 
+						       (grid-js-render "cl-wfx:ajax-grid" 
+								       spec-name
+								       :action "new")
+						       "+")))))))))))))
       
       (when (equalp (parameter "action") "new")
 	(render-grid-edit spec-name fields 
 			  (make-instance spec-name) 
 			  parent-item
 			  parent-spec
-			  sub-name
-			  )))))
+			  sub-name)))))
 
 (defun render-grid-sizing (spec-name)
   (monkey-html-lisp:htm
@@ -683,7 +677,6 @@
 	      (frmt "~A" 
 		    (frmt "~A" spec-name)))
 	     (js-pair "action" "grid-search")))))
-
 
 
 (defun fetch-grid-page-data (spec-name items)
@@ -872,9 +865,7 @@
 	(setf items
 	      (items-from-items 
 	       items
-	       :test (search-function spec-name search-term)
-	       ;;  :result-type 'list
-	       ))))
+	       :test (search-function spec-name search-term)))))
     
     (fetch-grid-page-data spec-name items)))
 
@@ -971,11 +962,15 @@
 				 (js-pair "action" "page-next"))
 		      "Next")))))))))
 
+
+
 (defun render-grid (spec-name) 
   
   (parse-data-spec-for-grid spec-name)
   
   (setf (gethash :root-data-spec (cache *context*)) spec-name)
+  
+  (setf (gethash :root-item (cache *context*)) nil)
   
   (set-context-data-spec-attribute spec-name :list-field-name nil)
   
@@ -1014,6 +1009,7 @@
   
   
   (when (equalp (parameter "action") "expand")
+    
     (set-context-data-spec-attribute (parameter "data-spec")
 				     :expand-id (parameter "item-id")))
   
@@ -1102,13 +1098,14 @@
   (let* ((spec-name (read-symbol-from-string (parameter "data-spec")))
 	 (fields (get-context-data-spec-attribute 
 		  spec-name
-		  :data-fields)))
+		  :data-fields))
+	 (parent-slot (get-context-data-spec-attribute 
+				spec-name :list-field-name)))
     
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
-    
+       
     (when fields
- 
       (let ((item (get-context-data-spec-attribute 
 			 spec-name
 			 :edit-item))
@@ -1140,6 +1137,7 @@
 		    (set-item-val (field-data-type field) field item 
 				  (parameter (getf field :name)))))))
 	
+	;;TODO: is this still needed????
 	;;Doing this to keep edit window open.
 	(when (gethash :validation-errors (cache *context*))
 	  (setf (gethash :validation-error-item-id
@@ -1155,38 +1153,22 @@
 			    (not (equalp (field-data-type field) 'data-list))))
 		(set-item-val (field-data-type field) field item 
 			      (parameter (getf field :name)))))
-	  
-
-	  (when (xdb2::top-level item)
-	    (persist-data item
-			  :collection-name (get-context-data-spec-attribute 
-					    spec-name
-					    :collection-name)))
-	  
-	  (when parent-item
-	    (let ((parent-slot (get-context-data-spec-attribute 
-				spec-name :list-field-name)))
+	 
+	  ;;Append parent-slot only if new
+	  (when (and parent-slot (not (xdb2:id item)))
 	    
-	      (when parent-slot
-		(setf (slot-value parent-item
-				  parent-slot)
-		      (append (slot-value parent-item
-					  parent-slot)
-			      (list item)))))
-	    
-	    (when (xdb2::top-level parent-item)
-	      (persist-data parent-item
+	    (setf (slot-value parent-item parent-slot)
+		  (append (slot-value parent-item parent-slot)
+			  (list item))))
+	  
+	  
+	  (persist-data (gethash :root-item (cache *context*))
 			    :collection-name (get-context-data-spec-attribute 
-					      (get-context-data-spec-attribute 
-					       spec-name
-					       :parent-spec)
-					      :collection-name)
-
-			    )))
+					      (gethash :root-data-spec (cache *context*))
+					      :collection-name))
 	  
 	  (set-context-data-spec-attribute spec-name :parent-item nil)
 	  (set-context-data-spec-attribute spec-name :edit-item nil)
-	  (set-context-data-spec-attribute spec-name :item-id nil)
-	  )))))
+	  (set-context-data-spec-attribute spec-name :item-id nil))))))
 
 

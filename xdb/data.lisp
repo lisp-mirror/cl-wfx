@@ -114,12 +114,16 @@
   (let ((collection (license-collection license-code collection-name)))
     (remove-doc doc collection)))
 
-(defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
+
+(defun get-key-value* (item fields)
   (let ((keys))
-    (dolist (field (data-spec-fields data-spec))
+    (dolist (field fields)
       (when (getf field :key)
 	(pushnew (slot-value item (getf field :name)) keys)))
     keys))
+
+(defmethod get-key-value ((item xdb2:storable-object) data-spec &key &allow-other-keys)
+  (get-key-value* item (data-spec-fields data-spec)))
 
 
 (defmethod data-items (license-code collection-name)
