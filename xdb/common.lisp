@@ -6,9 +6,9 @@
    :label "Doc"
    :super-classes ()
    :data-fields
-   ((:name user :initarg :user
+   ((:name user-name :initarg :user-name
 	   :initform nil
-	   :accessor user
+	   :accessor user-name
 	   :db-type string
 	   :display t)
     (:name log-action :initarg :log-action

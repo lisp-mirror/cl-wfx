@@ -117,7 +117,7 @@
    
    (setf (contexts *session*) nil)
    (setf *session* nil)
-   (break "???")
+
   (hunchentoot:remove-session hunchentoot:*session*)
   
   (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*))))

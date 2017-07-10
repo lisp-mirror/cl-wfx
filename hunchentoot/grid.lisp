@@ -51,6 +51,9 @@
 (defmethod print-item-val ((type (eql 'data-group)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
+(defmethod print-item-val ((type (eql 'data-list)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
 (defmethod print-item-val ((type (eql 'data-member)) field item &key &allow-other-keys)
 
   (let ((full-type (cdr (getf field :db-type)))
@@ -102,6 +105,9 @@
   (render-input-val* type field item))
 
 (defmethod render-input-val ((type (eql 'number)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'date)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
 (defmethod render-input-val ((type (eql 'boolean)) field item &key &allow-other-keys)
@@ -164,8 +170,6 @@
 (defmethod render-input-val ((type (eql 'list)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-
-
 (defmethod render-input-val ((type (eql 'list-item)) field item &key &allow-other-keys)
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
@@ -184,7 +188,12 @@
 (defmethod render-input-val ((type (eql 'data-group)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'data-member)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql 'data-list)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'data-member)) field item 
+			     &key &allow-other-keys)
+;;  (break "~A ~A" item parent-item )
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
 	 (data-spec (get-data-spec (getf full-type :data-spec)))
@@ -337,8 +346,9 @@
 		"Delete")))))))
 
 
-(defun render-grid-edit (spec-name fields item parent-item parent-spec)
+(defun render-grid-edit (spec-name fields item parent-item parent-spec sub-name)
   
+  (set-context-data-spec-attribute spec-name :list-field-name sub-name)
   (set-context-data-spec-attribute spec-name :edit-item item)
   (set-context-data-spec-attribute spec-name :parent-item parent-item)
   (set-context-data-spec-attribute spec-name :parent-spec parent-spec)
@@ -361,8 +371,11 @@
 				     (label (getf field :label)))
 				      
 				(when (and (getf field :display) 
-					   (not (equalp (field-data-type field)
-							'data-group)))
+					   (and (not (equalp (field-data-type field)
+							     'data-group))
+						(not (equalp (field-data-type field)
+							    'data-list))
+					       ))
 					
 				  (monkey-html-lisp:htm					  
 				    (:div :class (if (getf field :editable)
@@ -381,7 +394,7 @@
 					  (:div :class "col"
 						(render-input-val 
 						 (field-data-type field) 
-						 field item))))))))))
+						 field item :parent-item parent-item))))))))))
 	  (:div :class "card-footer"
 		(when (gethash :validation-errors (cache *context*))
 		  (let ((errors (gethash :validation-errors (cache *context*))))
@@ -450,8 +463,9 @@
   (let ((subs))
     
     (dolist (field fields)
-	(cond ((equalp (field-data-type field) 'data-group)
-	       (pushnew field subs))))
+      (cond ((or (equalp (field-data-type field) 'data-group)
+		 (equalp (field-data-type field) 'data-list))
+	     (pushnew field subs))))
     
     (monkey-html-lisp:htm
       (:div :class "row"	
@@ -463,8 +477,10 @@
 	    (dolist (field fields)
 	      
 	      (when (and (getf field :display) 
-			 (not (equalp (field-data-type field)
-				      'data-group)))
+			 (and (not (equalp (field-data-type field)
+					  'data-group))
+			     (not (equalp (field-data-type field)
+					  'data-list))))
 		(let* ((name (getf field :name))
 		       (label (getf field :label)))
 		  
@@ -478,13 +494,13 @@
 					  (substitute #\Space  (character "-")  
 						      (format nil "~A" name) 
 						      :test #'equalp)))))
-			 (unless sub-p
-			   (monkey-html-lisp:htm
-			     (:div :class "row"
-				   (render-grid-col-filter spec-name name)
-				   )))
+			  (unless sub-p
+			    (monkey-html-lisp:htm
+			      (:div :class "row"
+				    (render-grid-col-filter spec-name name)
+				    )))
 			 
-				)
+			  )
 		    ))))
 	    (unless sub-p
 	      (monkey-html-lisp:htm	      
@@ -494,11 +510,16 @@
 				  (render-grid-search spec-name)
 				  (render-grid-sizing spec-name))))))))))
 
-(defun render-grid-data (spec-name page-items sub-level parent-item parent-spec)
+(defun render-grid-data (spec-name page-items sub-level sub-name parent-item parent-spec)
   
-  (let ((sub-level-p (not (equalp spec-name 
-				  (gethash :root-data-spec 
-					   (cache *context*))))))
+  (let ((sub-level-p (or
+		   
+		      (not (equalp spec-name 
+				      (gethash :root-data-spec 
+					       (cache *context*)))))))
+    
+    
+   
     
     (when sub-level-p
       (parse-data-spec-for-grid spec-name))  
@@ -507,7 +528,8 @@
 	  (subs))
       
       (dolist (field (get-context-data-spec-attribute spec-name :data-fields))
-	(cond ((equalp (field-data-type field) 'data-group)
+	(cond ((or (equalp (field-data-type field) 'data-group)
+		   (equalp (field-data-type field) 'data-list))
 	       (pushnew field subs))))
       
       (dolist (item page-items)
@@ -521,8 +543,10 @@
 		  
 		  (dolist (field fields)
 		    (when (and (getf field :display) 
-			       (not (equalp (field-data-type field)
-					    'data-group)))
+			       (and (not (equalp (field-data-type field)
+						'data-group))
+				    (not (equalp (field-data-type field)
+						'data-list))))
 		      (monkey-html-lisp:htm 
 			(:div :class "col"
 			     
@@ -532,8 +556,8 @@
 				    (frmt "~A ..." (subseq val 0 100))
 				    val)))))))
 
-		(:div :class "col"
-		      (:div :class "btn-group"
+		(:div :class "col "
+		      (:div :class "btn-group float-right"
 			    (render-grid-buttons spec-name item ))))
 	  
 	  (if (and (or (and (equalp (parameter "action") "edit")
@@ -545,11 +569,11 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (xdb2:id item))))
-	      (render-grid-edit	spec-name fields item parent-item parent-spec))
+	      (render-grid-edit	spec-name fields item parent-item parent-spec sub-name))
 	  
 	  (when (equalp (ensure-parse-integer 
-					  (get-context-data-spec-attribute spec-name
-									   :expand-id)) 
+			 (get-context-data-spec-attribute spec-name
+							  :expand-id)) 
 			(xdb2:id item))
 	      
 	      
@@ -575,20 +599,41 @@
 					      sub-data-spec :data-fields)
 					     
 					     t))
-				      (:div :clss "card-block"
+				      (:div :class "card-block"
 					    (render-grid-data 
 					     sub-data-spec
 					     (item-val (field-data-type sub) sub item) 
 					     (+ sub-level 1)
+					     (getf sub :name)
 					     item
 					     spec-name
-					     )))))))))))
+					     ))
+				      (:div :class "card-footer"
+					    (:div :class "row"	  
+			      (:div :class "col"
+				    (:button ;;:tabindex -1 ;;when disabled
+				     :name "new" :type "submit" 
+				     :class "btn btn-outline-success"
+				  
+				     :aria-pressed "false"
+				
+				     :onclick 
+				    
+				     (grid-js-render "cl-wfx:ajax-grid" 
+						     spec-name
+						     :action "new")
+				     "+")
+				    
+				    
+				    ))))))))))))
       
       (when (equalp (parameter "action") "new")
 	(render-grid-edit spec-name fields 
 			  (make-instance spec-name) 
 			  parent-item
-			  parent-spec)))))
+			  parent-spec
+			  sub-name
+			  )))))
 
 (defun render-grid-sizing (spec-name)
   (monkey-html-lisp:htm
@@ -729,12 +774,16 @@
 	  (when filter-term
 			       
 	    (when (getf field :db-type)
-	      (when (equalp (field-data-type field) 'data-group)
+	      (when (or (equalp (field-data-type field) 'data-group)
+			(equalp (field-data-type field) 'data-list))
 		(dolist (sub-val (item-val (field-data-type field) field item))
 		  (when sub-val
 		    (let* ((full-type (cdr (getf field :db-type)))
 			   (accessor (getf full-type :key-accessor))
-			   (val (frmt "~A" (slot-value sub-val accessor))))
+			   (accessor-accessor (getf full-type :accessor-accessor))
+			   (val (if (getf full-type :accessor-accessor)
+				  (slot-value (slot-value sub-val accessor)
+					      accessor-accessor))))
 		      
 		      (if (filter-found-p filter-term val)
 			  (push t found)
@@ -752,25 +801,29 @@
 
 (defun search-function (spec-name search-term)
   (lambda (item)
-		       
+    
     (let ((found nil))
       (dolist (field (get-context-data-spec-attribute 
 		      spec-name 
 		      :data-fields))
 	(when (getf field :db-type)
-	  (when (equalp (field-data-type field) 'data-group)
+	  (when (or (equalp (field-data-type field) 'data-group)
+		    (equalp (field-data-type field) 'data-list))
 	    (dolist (sub-val (item-val (field-data-type field) field item))
-	      (when sub-val
-		(let* ((full-type (cdr (getf field :db-type)))
-		       (accessor (getf full-type :key-accessor))
-		       (val (slot-value sub-val accessor)))
-		  (when val
-		    (when (search search-term 
-				  val
-				  :test #'string-equal)
-		      (unless found		       
-					   
-			(setf found t))))))))
+		(when sub-val
+		  (let* ((full-type (cdr (getf field :db-type)))
+			 (accessor (getf full-type :key-accessor))	
+			 (accessor-accessor (getf full-type :accessor-accessor))
+			 (val (if (getf full-type :accessor-accessor)
+				  (slot-value (slot-value sub-val accessor)
+					      accessor-accessor))))
+		    (when val
+		      (when (search search-term 
+				    val
+				    :test #'string-equal)
+			(unless found		       
+			  
+			  (setf found t))))))))
 	  (let ((val (print-item-val 
 		      (field-data-type field) field item)))
 	    (when val
@@ -924,12 +977,12 @@
   
   (setf (gethash :root-data-spec (cache *context*)) spec-name)
   
+  (set-context-data-spec-attribute spec-name :list-field-name nil)
   
   (set-context-data-spec-attribute spec-name
 				   :search (or (parameter "search")
 					       (get-context-data-spec-attribute 
 						spec-name :search)))
-  
   (set-context-data-spec-attribute spec-name
 				     :filter t)
   
@@ -968,14 +1021,46 @@
     (set-context-data-spec-attribute (parameter "data-spec")
 				     :expand-id nil))
  
-  
-  
   (let ((page-items (fetch-grid-data spec-name)))
     
     (monkey-html-lisp:with-html	  
       (:div :class "card"
 		  (:h4 :class "card-title"
-		       (frmt "~A" (name (context-spec *context*))))
+			 (frmt "~A" (name (context-spec *context*)))
+			 (:button :class "float-right"
+				     :name "export" 
+				     :type "submit" 
+				     :class "btn btn-small btn-outline-success"
+				     :aria-pressed "false"
+				     :onclick 
+				     (grid-js-render "cl-wfx:ajax-grid" 
+						     spec-name
+						     :action "export")
+				     "Export")
+			 (when (string-equal (frmt "~A" spec-name) "company")
+			   (let ((campaigns (fetch-all "campaigns" :result-type 'list)))
+			     (monkey-html-lisp:htm
+			       (:button :class "float-right"
+					:name "assign-campaign" 
+					:type "submit" 
+					:class "btn btn-small btn-outline-success"
+					:aria-pressed "false"
+					:onclick 
+					(grid-js-render "cl-wfx:ajax-grid" 
+							spec-name
+							:action "assign-campain")
+					"<>")
+			       
+			       (:select  :class "float-right"
+				:name "campaign"
+				(dolist (option campaigns)
+				  (monkey-html-lisp:htm
+				    (:option :value (frmt "~S" (xdb2::id option)) 
+					     (frmt "~A" 
+						   (slot-value 
+						    option 
+						    (intern "NAME" 'cl-bizhub)))))))
+			       ))))
 		  (:div :class "card-header"
 			(render-grid-header spec-name
 					    (get-context-data-spec-attribute 
@@ -983,7 +1068,7 @@
 					     :data-fields)
 					    nil))
 		  (:div :class "card-block"
-			(render-grid-data spec-name page-items 0 nil nil))
+			(render-grid-data spec-name page-items 0 nil nil nil))
 	
 		  (:div :class "card-footer"
 			(:div :class "row"	  
@@ -995,8 +1080,9 @@
 				     :aria-pressed "false"
 				
 				     :onclick 
-				     (grid-js-render "cl-wfx:ajax-grid" spec-name 
-						     :widget-id spec-name
+				     (grid-js-render "cl-wfx:ajax-grid" 
+						     spec-name 
+						     
 						     :action "new")
 				     "+")
 				    (render-grid-paging spec-name)))))
@@ -1014,7 +1100,6 @@
 			   &key &allow-other-keys)
 
   (let* ((spec-name (read-symbol-from-string (parameter "data-spec")))
-	 
 	 (fields (get-context-data-spec-attribute 
 		  spec-name
 		  :data-fields)))
@@ -1029,8 +1114,7 @@
 			 :edit-item))
 	    (parent-item (get-context-data-spec-attribute 
 			  spec-name
-			  :parent-item))
-	)
+			  :parent-item)))
 	
 	(unless item
 	  (setf item (make-instance spec-name)))
@@ -1038,7 +1122,9 @@
 	(dolist (field fields)
 	  (when (and (getf field :editable)
 			 (getf field :db-type)
-			 (not (equalp (field-data-type field) 'data-group)))
+			 (and
+			  (not (equalp (field-data-type field) 'data-group))
+			  (not (equalp (field-data-type field) 'data-list))))
 		(let ((valid (if (equalp (field-data-type field) 'list-item)
 				 (validate-item-val (field-data-type field) 
 						    field 
@@ -1064,20 +1150,30 @@
 	  
 	  (dolist (field fields)
 	    (when (and (getf field :editable)
-			 (getf field :db-type)
-			 (not (equalp (field-data-type field) 'data-group)))
+		       (getf field :db-type)
+		       (and (not (equalp (field-data-type field) 'data-group))
+			    (not (equalp (field-data-type field) 'data-list))))
 		(set-item-val (field-data-type field) field item 
 			      (parameter (getf field :name)))))
 	  
-;;	  (break "~A ~A" item parent-item)
+
 	  (when (xdb2::top-level item)
 	    (persist-data item
 			  :collection-name (get-context-data-spec-attribute 
 					    spec-name
-					    :collection-name)
-			  ))
+					    :collection-name)))
 	  
 	  (when parent-item
+	    (let ((parent-slot (get-context-data-spec-attribute 
+				spec-name :list-field-name)))
+	    
+	      (when parent-slot
+		(setf (slot-value parent-item
+				  parent-slot)
+		      (append (slot-value parent-item
+					  parent-slot)
+			      (list item)))))
+	    
 	    (when (xdb2::top-level parent-item)
 	      (persist-data parent-item
 			    :collection-name (get-context-data-spec-attribute 

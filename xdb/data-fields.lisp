@@ -35,6 +35,9 @@
 (defmethod item-val ((type (eql 'data-group)) field item &key &allow-other-keys)
    (item-val* field item))
 
+(defmethod item-val ((type (eql 'data-list)) field item &key &allow-other-keys)
+   (item-val* field item))
+
 (defmethod item-val ((type (eql 'data-member)) field item &key &allow-other-keys)
    (item-val* field item))
 
@@ -137,3 +140,7 @@
 (defmethod set-item-val ((type (eql 'number)) field item value  
 			 &key &allow-other-keys)
   (set-item-val-read* field item value #'numberp "~R is not a number!"))
+
+(defmethod set-item-val ((type (eql 'date)) field item value  
+			 &key &allow-other-keys)
+  (set-item-val* field item value))

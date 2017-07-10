@@ -75,12 +75,16 @@
     (unless license-code
       (setf license-code (license-code item)))
     
+    (when (slot-exists-p item 'user-name)
+      (setf (user-name item) (or (and (current-user) 
+				 (email (current-user)))
+			    "admin@cl-wfx.com")))
+    
     (let ((collection (license-collection license-code collection-name)))
       (when (and (slot-exists-p item 'license-code)
 		 (not (license-code item)))
 	(setf (license-code item) license-code))
-      (xdb2:persist item :collection collection)))
-  )
+      (xdb2:persist item :collection collection))))
 
 (defmethod persist-data ((item xdb2:storable-object) 
 			 &key license-code collection-name 
