@@ -1,14 +1,15 @@
+/*
 @page{size:auto; margin:0;}
 
 .bodyclass {
     margin: auto;
     font-size:small;
 }
+*/
 
 html {
   font-size: 14px;
 }
-
 /*
 h1 {
     font-size: 200%;
@@ -55,15 +56,16 @@ select {
 
 */
 
+
 .card-title {
    font-size:120%;
 }
 
+
+
 .btn {
     font-size:small;
 }
-
-
 /*
     10px = 0.625rem
     12px = 0.75rem

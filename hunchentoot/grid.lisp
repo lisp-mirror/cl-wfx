@@ -173,15 +173,20 @@
 (defmethod render-input-val ((type (eql 'list-item)) field item &key &allow-other-keys)
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
-	 (list (getf full-type :list)))
+	 (list (getf full-type :list))
+	 (selected (find (item-val type field item) list :test #'equalp))
+	 )
 
     (monkey-html-lisp:htm
       (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value "")
 	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button" :id name :name name :data-toggle "dropdown"
+		     :type "button" 
 		     :aria-haspopup "true" :aria-expanded "false"
-		     (find (item-val type field item) list :test #'equalp))
-	    (:div :class "dropdown-menu"
+		     (if selected
+			 (frmt "~S" selected)))
+	    (:div :class "dropdown-menu" 
 		  (dolist (option list)
 		    (monkey-html-lisp:htm
 		      (:a :class "dropdown-item" :href "#"
@@ -210,10 +215,47 @@
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" name) :value "")
 	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button" :id (frmt "wtf-~A" name) :name (frmt "wtf-~A" name)
+		     :type "button"
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
-		     :value (if selected (frmt "~A" (xdb2:id selected)))
+		     (if selected
+			 (slot-value
+			  selected
+			    (getf full-type :key-accessor))))
+	   
+	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+		  (dolist (option list)
+		    (monkey-html-lisp:htm
+		      (:span :class "dropdown-item" 
+			     (:input :type "hidden"
+				     :value (frmt "~S" option))
+			  (frmt "~S" option)))))))))
+
+(defmethod render-input-val ((type (eql 'data-group)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'data-list)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql 'data-member)) field item 
+			     &key &allow-other-keys)
+;;  (break "~A ~A" item parent-item )
+  (let* ((name (getf field :name))
+	 (full-type (cdr (getf field :db-type)))
+	 (data-spec (get-data-spec (getf full-type :data-spec)))
+	 (list (fetch-all (collection-name data-spec) :result-type 'list))
+	 (selected (find (slot-value item name)  
+			    list :test #'equalp)))
+
+    
+    (monkey-html-lisp:htm
+      (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value "")
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
 			 (slot-value
 			  selected
@@ -222,9 +264,8 @@
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		    (dolist (option list)
 		      (monkey-html-lisp:htm
-			(:span :class "dropdown-item" 
-			      
-			       (:input :type "hidden" :id "bullshit" 
+			(:span :class "dropdown-item" 			      
+			       (:input :type "hidden"
 				       :value (frmt "~A" (xdb2:id option)))
 			       (slot-value option (getf full-type :key-accessor))))))))))
 
@@ -467,9 +508,104 @@
 		 "grid-table"
 		 (js-pair "data-spec"
 			  (frmt "~S" spec-name))
-		 
-		 
 		 (js-pair "action" "grid-col-filter")))))
+
+
+
+(defun rough-half-list (list &optional (half-if-length 2))
+  (when list
+    (let ((length (length list))
+	 (halfs))
+      (if (and (> length 1)
+	       (> length half-if-length))
+	  (multiple-value-bind (half)
+	      (floor length 2)
+	    (list
+	     (subseq list 0 half)
+	     (subseq list half)))
+	  (list list))
+      
+      )))
+
+(defun get-header-fields (fields)
+  (let ((header-fields))
+    (dolist (field fields)
+      (when (and (getf field :display) 
+		 (and (not (equalp (field-data-type field)
+				   'data-group))
+		      (not (equalp (field-data-type field)
+				   'data-list))))
+	(pushnew field header-fields)))
+    (reverse header-fields)))
+
+(defun render-filter-row (spec-name fields sub-p subs)
+  (monkey-html-lisp:htm
+    (:div :class "collapse" :id "collapseFilter"
+     (:div :class "row"	
+	   (when subs
+	     (monkey-html-lisp:htm
+	       (:div :class "col-sm-1"
+		     " ")))
+	   
+	   (dolist (half (rough-half-list (get-header-fields fields) 7))
+	     (monkey-html-lisp:htm
+	     ;;  (break "f half ~A" half)
+	       (:div :class "col"
+		     (:div :class "row"
+			   (dolist (field half)
+			     (let* ((name (getf field :name)))
+			       
+			       (monkey-html-lisp:htm
+				 (:div :class "col"
+				       (monkey-html-lisp:htm
+					 (render-grid-col-filter 
+					  spec-name name))))))))))
+	   (if sub-p
+	     (monkey-html-lisp:htm	      
+	       (:div :class "col-sm-2"
+		     (render-grid-search spec-name)))
+	     (monkey-html-lisp:htm	      
+	       (:div :class "col-sm-2"))
+	     )))))
+
+(defun render-header-row (spec-name fields sub-p subs)
+  (monkey-html-lisp:htm
+    (:div :class "row"	
+	  (when subs
+	    (monkey-html-lisp:htm
+	      (:div :class "col-sm-1"
+		    " ")))
+	  
+	  (dolist (half (rough-half-list (get-header-fields fields) 7))
+	  ;;  (break "h half ~A" half)
+	    (monkey-html-lisp:htm
+	      (:div :class "col"
+		    (:div :class "row"
+			;;  (break "wtf ~A" half)
+			  (dolist (field half)
+			    
+			    (let* ((name (getf field :name))
+				   (label (getf field :label)))
+						  
+			      (monkey-html-lisp:htm
+				(:div :class "col"
+				      (:h6 (if label
+					       label
+					       (string-capitalize 
+						(substitute #\Space  (character "-")  
+							    (format nil "~A" name) 
+							    :test #'equalp)))))))))))
+	    )
+	  
+	  (if sub-p
+	    (monkey-html-lisp:htm	      
+	      (:div :class "col-sm-2"
+		    (render-grid-sizing spec-name)))
+	    (monkey-html-lisp:htm	      
+	      (:div :class "col-sm-2"))
+	    
+	    )))
+  )
 
 (defun render-grid-header (spec-name fields sub-p)
   (let ((subs))
@@ -478,49 +614,25 @@
       (cond ((or (equalp (field-data-type field) 'data-group)
 		 (equalp (field-data-type field) 'data-list))
 	     (pushnew field subs))))
+    (unless sub-p
+	    (render-filter-row spec-name fields sub-p subs))
+    (render-header-row spec-name fields sub-p subs)
     
-    (monkey-html-lisp:htm
-      (:div :class "row"	
-	    (when subs
-	      (monkey-html-lisp:htm
-		(:div :class "col-sm-1"
-		      " ")))
-	    
-	    (dolist (field fields)
-	      
-	      (when (and (getf field :display) 
-			 (and (not (equalp (field-data-type field)
-					  'data-group))
-			     (not (equalp (field-data-type field)
-					  'data-list))))
-		(let* ((name (getf field :name))
-		       (label (getf field :label)))
-		  
-		  (monkey-html-lisp:htm
-		    (:div :class "col"
-			  (:div :class "row"
-				
-				(:h6 (if label
-					 label
-					 (string-capitalize 
-					  (substitute #\Space  (character "-")  
-						      (format nil "~A" name) 
-						      :test #'equalp)))))
-			  (unless sub-p
-			    (monkey-html-lisp:htm
-			      (:div :class "row"
-				    (render-grid-col-filter spec-name name)
-				    )))
-			 
-			  )
-		    ))))
-	    (unless sub-p
-	      (monkey-html-lisp:htm	      
-		(:div :class "col" ;;column spacing for buttons
-		      (:div :class "row"	  
-			    (:div :class "col"
-				  (render-grid-search spec-name)
-				  (render-grid-sizing spec-name))))))))))
+    ))
+
+(defun get-data-fields (fields)
+  (let ((data-fields))
+    (dolist (field fields)
+      (when (and (getf field :display) 
+		 (and (not (equalp (field-data-type field)
+				   'data-group))
+		      (not (equalp (field-data-type field)
+				   'data-list))))
+	(pushnew field data-fields)))
+    (reverse data-fields))
+  
+  
+  )
 
 (defun render-grid-data (spec-name page-items sub-level sub-name parent-item parent-spec)  
   (let ((sub-level-p (or
@@ -548,23 +660,21 @@
 		      (monkey-html-lisp:htm
 			(:div :class "col-sm-1"
 			      (render-expand-buttons subs spec-name item))))
-		    
-		  (dolist (field fields)
-		    (when (and (getf field :display) 
-			       (and (not (equalp (field-data-type field)
-						 'data-group))
-				    (not (equalp (field-data-type field)
-						 'data-list))))
-		      (monkey-html-lisp:htm 
-			(:div :class "col"
-				
-			      (let ((val (print-item-val 
-					  (field-data-type field) field item)))
-				(if (> (length val) 100 )
-				    (frmt "~A ..." (subseq val 0 100))
-				    val)))))))
+		  (dolist (half (rough-half-list (get-data-fields fields)))
+		    (monkey-html-lisp:htm
+		      (:div :class "col"
+			    (:div :class "row"
+				  (dolist (field half)
+				    (monkey-html-lisp:htm 
+				      (:div :class "col"
+					    
+					    (let ((val (print-item-val 
+							(field-data-type field) field item)))
+					      (if (> (length val) 100 )
+						  (frmt "~A ..." (subseq val 0 100))
+						  val))))))))))
 
-		(:div :class "col "
+		(:div :class "col-sm-2"
 		      (:div :class "btn-group float-right"
 			    (render-grid-buttons spec-name item ))))
 	 
@@ -604,11 +714,11 @@
 						     (getf sub :name))))
 				    (:div :class "card-header"
 					  (render-grid-header
-					   sub-data-spec
-					   (get-context-data-spec-attribute 
-					    sub-data-spec :data-fields)
-					     
-					   t))
+						       sub-data-spec
+						       (get-context-data-spec-attribute 
+							sub-data-spec :data-fields)
+						       
+						       t))
 				    (:div :class "card-block"
 					  (render-grid-data 
 					   sub-data-spec
@@ -621,7 +731,7 @@
 				    (:div :class "card-footer"
 					  (:div :class "row"	  
 						(:div :class "col"
-						      (:button ;;:tabindex -1 ;;when disabled
+						      (:button
 						       :name "new" :type "submit" 
 						       :class "btn btn-outline-success"
 							 
@@ -1034,67 +1144,88 @@
     
     (monkey-html-lisp:with-html	  
       (:div :class "card"
-		  (:h4 :class "card-title"
-			 (frmt "~A" (name (context-spec *context*)))
-			 (:button :class "float-right"
-				     :name "export" 
-				     :type "submit" 
-				     :class "btn btn-small btn-outline-success"
-				     :aria-pressed "false"
-				     :onclick 
-				     (grid-js-render "cl-wfx:ajax-grid" 
-						     spec-name
-						     :action "export")
-				     "Export")
-			 (when (string-equal (frmt "~A" spec-name) "company")
-			   (let ((campaigns (fetch-all "campaigns" :result-type 'list)))
-			     (monkey-html-lisp:htm
-			       (:button :class "float-right"
-					:name "assign-campaign" 
-					:type "submit" 
-					:class "btn btn-small btn-outline-success"
-					:aria-pressed "false"
-					:onclick 
-					(grid-js-render "cl-wfx:ajax-grid" 
-							spec-name
-							:action "assign-campain")
-					"<>")
-			       
-			       (:select  :class "float-right"
-				:name "campaign"
-				(dolist (option campaigns)
-				  (monkey-html-lisp:htm
-				    (:option :value (frmt "~S" (xdb2::id option)) 
-					     (frmt "~A" 
-						   (slot-value 
-						    option 
-						    (intern "NAME" 'cl-bizhub)))))))
-			       ))))
-		  (:div :class "card-header"
-			(render-grid-header spec-name
-					    (get-context-data-spec-attribute 
-					     spec-name 
-					     :data-fields)
-					    nil))
-		  (:div :class "card-block"
-			(render-grid-data spec-name page-items 0 nil nil nil))
+	    (:h4 :class "card-title"
+		 (frmt "~A" (name (context-spec *context*)))
+		 (:button :class "btn btn-small btn-outline-secondary float-right"
+				:name "assign-campaign" 
+			
+				:data-toggle "collapse" :href "#collapseFilter" 
+				:aria-expanded "false" :aria-controls="collapseFilter"
+				:aria-pressed "false"
+				(:i :class "fa fa-filter "))
+		 
+
+		 (:button :class "btn btn-small btn-outline-secondary float-right"
+			  :name "export" 
+			  :type "submit" 
+			
+			  :aria-pressed "false"
+			  :onclick 
+			  (grid-js-render "cl-wfx:ajax-grid" 
+					  spec-name
+					  :action "export")
+			  (:i :class "fa fa-download"))
+		 (when (string-equal (frmt "~A" spec-name) "company")
+		   (let ((campaigns (fetch-all "campaigns" :result-type 'list)))
+		     (monkey-html-lisp:htm
+		       (:button :class "btn btn-small btn-outline-success float-right"
+				:name "assign-campaign" 
+				:type "submit" 
+			
+				:aria-pressed "false"
+				:onclick 
+				(grid-js-render "cl-wfx:ajax-grid" 
+						spec-name
+						:action "assign-campain")
+				"<>")
+			       			       
+		       (:div :class "dropdown float-right"
+			     (:input :type "hidden" :class "selected-value" 
+				     :name "campaign" :value "")
+			     (:button :class "btn btn-secondary dropdown-toggle"
+				      :type "button"
+				      :data-toggle "dropdown"
+				      :aria-haspopup "true" :aria-expanded "false"
+				      (if (parameter "campaign")
+					  (parameter "campaign")
+					  "Assign Campaign"))
+	   
+			     (:div :class "dropdown-menu" 
+				   ;; :aria-labelledby "campaign"
+				   (dolist (option campaigns)
+				     (monkey-html-lisp:htm
+				       (:span :class "dropdown-item" 			     
+					      (:input :type "hidden"
+						      :value (frmt "~A" (xdb2:id option)))
+					      (frmt "~A" 
+						    (slot-value 
+						     option 
+						     (intern "NAME" 'cl-bizhub))))))))))))
+	    (:div :class "card-header"
+		  (render-grid-header spec-name
+				      (get-context-data-spec-attribute 
+				       spec-name 
+				       :data-fields)
+				      nil))
+	    (:div :class "card-block"
+		  (render-grid-data spec-name page-items 0 nil nil nil))
 	
-		  (:div :class "card-footer"
-			(:div :class "row"	  
-			      (:div :class "col"
-				    (:button ;;:tabindex -1 ;;when disabled
-				     :name "expand" :type "submit" 
-				     :class "btn btn-outline-success"
+	    (:div :class "card-footer"
+		  (:div :class "row"	  
+			(:div :class "col"
+			      (:button ;;:tabindex -1 ;;when disabled
+			       :name "expand" :type "submit" 
+			       :class "btn btn-outline-success"
 				  
-				     :aria-pressed "false"
+			       :aria-pressed "false"
 				
-				     :onclick 
-				     (grid-js-render "cl-wfx:ajax-grid" 
-						     spec-name 
+			       :onclick 
+			       (grid-js-render "cl-wfx:ajax-grid" 
+					       spec-name 
 						     
-						     :action "new")
-				     "+")
-				    (render-grid-paging spec-name)))))
+					       :action "new")
+			       "+")
+			      (render-grid-paging spec-name)))))
       )))
 
 
