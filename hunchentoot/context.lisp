@@ -254,13 +254,14 @@
 (monkey-lisp::define-monkey-macro render-page (menu-p &body body)
   
   `(:html
-	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
-	
-	"<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js\"></script>"
-	" <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
-	"<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
-	
-	"<script src=\"../web/codemirror/lib/codemirror.js\"></script>
+    (:head
+     "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
+     
+     "<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>"
+     " <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
+     "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
+     
+     "<script src=\"../web/codemirror/lib/codemirror.js\"></script>
 <link rel=\"stylesheet\" href=\"../web/codemirror/lib/codemirror.css\">
 <script src=\"../web/codemirror/mode/commonlisp/commonlisp.js\"></script>
 <script src=\"../web/codemirror/addon/edit/closebrackets.js\"></script>
@@ -270,161 +271,172 @@
 <link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 "
-	
-	
-	(:body 
-	 (:input :type "hidden" :id "contextid" :value (context-id *context*))
-	
-	 (if ,(not menu-p)	 
-	     (monkey-html-lisp:htm
-	       (:div :class "container"
-		     ,@body))
-	     (monkey-html-lisp:htm
-	       (:nav 
-		:class "navbar sticky-top navbar-toggleable-md hidden-print"
-		
-		(if (current-user)
-		    (monkey-html-lisp:htm 
-		      (:button :class "navbar-toggler navbar-toggler-left"
-			       :type "button btn-small"
-			       :data-toggle "collapse"
-			       :data-target "#menushit"
-			       :aria-controls "menushit"
-			       :aria-expanded "true"
-			       :aria-label "Toggle menu"
-			       (:span :class "navbar-toggler-icon"))))
-		
-		(:a :class "navbar-brand" :href "#" 
-		    (:img :src "../sys/web/images/logo-small.png")
-		    (system-name *system*))
-		(:div :class "collapse navbar-collapse" :id "menushit"
-		 (:span :class "navbar-text mr-auto"
-			(frmt "Entities: ~A" (current-entities (active-user))))
-		 
-		 (:div :class "nav-item dropdown"
-		       
-		       (:a :class "nav-link dropdown-toggle" 
-			   :href ""
-			   :id "userDropdown" 
-			   :data-toggle "dropdown" 
-			   :aria-haspopup="true"
-			   :aria-expanded "false" 
-			   (if (current-user) 
-			       (monkey-html-lisp:htm (email (current-user)))))
-		       (:div :class "dropdown-menu":aria-labelledby "userDropdown"
-			     
-			     (let ((sys-mod 
-					  (fetch-item "modules"
-						      :test (lambda (doc)
-							      (string-equal
-							       "System Admin" 
-							       (module-name doc))))))
-				     
-				     
-				     (dolist (item (menu-items (first (menu sys-mod))))
-				       
-				       (let ((parameters))
-					 
-					 (dolist (param (context-parameters item))
-					   
-					   (setf parameters 
-						 (if parameters
-						     (frmt "~A&~A=~A" 
-							   parameters
-							   (parameter-name param)
-							   (parameter-value param))
-						     (frmt "~A=~A" 
-							   (parameter-name param)
-							   (parameter-value param)))))
-					 
-					 (monkey-html-lisp:htm
-					   (:a :class "dropdown-item"
-					       :href 
-					       (if parameters
-						   (frmt "~A?~A" 
-							 (context-url 
-							  (context-spec item)
-							  sys-mod)
-							 parameters)
-						   (context-url 
-						    (context-spec item)
-						    sys-mod))
-					       (item-name item)
-					       
-					       )))))))
-		 
-		 ))
-	       (:nav :class "navbar"
-		(if (current-user)
-		    (monkey-html-lisp:htm 
-		      (:button :class "navbar-toggler navbar-toggler-left"
-			       :type "button btn-small"
-			       :data-toggle "collapse"
-			       :data-target "#exNavbarLeft"
-			       :aria-controls "exNavbarLeft"
-			       :aria-expanded "true"
-			       :aria-label "Toggle application menu"
-			       "&#9776;")))
-		(if (current-user)
-		    (monkey-html-lisp:htm
-		      (:button :class "navbar-toggler navbar-toggler-right"
-			       :type "button"
-			       :data-toggle "collapse"
-			       :data-target "#exNavbarRight"
-			       :aria-controls "exNavbarRight"
-			       :aria-expanded "false"
-			       :aria-label "Toggle system menu"
-			       "&#9776;")))
-		
-		)
-	      
-	       (:br "")
-	       (:div :class "container-fluid"
-		     
-		     (:div :class "row"
-			   (:div :class "collapse col-md-2 col-md-auto show hidden-print"
-				 :id "exNavbarLeft"
-				 (:nav :class "nav nav-pills flex-column"
-				       (dolist (mod (user-mods))
-					 (dolist (menu (menu mod))
+     
 
-					   (dolist (item (menu-items menu))
-					     (monkey-html-lisp:htm
-					       (:a :class 
-						   "nav-link ~A"
-						   :href (url 
-							  (context-spec item))
-						   (item-name item))))))))
-		    
-			   (:div  :class "col" :id "grid-table"
-				  ,@body)
-		    
-			   (:div :class "collapse col-md-2 hidden-print " 
-				 :id "exNavbarRight" :style "background-color:#FFFFFF"
-				 (:form
-				  (:div :class "row bg-faded"
-					"Accessible License Codes")
-				  (render-licence-codes)				 
-				 
-				  (:button
-				   :name "set-licenses" 
-				   :type "submit" 
-				   :formmethod "post"
-				   :class "btn btn-outline-success"
-				   :aria-pressed "false"
-				   :value "set-licenses"
-				   "Set Licenses"))
+     )
+     
+     
+    (:body 
+     (:input :type "hidden" :id "contextid" :value (context-id *context*))
+
+     (if ,(not menu-p)	 
+	 (monkey-html-lisp:htm
+	   (:div :class "container"
+		 ,@body))
+	 (monkey-html-lisp:htm
+	   (:nav 
+	    :class "navbar sticky-top navbar-toggleable-md hidden-print"
+	    
+	    (if (current-user)
+		(monkey-html-lisp:htm 
+		  (:button :class "navbar-toggler navbar-toggler-left"
+			   :type "button btn-small"
+			   :data-toggle "collapse"
+			   :data-target "#menushit"
+			   :aria-controls "menushit"
+			   :aria-expanded "true"
+			   :aria-label "Toggle menu"
+			   (:span :class "navbar-toggler-icon"))))
+	    
+	    (:a :class "navbar-brand" :href "#" 
+		(:img :src "../sys/web/images/logo-small.png")
+		(system-name *system*))
+	    (:div :class "collapse navbar-collapse" :id "menushit"
+		  (:span :class "navbar-text mr-auto"
+			 (frmt "Entities: ~A" (current-entities (active-user))))
+		  
+		  (:div :class "nav-item dropdown"
 			
-				 (:div :class "row bg-faded"
-				       "Accessible Entities")
-				 (:div :class "row"
-				       (render-entity-tree 
-					(accessible-entities* (current-user))))
-				 
-				 )))))
-	 
-	 (:script ,(frmt	      
-"function ajax_call(func, callback, args, widget_args) {
+			(:a :class "nav-link dropdown-toggle" 
+			    :href ""
+			    :id "userDropdown" 
+			    :data-toggle "dropdown" 
+			    :aria-haspopup="true"
+			    :aria-expanded "false" 
+			    (if (current-user) 
+				(monkey-html-lisp:htm (email (current-user)))))
+			(:div :class "dropdown-menu":aria-labelledby "userDropdown"
+			      
+			      (let ((sys-mod 
+				     (fetch-item "modules"
+						 :test (lambda (doc)
+							 (string-equal
+							  "System Admin" 
+							  (module-name doc))))))
+				
+				
+				(dolist (item (menu-items (first (menu sys-mod))))
+				  
+				  (let ((parameters))
+				    
+				    (dolist (param (context-parameters item))
+				      
+				      (setf parameters 
+					    (if parameters
+						(frmt "~A&~A=~A" 
+						      parameters
+						      (parameter-name param)
+						      (parameter-value param))
+						(frmt "~A=~A" 
+						      (parameter-name param)
+						      (parameter-value param)))))
+				    
+				    (monkey-html-lisp:htm
+				      (:a :class "dropdown-item"
+					  :href 
+					  (if parameters
+					      (frmt "~A?~A" 
+						    (context-url 
+						     (context-spec item)
+						     sys-mod)
+						    parameters)
+					      (context-url 
+					       (context-spec item)
+					       sys-mod))
+					  (item-name item)
+					  
+					  )))))))
+		  
+		  ))
+	   (:nav :class "navbar"
+		 (if (current-user)
+		     (monkey-html-lisp:htm 
+		       (:button :class "navbar-toggler navbar-toggler-left"
+				:type "button btn-small"
+				:data-toggle "collapse"
+				:data-target "#exNavbarLeft"
+				:aria-controls "exNavbarLeft"
+				:aria-expanded "true"
+				:aria-label "Toggle application menu"
+				"&#9776;")))
+		 (if (current-user)
+		     (monkey-html-lisp:htm
+		       (:button :class "navbar-toggler navbar-toggler-right"
+				:type "button"
+				:data-toggle "collapse"
+				:data-target "#exNavbarRight"
+				:aria-controls "exNavbarRight"
+				:aria-expanded "false"
+				:aria-label "Toggle system menu"
+				"&#9776;")))
+		 
+		 )
+	   
+	   (:br "")
+	   (:div :class "container-fluid"
+		 
+		 (:div :class "row"
+		       (:div :class "collapse col-md-2 col-md-auto show hidden-print"
+			     :id "exNavbarLeft"
+			     (:nav :class "nav nav-pills flex-column"
+				   (dolist (mod (user-mods))
+				     (dolist (menu (menu mod))
+
+				       (dolist (item (menu-items menu))
+					 (monkey-html-lisp:htm
+					   (:a :class 
+					       "nav-link ~A"
+					       :href (url 
+						      (context-spec item))
+					       (item-name item))))))))
+		       
+		       (:div  :class "col" :id "grid-table"
+			      ,@body)
+		       
+		       (:div :class "collapse col-md-2 hidden-print " 
+			     :id "exNavbarRight" :style "background-color:#FFFFFF"
+			     (:form
+			      (:div :class "row bg-faded"
+				    "Accessible License Codes")
+			      (render-licence-codes)				 
+			      
+			      (:button
+			       :name "set-licenses" 
+			       :type "submit" 
+			       :formmethod "post"
+			       :class "btn btn-outline-success"
+			       :aria-pressed "false"
+			       :value "set-licenses"
+			       "Set Licenses"))
+			     
+			     (:div :class "row bg-faded"
+				   "Accessible Entities")
+			     (:div :class "row"
+				   (render-entity-tree 
+				    (accessible-entities* (current-user))))
+			     
+			     )))))
+
+
+     "<script>$(document).on('click', '.dropdown-item', function(){
+       var selVal = $(this).children().first();
+       var selText = $(this).text();
+       $(this).parents('.dropdown').find('.dropdown-toggle').html(selText);
+       $(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
+});</script>"
+     
+     (:script ,(frmt	      
+		"function ajax_call(func, callback, args, widget_args) {
 
     var uri = '~Aajax/' + encodeURIComponent(func);
     var post_parameters = '&contextid=' + contextid.value;

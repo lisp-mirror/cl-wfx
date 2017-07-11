@@ -176,14 +176,16 @@
 	 (list (getf full-type :list)))
 
     (monkey-html-lisp:htm
-      (:select :name name
-       (dolist (option list)
-	 (if (string-equal
-	      (print-item-val type field item) (frmt "~S" option))
-	     (monkey-html-lisp:htm
-	       (:option :selected "" :value (frmt "~S" option) option))
-	     (monkey-html-lisp:htm
-	       (:option :value (frmt "~S" option) option))))))))
+      (:div :class "dropdown"
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button" :id name :name name :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (find (item-val type field item) list :test #'equalp))
+	    (:div :class "dropdown-menu"
+		  (dolist (option list)
+		    (monkey-html-lisp:htm
+		      (:a :class "dropdown-item" :href "#"
+			  (frmt "~S" option)))))))))
 
 (defmethod render-input-val ((type (eql 'data-group)) field item &key &allow-other-keys)
   (render-input-val* type field item))
@@ -197,24 +199,34 @@
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
 	 (data-spec (get-data-spec (getf full-type :data-spec)))
-	 (list (fetch-all (collection-name data-spec) :result-type 'list)))
+	 (list (fetch-all (collection-name data-spec) :result-type 'list))
+	 (selected (find (slot-value item name)  
+			    list :test #'equalp))
+	 )
 
+    
     (monkey-html-lisp:htm
-      (:select :name name
-       (dolist (option list)
-	 (monkey-html-lisp:htm
-	   (if (equalp (xdb2::id option) (xdb2::id item))
-	     (monkey-html-lisp:htm
-	       (:option :selected "" :value (frmt "~S" (xdb2::id option)) 
-			(frmt "~A" (slot-value option (getf full-type :key-accessor)))))
-	     (monkey-html-lisp:htm
-	       (:option :value (frmt "~S" (xdb2::id option)) 
-		    (frmt "~A" (slot-value option (getf full-type :key-accessor))))))))))))
-
-
-
-
-
+      (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value "")
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button" :id (frmt "wtf-~A" name) :name (frmt "wtf-~A" name)
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     :value (if selected (frmt "~A" (xdb2:id selected)))
+		     (if selected
+			 (slot-value
+			  selected
+			    (getf full-type :key-accessor))))
+	   
+	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+		    (dolist (option list)
+		      (monkey-html-lisp:htm
+			(:span :class "dropdown-item" 
+			      
+			       (:input :type "hidden" :id "bullshit" 
+				       :value (frmt "~A" (xdb2:id option)))
+			       (slot-value option (getf full-type :key-accessor))))))))))
 
 (defun grid-js-render-form-values (renderer spec-name form-id 
 				   &key widget-id action item-id )
@@ -869,8 +881,7 @@
     
     (fetch-grid-page-data spec-name items)))
 
-(defun render-grid-paging (spec-name)
-  
+(defun render-grid-paging (spec-name)  
   (let ((active-page (get-context-data-spec-attribute 
 		      spec-name :active-page))
 	(how-many-rem (get-context-data-spec-attribute 
@@ -965,6 +976,8 @@
 
 
 (defun render-grid (spec-name) 
+  
+  ;;(break "shit ~A" (hunchentoot:post-parameters*))
   
   (parse-data-spec-for-grid spec-name)
   
@@ -1094,7 +1107,7 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
-
+  
   (let* ((spec-name (read-symbol-from-string (parameter "data-spec")))
 	 (fields (get-context-data-spec-attribute 
 		  spec-name
