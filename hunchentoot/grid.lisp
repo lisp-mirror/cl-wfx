@@ -327,7 +327,7 @@
 	  (monkey-html-lisp:htm
 	    (:button
 	     :name "expand" :type "submit" 
-	     :class "btn btn-outline-primary btn-sm active"				 
+	     :class "btn btn-outline-primary btn-sm active "				 
 	     :aria-pressed "true"
 	     :onclick (grid-js-render "cl-wfx:ajax-grid" spec-name
 				      :action "unexpand"
@@ -510,12 +510,9 @@
 			  (frmt "~S" spec-name))
 		 (js-pair "action" "grid-col-filter")))))
 
-
-
 (defun rough-half-list (list &optional (half-if-length 2))
   (when list
-    (let ((length (length list))
-	 (halfs))
+    (let ((length (length list)))
       (if (and (> length 1)
 	       (> length half-if-length))
 	  (multiple-value-bind (half)
@@ -523,9 +520,7 @@
 	    (list
 	     (subseq list 0 half)
 	     (subseq list half)))
-	  (list list))
-      
-      )))
+	  (list list)))))
 
 (defun get-header-fields (fields)
   (let ((header-fields))
@@ -551,7 +546,7 @@
 	     (monkey-html-lisp:htm
 	     ;;  (break "f half ~A" half)
 	       (:div :class "col"
-		     (:div :class "row"
+		     (:div :class "row no-gutters"
 			   (dolist (field half)
 			     (let* ((name (getf field :name)))
 			       
@@ -561,11 +556,12 @@
 					 (render-grid-col-filter 
 					  spec-name name))))))))))
 	   (if sub-p
-	     (monkey-html-lisp:htm	      
-	       (:div :class "col-sm-2"
-		     (render-grid-search spec-name)))
-	     (monkey-html-lisp:htm	      
-	       (:div :class "col-sm-2"))
+	       (monkey-html-lisp:htm	      
+		 (:div :class "col-sm-2"))
+	       (monkey-html-lisp:htm	      
+		 (:div :class "col-sm-2"
+		       (render-grid-search spec-name)))
+	       
 	     )))))
 
 (defun render-header-row (spec-name fields sub-p subs)
@@ -580,7 +576,7 @@
 	  ;;  (break "h half ~A" half)
 	    (monkey-html-lisp:htm
 	      (:div :class "col"
-		    (:div :class "row"
+		    (:div :class "row no-gutters"
 			;;  (break "wtf ~A" half)
 			  (dolist (field half)
 			    
@@ -588,21 +584,20 @@
 				   (label (getf field :label)))
 						  
 			      (monkey-html-lisp:htm
-				(:div :class "col"
+				(:div :class "col text-left"
 				      (:h6 (if label
 					       label
 					       (string-capitalize 
 						(substitute #\Space  (character "-")  
 							    (format nil "~A" name) 
-							    :test #'equalp)))))))))))
-	    )
+							    :test #'equalp))))))))))))
 	  
 	  (if sub-p
 	    (monkey-html-lisp:htm	      
+	      (:div :class "col-sm-2"))
+	    (monkey-html-lisp:htm	      
 	      (:div :class "col-sm-2"
 		    (render-grid-sizing spec-name)))
-	    (monkey-html-lisp:htm	      
-	      (:div :class "col-sm-2"))
 	    
 	    )))
   )
@@ -615,7 +610,8 @@
 		 (equalp (field-data-type field) 'data-list))
 	     (pushnew field subs))))
     (unless sub-p
-	    (render-filter-row spec-name fields sub-p subs))
+	 (render-filter-row spec-name fields sub-p subs)
+      )
     (render-header-row spec-name fields sub-p subs)
     
     ))
@@ -628,7 +624,8 @@
 				   'data-group))
 		      (not (equalp (field-data-type field)
 				   'data-list))))
-	(pushnew field data-fields)))
+	(pushnew field data-fields)
+	))
     (reverse data-fields))
   
   
@@ -651,33 +648,35 @@
 	(cond ((or (equalp (field-data-type field) 'data-group)
 		   (equalp (field-data-type field) 'data-list))
 	       (pushnew field subs))))
-      
       (dolist (item page-items)
 	(monkey-html-lisp:htm
-	  (:div :class "row"
+	  (:div :class "row "
+		
 		(monkey-html-lisp:htm
 		  (if subs
 		      (monkey-html-lisp:htm
 			(:div :class "col-sm-1"
 			      (render-expand-buttons subs spec-name item))))
-		  (dolist (half (rough-half-list (get-data-fields fields)))
+		  (dolist (half (rough-half-list (get-data-fields fields) 7))
 		    (monkey-html-lisp:htm
 		      (:div :class "col"
-			    (:div :class "row"
+			    (:div :class "row no-gutters"
 				  (dolist (field half)
 				    (monkey-html-lisp:htm 
-				      (:div :class "col"
-					    
-					    (let ((val (print-item-val 
-							(field-data-type field) field item)))
-					      (if (> (length val) 100 )
-						  (frmt "~A ..." (subseq val 0 100))
-						  val))))))))))
+				      (:div 
+				       :class "col text-left text-truncate"
+				       
+				       (let ((val (print-item-val 
+						   (field-data-type field) field item)))
+					 (if (> (length val) 100)
+					     (subseq val 0 100)
+					     val))
+				       ))))))))
 
 		(:div :class "col-sm-2"
 		      (:div :class "btn-group float-right"
 			    (render-grid-buttons spec-name item ))))
-	 
+			
 	  (if (and (or (and (equalp (parameter "action") "edit")
 			    (parameter "item-id")) 
 		       (gethash :validation-error-item-id
@@ -687,24 +686,24 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (xdb2:id item))))
-				
+			    
 	      (render-grid-edit spec-name fields item
 				parent-item parent-spec sub-name))
-	    
+			
 	  (when (equalp (ensure-parse-integer 
 			 (get-context-data-spec-attribute spec-name
 							  :expand-id)) 
 			(xdb2:id item))
-	      
+			  
 	    (unless sub-level-p
 	      (setf (gethash :root-item (cache *context*)) item))
-	      
+			  
 	    (dolist (sub subs)
 	      (let* ((attributes (cdr (getf sub :db-type)))
 		     (sub-data-spec (getf attributes :data-spec)))
-		  
+			      
 		(parse-data-spec-for-grid sub-data-spec)
-		  
+			      
 		(monkey-html-lisp:htm
 		  (:div :class "row"
 			(:div :class "col"
@@ -714,11 +713,11 @@
 						     (getf sub :name))))
 				    (:div :class "card-header"
 					  (render-grid-header
-						       sub-data-spec
-						       (get-context-data-spec-attribute 
-							sub-data-spec :data-fields)
-						       
-						       t))
+					   sub-data-spec
+					   (get-context-data-spec-attribute 
+					    sub-data-spec :data-fields)
+							 
+					   t))
 				    (:div :class "card-block"
 					  (render-grid-data 
 					   sub-data-spec
@@ -734,11 +733,11 @@
 						      (:button
 						       :name "new" :type "submit" 
 						       :class "btn btn-outline-success"
-							 
+								     
 						       :aria-pressed "false"
-							 
+								     
 						       :onclick 
-							 
+								     
 						       (grid-js-render "cl-wfx:ajax-grid" 
 								       spec-name
 								       :action "new")
@@ -925,13 +924,17 @@
 	  (when (or (equalp (field-data-type field) 'data-group)
 		    (equalp (field-data-type field) 'data-list))
 	    (dolist (sub-val (item-val (field-data-type field) field item))
+	      
 		(when sub-val
+		  
 		  (let* ((full-type (cdr (getf field :db-type)))
 			 (accessor (getf full-type :key-accessor))	
 			 (accessor-accessor (getf full-type :accessor-accessor))
 			 (val (if (getf full-type :accessor-accessor)
 				  (slot-value (slot-value sub-val accessor)
-					      accessor-accessor))))
+					      accessor-accessor)
+				  (slot-value sub-val accessor)
+				  )))
 		    (when val
 		      (when (search search-term 
 				    val

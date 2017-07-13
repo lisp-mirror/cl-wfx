@@ -79,50 +79,29 @@ select {
 */
 
 
-/*
- * Off Canvas
- * --------------------------------------------------
- */
+//Gutters
 
-/*
-@media screen and (min-width: 768px) {
-  .sidebar-offcanvas .nav-stacked {
-   position: fixed;
-   top: 8em;
-   width: 33%;
-  } 
+.row.no-gutters {
+  margin-right: 0;
+  margin-left: 0;
+
+  & > [class^="col-"],
+  & > [class*=" col-"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }
 
-   .row-offcanvas-right {
-    right: 0;
-  }
+.truncate-fix {
+    min-width: 0;
+}
 
-  .row-offcanvas-left {
-    left: 0;
-  }
 
-  .row-offcanvas-right
-  .sidebar-offcanvas {
-    right: 16%; /* 6 columns */
+.long-and-truncated {
+  flex: 1;
+  &, & > * {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
-  .row-offcanvas-left
-  .sidebar-offcanvas {
-    left: 16%; /* 6 columns */
-  }
-
-  .row-offcanvas-right.active {
-    right: -16%; /* 6 columns */
-  }
-
-  .row-offcanvas-left.active {
-    left: -16%; /* 6 columns */
-  }
-
-  .sidebar-offcanvas {
-    position: absolute;
-    top: 5;
-    width: -16%; /* 6 columns */
-  }
-  
-*/
+}
