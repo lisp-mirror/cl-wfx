@@ -1,12 +1,8 @@
 (in-package :cl-wfx)
 
-(monkey-lisp::define-monkey-macro shit-shat (&key id from-ajax)
-  `(:div "No idea wtf?????????????????"
-	 (:div ,id ,from-ajax)))
-
 
 (defun render-login ()
-  (monkey-html-lisp:htm
+  (with-html-string
     (:div :class "row"
 	  (:div :class "card col-5"
 		(:img :class "card-image-top" :src "../sys/web/images/logo.png")
@@ -47,7 +43,7 @@
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
 	   (id-string (if module
-			  (module-short module)
+			  (getx module :module-short)
 			  "sys"
 			  )))
 	  (if (and spec (url spec))
@@ -65,14 +61,15 @@
     ;;(hunchentoot:remove-session *session*)
     )
   
-  (let ((active-user (fetch-item "active-users"
-				:test (lambda (doc)
-					(equal (parameter "user") (user doc))))))
+  (let ((active-user (fetch-item (core-collection "active-users")
+				:test (lambda (item)
+					(equal (parameter "user") (getx item :email))))))
     (unless active-user
-      (setf active-user (persist-data (make-instance 'active-user
-						     :user user)
-				      :license-code *sys-license-code*
-				      :collection-name "active-users"
+      (setf active-user (persist-item (core-collection "active-users")
+				      '(:email (getx item :email) 
+					:selected-licenses nil
+					:selected-entities nil)
+
 				      )))
 
     (setf (user *session*) active-user))
@@ -126,76 +123,77 @@
 (defun user-mods ()
   (fetch-items "modules"
 	       :test
-	       (lambda (doc)
-		 (if (not (string-equal "System Admin" (module-name doc)))
-		     doc))
+	       (lambda (item)
+		 (and (not (string-equal "System Admin" (getx item :name)))
+			  item))
 	       :result-type 'list))
 
 (defun mod-menu (mod)
   (if mod
-      (menu-items (first (menu mod)))))
+      (getx (first (getx mod :menu)) :menu-items)))
 
 (defun system-menu ()
   (let ((sys-mod (fetch-item "modules"
-			      :test (lambda (doc)
-				      (string-equal "System Admin" (module-name doc))))))    
+			      :test (lambda (item)
+				      (string-equal "System Admin" (getx item :name))))))    
     (if sys-mod
-	(menu-items (first (menu sys-mod))))))
+	(getx (first (getx sys-mod :menu)) :menu-items))))
 
 
 (defun accessible-entity (entity accessible-entities)
   (if (find entity accessible-entities)
       (return-from accessible-entity entity)
-      (dolist (entity (children entity))
+      (dolist (entity (getx entity :children))
 	(if (find entity accessible-entities)
 	    (return-from accessible-entity entity)
 	    (accessible-entity entity accessible-entities))))
   )
 
-(defun accessible-entity-roots (accessible-entities)
+(defun accessible-entity-roots (accessible-entities license-code)
   (let ((roots))
-    (dolist (entity (fetch-all "entities" :result-type 'list))
-      (when (root-p entity)
+    (dolist (entity (fetch-items (license-collection license-code "entities")
+				 :result-type 'list))
+      (when (getx entity :root-p)
 	(when (accessible-entity entity accessible-entities)
 	  (pushnew entity roots)
 	  )))
     roots))
 
 (defun render-entity-check (entity level accessible-entities)
-  (monkey-html-lisp:htm
+  (with-html-string
     (:div :class "row"
 	  (:div :class "form-check"
 		    
 		(:div :class "form-check-label"
 		      (dotimes (i level)
-			(monkey-html-lisp:htm "&nbsp;"))
+			(cl-who:htm "&nbsp;"))
 		      (if (find entity accessible-entities)
 			  (if (find entity (current-entities (active-user)))
-			      (monkey-html-lisp:htm
+			      (cl-who:htm
 				(:input :class "form-check-input" :type "checkbox" 
 					:name "tree-entity-id" 
-					:value (xdb2::id entity)
+					:value (item-hash entity)
 					:checked ""))
-			      (monkey-html-lisp:htm
+			      (cl-who:htm
 				(:input :class "form-check-input" :type "checkbox" 
-					:name "tree-entity-id" :value (xdb2::id entity))))
-			  (monkey-html-lisp:htm
+					:name "tree-entity-id" :value (item-hash entity))))
+			  (cl-who:htm
 			    (:input :class "form-check-input" :type "checkbox" 
 				    :disabled "")))
 		      (name entity))))
-    (if (children entity)
-	(dolist (entity (children entity))
+    (if (getx entity :children)
+	(dolist (entity (getx entity :children))
 	  (render-entity-check entity 
 			       (+ level 1) 
 			       accessible-entities)))))
 
-(defun render-entity-tree (accessible-entities) 
+(defun render-entity-tree (license-code accessible-entities ) 
   
-  (monkey-html-lisp:htm
+  (with-html-string
     (:form
-     (dolist (entity (accessible-entity-roots accessible-entities))
-       ;; (break "~A ~A" entity (xdb2::id entity))
-       (when (root-p entity)      
+     (dolist (entity (accessible-entity-roots license-code accessible-entities))
+       ;; (break "~A ~A" entity (item-hash entity))
+       (when (getx entity :root-p)      
 	 (render-entity-check entity 0 accessible-entities)))
      (:button
       :name "set-entities" 
@@ -216,25 +214,25 @@
     (when (equalp (car parameter) "tree-entity-id")
       
       (dolist (entity (accessible-entities* (current-user)))
-	(if (string-equal (frmt "~A" (xdb2::id entity)) (cdr parameter))
+	(if (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
 	    (pushnew entity (current-entities (active-user))))))))
 
 (defun render-licence-codes ()
-  (dolist (code (license-codes (current-user)))
+  (dolist (code (getx (current-user) :license-codes))
 			    
-    (monkey-html-lisp:htm
+    (with-html-string
       
       (:div :class "row"
 	    (:div :class "form-check"
 		  
 		  (:div :class "form-check-label"
-			(if (find code (license-codes (active-user)) :test #'string-equal)
-			    (monkey-html-lisp:htm
+			(if (find code (getx (active-user) :license-codes) :test #'string-equal)
+			    (cl-who:htm
 			      (:input :class "form-check-input" :type "checkbox" 
 				      :name "license-id" 
 				      :value code
 				      :checked ""))
-			    (monkey-html-lisp:htm
+			    (cl-who:htm
 			      (:input :class "form-check-input" :type "checkbox" 
 				      :name "license-id" :value code)))
 			
@@ -249,22 +247,22 @@
   (setf (current-entities (active-user)) nil)
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
-      (pushnew (cdr parameter) (license-codes (active-user))))))
+      (pushnew (cdr parameter) (getx (active-user) :license-codes)))))
 
-(monkey-lisp::define-monkey-macro render-page (menu-p &body body)
-  
-  `(:html
-    (:head
-     "<link rel=\"stylesheet\"
+(defun render-page (menu-p body)
+  (with-html
+    (:html
+     (:head
+      "<link rel=\"stylesheet\"
 	href=\"../web/font-awesome-4.7.0/css/font-awesome.min.css\">"
-	
-     "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
-     
-     "<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>"
-     " <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
-     "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
-     
-     "<script src=\"../web/codemirror/lib/codemirror.js\"></script>
+      
+      "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
+      
+      "<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>"
+      " <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
+      "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
+      
+      "<script src=\"../web/codemirror/lib/codemirror.js\"></script>
 <link rel=\"stylesheet\" href=\"../web/codemirror/lib/codemirror.css\">
 <script src=\"../web/codemirror/mode/commonlisp/commonlisp.js\"></script>
 <script src=\"../web/codemirror/addon/edit/closebrackets.js\"></script>
@@ -274,36 +272,36 @@
 <link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 "
-     
+      
 
-     )
+      )
      
      
-    (:body 
-     (:input :type "hidden" :id "contextid" :value (context-id *context*))
+     (:body 
+      (:input :type "hidden" :id "contextid" :value (context-id *context*))
 
-     (if ,(not menu-p)	 
-	 (monkey-html-lisp:htm
+      (if (not menu-p)	 
+	  (cl-who:htm
 	   (:div :class "container"
-		 ,@body))
-	 (monkey-html-lisp:htm
+		 body))
+	  (cl-who:htm
 	   (:nav 
 	    :class "navbar sticky-top navbar-toggleable-md hidden-print"
 	    
 	    (if (current-user)
-		(monkey-html-lisp:htm 
-		  (:button :class "navbar-toggler navbar-toggler-left"
-			   :type "button btn-small"
-			   :data-toggle "collapse"
-			   :data-target "#menushit"
-			   :aria-controls "menushit"
-			   :aria-expanded "true"
-			   :aria-label "Toggle menu"
-			   (:span :class "navbar-toggler-icon"))))
+		(cl-who:htm 
+		 (:button :class "navbar-toggler navbar-toggler-left"
+			  :type "button btn-small"
+			  :data-toggle "collapse"
+			  :data-target "#menushit"
+			  :aria-controls "menushit"
+			  :aria-expanded "true"
+			  :aria-label "Toggle menu"
+			  (:span :class "navbar-toggler-icon"))))
 	    
 	    (:a :class "navbar-brand" :href "#" 
 		(:img :src "../sys/web/images/logo-small.png")
-		(system-name *system*))
+		(name *system*))
 	    (:div :class "collapse navbar-collapse" :id "menushit"
 		  (:span :class "navbar-text mr-auto"
 			 (frmt "Entities: ~A" (current-entities (active-user))))
@@ -317,71 +315,72 @@
 			    :aria-haspopup="true"
 			    :aria-expanded "false" 
 			    (if (current-user) 
-				(monkey-html-lisp:htm (email (current-user)))))
+				(cl-who:htm (getx (current-user) :email))))
 			(:div :class "dropdown-menu":aria-labelledby "userDropdown"
 			      
 			      (let ((sys-mod 
 				     (fetch-item "modules"
-						 :test (lambda (doc)
+						 :test (lambda (item)
 							 (string-equal
 							  "System Admin" 
-							  (module-name doc))))))
+							  (getx item :name))))))
 				
 				
-				(dolist (item (menu-items (first (menu sys-mod))))
+				(dolist (item (getx (first (getx sys-mod :menu))
+						    :menu-items))
 				  
 				  (let ((parameters))
 				    
-				    (dolist (param (context-parameters item))
+				    (dolist (param (getx item :context-parameters))
 				      
 				      (setf parameters 
 					    (if parameters
 						(frmt "~A&~A=~A" 
 						      parameters
-						      (parameter-name param)
-						      (parameter-value param))
+						      (getx param :name)
+						      (getx param :value))
 						(frmt "~A=~A" 
-						      (parameter-name param)
-						      (parameter-value param)))))
+						      (getx param :name)
+						      (getx param :value)))))
 				    
-				    (monkey-html-lisp:htm
-				      (:a :class "dropdown-item"
-					  :href 
-					  (if parameters
-					      (frmt "~A?~A" 
-						    (context-url 
-						     (context-spec item)
-						     sys-mod)
-						    parameters)
-					      (context-url 
-					       (context-spec item)
-					       sys-mod))
-					  (item-name item)
-					  
-					  )))))))
+				    (cl-who:htm
+				     (:a :class "dropdown-item"
+					 :href 
+					 (if parameters
+					     (frmt "~A?~A" 
+						   (context-url 
+						    (context-spec item)
+						    sys-mod)
+						   parameters)
+					     (context-url 
+					      (context-spec item)
+					      sys-mod))
+					 (getx item :name)
+					 
+					 )))))))
 		  
 		  ))
 	   (:nav :class "navbar"
 		 (if (current-user)
-		     (monkey-html-lisp:htm 
-		       (:button :class "navbar-toggler navbar-toggler-left"
-				:type "button btn-small"
-				:data-toggle "collapse"
-				:data-target "#exNavbarLeft"
-				:aria-controls "exNavbarLeft"
-				:aria-expanded "true"
-				:aria-label "Toggle application menu"
-				"&#9776;")))
+		     (cl-who:htm 
+		      (:button :class "navbar-toggler navbar-toggler-left"
+			       :type "button btn-small"
+			       :data-toggle "collapse"
+			       :data-target "#exNavbarLeft"
+			       :aria-controls "exNavbarLeft"
+			       :aria-expanded "true"
+			       :aria-label "Toggle application menu"
+			       "&#9776;")))
 		 (if (current-user)
-		     (monkey-html-lisp:htm
-		       (:button :class "navbar-toggler navbar-toggler-right"
-				:type "button"
-				:data-toggle "collapse"
-				:data-target "#exNavbarRight"
-				:aria-controls "exNavbarRight"
-				:aria-expanded "false"
-				:aria-label "Toggle system menu"
-				"&#9776;")))
+		     (cl-who:htm
+		      (:button :class "navbar-toggler navbar-toggler-right"
+			       :type "button"
+			       :data-toggle "collapse"
+			       :data-target "#exNavbarRight"
+			       :aria-controls "exNavbarRight"
+			       :aria-expanded "false"
+			       :aria-label "Toggle system menu"
+			       "&#9776;")))
 		 
 		 )
 	   
@@ -393,18 +392,18 @@
 			     :id "exNavbarLeft"
 			     (:nav :class "nav nav-pills flex-column"
 				   (dolist (mod (user-mods))
-				     (dolist (menu (menu mod))
+				     (dolist (menu (getx mod :menu))
 
-				       (dolist (item (menu-items menu))
-					 (monkey-html-lisp:htm
-					   (:a :class 
-					       "nav-link ~A"
-					       :href (url 
-						      (context-spec item))
-					       (item-name item))))))))
+				       (dolist (item (getx menu :menu-items))
+					 (cl-who:htm
+					  (:a :class 
+					      "nav-link ~A"
+					      :href (url 
+						     (context-spec item))
+					      (getx item :name))))))))
 		       
 		       (:div  :class "col" :id "grid-table"
-			      ,@body)
+			      body)
 		       
 		       (:div :class "collapse col-md-2 hidden-print " 
 			     :id "exNavbarRight" :style "background-color:#FFFFFF"
@@ -425,21 +424,25 @@
 			     (:div :class "row bg-faded"
 				   "Accessible Entities")
 			     (:div :class "row"
-				   (render-entity-tree 
-				    (accessible-entities* (current-user))))
+				   (dolist (license-code (getx (active-user) 
+								 :selected-licenses))
+				       (cl-who:htm
+					(render-entity-tree 
+					 license-code
+					 (accessible-entities* (current-user))))))
 			     
 			     )))))
 
 
-     "<script>$(document).on('click', '.dropdown-item', function(){
+      "<script>$(itemument).on('click', '.dropdown-item', function(){
        var selVal = $(this).children().first();
        var selText = $(this).text();
        $(this).parents('.dropdown').find('.dropdown-toggle').html(selText);
        $(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
 });</script>"
-     
-     (:script ,(frmt	      
-		"function ajax_call(func, callback, args, widget_args) {
+      
+      (:script (frmt	      
+		 "function ajax_call(func, callback, args, widget_args) {
 
     var uri = '~Aajax/' + encodeURIComponent(func);
     var post_parameters = '&contextid=' + contextid.value;
@@ -463,7 +466,7 @@
 
     fetchURI(uri, callback, post_parameters);
 
-}" (site-url *system*))))))
+}" (site-url *system*)))))))
 
 (defun check-user-access ()
   (unless (current-user)
@@ -471,47 +474,43 @@
     (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*)))
 	     )
   )
-(defmethod setup-context ((module module) (spec context-spec) system)  
+(defmethod setup-context ((module item) (spec item) system)  
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 
 	   (string-upcase (id-string (name spec))) 
 	   '-page)  
-	  :uri ,(if (url spec)
-		    (url spec)
+	  :uri ,(if (getx spec :url)
+		    (getx spec :url)
 		    (frmt "~A~A/~A" (site-url system) 
 			  (string-downcase 
-			   (id-string (if module
-					  (module-short module)
-					  "sys"
-					  )))
+			   (id-string (getx module :module-short)))
 			  (string-downcase 
-			   (id-string (name spec)))))  
-	  :allow-other-keys t) ,(args spec)
+			   (id-string (getx spec :name)))))  
+	  :allow-other-keys t) ,(getx spec :args)
       
       (check-user-access)
-      (monkey-html-lisp:with-html
-	  "<!doctype html>"
-	  (render-page t (render-grid ',(getf (cdr (context-spec-script spec)) :name)))))))
+      (with-html
+	"<!itemtype html>"
+	(render-page t (render-grid ,(getx spec :collection) ,(getx spec :stores)))))))
 
-(defmethod setup-context-login ((module module) (spec context-spec) system)  
+(defmethod setup-context-login ((module item) (spec item) system)  
   (eval
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
 					(string-upcase (id-string (name spec))) 
 					'-page)  
 				       :uri ,(frmt "~A~A/~A" (site-url system) 
 						   (string-downcase 
-						    (id-string (if module
-								   (module-short module)
-								   "sys")))
+						    (id-string 
+						     (getx module :module-short)))
 						   (if (url spec)
 						       (url spec)
 						       (string-downcase 
 							(id-string (name spec)))))  
-				       :allow-other-keys t) ,(args spec)
+				       :allow-other-keys t) ,(getx spec :args)
       
-      (monkey-html-lisp:with-html
-	  "<!doctype html>"
+      (with-html-string
+	  "<!itemtype html>"
 	  (render-page nil
 	   (render-login))))))
 

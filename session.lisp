@@ -38,7 +38,6 @@
   (:documentation "Sessions are used to handle displaying of ui independantly for different users. A session starts life before a user login so user is added to the session afterwards."))
 
 
-
 (defgeneric locale-language (locale))
 
 (defmethod locale-language ((locale locale))
@@ -87,8 +86,15 @@
     (setf (system session) system)
     session))
 
+(defun current-user ()
+  (if (and (boundp '*session*) *session*) 
+      (if (user *session*)
+	  (user (user *session*)))))
 
-
+(defun active-user ()
+  (if (boundp '*session*)   
+      (if *session*
+	  (user *session*))))
 
 
 

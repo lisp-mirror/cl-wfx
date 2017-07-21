@@ -27,14 +27,12 @@
 	   (renderer* (if (second splits)
 			  (second splits)
 			  (first splits)))
-	   (render-macro (intern (string-upcase (id-string renderer*)) 
+	   (render-function (intern (string-upcase (id-string renderer*)) 
 				 (find-package renderer-package)))
 	   )
      ;; (break "to string* poes")
-      (eval
-	      `(monkey-html-lisp:with-html 
-		 (,render-macro
-		  ,@args)))))
+    (with-html)
+      (apply render-function (list args))))
 
 (defmacro with-debugging (&body body)
   ;; Using this as debugging tool because hunchentoot

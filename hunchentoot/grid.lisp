@@ -1,63 +1,105 @@
 (in-package :cl-wfx)
 
+(defun field-data-type (field)
+  (getf (getf field ::db-type) :type))
+
+(defun set-context-data-spec-attribute (spec-name attribute value)
+  (let ((spec (read-no-eval spec-name)))
+    (setf (gethash attribute (gethash (frmt "~S" spec) (cache *context*)) ) value)))
+
+(defun get-context-data-spec-attribute (spec-name attribute)
+  (let ((spec (read-no-eval spec-name)))
+    (when (gethash (frmt "~S" spec) (cache *context*))
+	  (gethash attribute (gethash (frmt "~S" spec) (cache *context*))))))
+
+
 (defun print-item-val-s* (field item)
   (let ((*print-case* :downcase))
     (frmt "~S"
-	  (item-val (field-data-type field) 
+	  (getfx 
 		    field 
 		    item))))
 
 (defun print-item-val-a* (field item)
   (let ((*print-case* :downcase))
     (frmt "~A"
-	  (item-val (field-data-type field) 
+	  (getfx 
 		    field 
 		    item))))
 
-(defmethod print-item-val ((type (eql 'symbol)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :symbol)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'keyword)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :keyword)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'script)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :script)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'string)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :string)) field item &key &allow-other-keys)
    (print-item-val-a* field item))
 
-(defmethod print-item-val ((type (eql 'email)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :email)) field item &key &allow-other-keys)
    (print-item-val-a* field item))
 
-(defmethod print-item-val ((type (eql 'number)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :number)) field item &key &allow-other-keys)
    (print-item-val-a* field item))
 
-(defmethod print-item-val ((type (eql 'date)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :integer)) field item &key &allow-other-keys)
    (print-item-val-a* field item))
 
-(defmethod print-item-val ((type (eql 'boolean)) field item &key &allow-other-keys)
-  (if (item-val (field-data-type field) 
+(defmethod print-item-val ((type (eql :date)) field item &key &allow-other-keys)
+   (print-item-val-a* field item))
+
+(defmethod print-item-val ((type (eql :boolean)) field item &key &allow-other-keys)
+  (if (getfx 
 		field 
 		item)
       "checked"
       ""))
 
-(defmethod print-item-val ((type (eql 'list)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :list)) field item &key &allow-other-keys)
+  (let* ((full-type (cdr (getf field :db-type)))
+	 (delimiter (getf full-type :delimiter))
+	 (val))
+;;    (break "delimiter ~A" delimiter)
+    (dolist (x (getsfx type field item))
+      (setf val 
+	    (if val
+		(concatenate 'string val delimiter 
+			     (if (getf full-type :type 'keyword)
+				 (string-downcase (frmt "~S" x))
+				 x))
+		(if (getf full-type :type 'keyword)
+		    (string-downcase (frmt "~S" x))
+		    x))))
+    val))
+
+(defmethod print-item-val ((type (eql :list-item)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'list-item)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :data-group)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'data-group)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :data-list)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql 'data-list)) field item &key &allow-other-keys)
-   (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql 'data-member)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :data-member)) field item &key &allow-other-keys)
 
   (let ((full-type (cdr (getf field :db-type)))
-	 (item-val (item-val (field-data-type field) 
+	 (item-val (getfx 
+			     field 
+			     item)))    
+    (when item-val
+      (frmt "~A" (slot-value 
+		  item-val
+		  (getf full-type :key-accessor))))))
+
+(defmethod print-item-val ((type (eql :data-child-member)) field item 
+			   &key &allow-other-keys)
+
+  (let ((full-type (cdr (getf field :db-type)))
+	 (item-val (getfx 
 			     field 
 			     item)))    
     (when item-val
@@ -70,7 +112,7 @@
 (defun render-input-val* (type field item)
   (let ((name (getf field :name)))
     (if (not (getf field :editable))
-	(monkey-html-lisp:htm
+	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
@@ -81,7 +123,7 @@
 		   field 
 		   item)
 		  :disabled "disabled"))
-	(monkey-html-lisp:htm
+	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
@@ -92,61 +134,64 @@
 		   field 
 		   item))))))
 
-(defmethod render-input-val ((type (eql 'symbol)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :symbol)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'keyword)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :keyword)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'string)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :string)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'email)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :email)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'number)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :number)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'date)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :integer)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'boolean)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :date)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql :boolean)) field item &key &allow-other-keys)
   (let ((name (getf field :name))
-	(print-val (item-val type field item)))
+	(print-val (getsfx type field item)))
     
-    (monkey-html-lisp:htm
+    (with-html-string
       (:div :class "form-check" 
 	    (if (not (getf field :editable))
-		(monkey-html-lisp:htm (:div :class "form-check-label"
+		(cl-who:htm (:div :class "form-check-label"
 					    (:input
 					     :class "form-check-input"
 					     :type "checkbox"
 					     :id name
 					     :name name
-					     :value (item-val 
+					     :value (getsfx
 						     type
 						     field 
 						     item)
 					     :checked print-val
 					     :aria-label "..."
 					     :disabled "disabled")))
-		(monkey-html-lisp:htm (:div :class "form-check-label"
+		(cl-who:htm (:div :class "form-check-label"
 					    (:input
 					     :class "form-check-input"
 					     :type "checkbox"
 					     :id name
 					     :name name
-					     :value (item-val 
+					     :value (getsfx
 						     type
 						     field 
 						     item)
 					     :checked print-val
 					     :aria-label "..."))))))))
 
-(defmethod render-input-val ((type (eql 'script)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :script)) field item &key &allow-other-keys)
   (let ((name (getf field :name)))
     (if (not (getf field :editable))
-	(monkey-html-lisp:htm
+	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
@@ -156,7 +201,7 @@
 	    type
 	    field 
 	    item)))
-	(monkey-html-lisp:htm
+	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
@@ -167,50 +212,85 @@
 	    field 
 	    item))))))
 
-(defmethod render-input-val ((type (eql 'list)) field item &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql 'list-item)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :list)) field item &key &allow-other-keys)
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
-	 (list (getf full-type :list))
-	 (selected (find (item-val type field item) list :test #'equalp))
+	 (delimiter (getf full-type :delimiter)))
+    
+    (if (not (getf field :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 20 :rows 3
+	   :disabled "disabled"
+	   (print-item-val 
+	    type
+	    field 
+	    item))
+	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
+					   "#\Space"
+					   delimiter))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 20 :rows 3
+
+	   (print-item-val 
+	    type
+	    field 
+	    item))
+	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
+					   "#\Space"
+					   delimiter))))
+	)))
+
+(defmethod render-input-val ((type (eql :list-item)) field item &key &allow-other-keys)
+  (let* ((name (getf field :name))
+
+	 (list (field-type-val field :values))
+	 (selected (find (getfx field item) list :test #'equalp))
 	 )
 
-    (monkey-html-lisp:htm
+    (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" name) :value "")
 	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button" 
+		     :type "button"
+		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
 			 (frmt "~S" selected)))
-	    (:div :class "dropdown-menu" 
+	  
+	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
-		    (monkey-html-lisp:htm
-		      (:a :class "dropdown-item" :href "#"
-			  (frmt "~S" option)))))))))
+		    (cl-who:htm
+		      (:span :class "dropdown-item" 
+			     (:input :type "hidden"
+				     :value (frmt "~S" option))
+			  (frmt "~S" option)))))
+	    
+	    ))))
 
-(defmethod render-input-val ((type (eql 'data-group)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :data-group)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'data-list)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :data-list)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql 'data-member)) field item 
+(defmethod render-input-val ((type (eql :data-member)) field item 
 			     &key &allow-other-keys)
 ;;  (break "~A ~A" item parent-item )
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
-	 (data-spec (get-data-spec (getf full-type :data-spec)))
-	 (list (fetch-all (collection-name data-spec) :result-type 'list))
-	 (selected (find (slot-value item name)  
-			    list :test #'equalp))
-	 )
 
-    
-    (monkey-html-lisp:htm
+	 (list ;;(fetch-items (collection data-spec) :result-type 'list)
+	  )
+	 (selected (find (slot-value item name)  
+			    list :test #'equalp)))
+    (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" name) :value "")
@@ -225,30 +305,64 @@
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
-		    (monkey-html-lisp:htm
+		    (cl-who:htm
 		      (:span :class "dropdown-item" 
 			     (:input :type "hidden"
 				     :value (frmt "~S" option))
 			  (frmt "~S" option)))))))))
 
-(defmethod render-input-val ((type (eql 'data-group)) field item &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql 'data-list)) field item &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql 'data-member)) field item 
+(defmethod render-input-val ((type (eql :data-child-member)) field item 
 			     &key &allow-other-keys)
 ;;  (break "~A ~A" item parent-item )
   (let* ((name (getf field :name))
 	 (full-type (cdr (getf field :db-type)))
-	 (data-spec (get-data-spec (getf full-type :data-spec)))
-	 (list (fetch-all (collection-name data-spec) :result-type 'list))
+
+	 (list (slot-value (get-context-data-spec-attribute 
+			    (getf full-type :source-data-spec) 
+			    :active-item)
+			   (getf full-type :source-accessor)))
+	 (selected (find (slot-value item name)  
+			    list :test #'equalp)))
+    (with-html-string
+      (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value "")
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (if selected
+			 (slot-value
+			  selected
+			  (getf full-type :key-accessor))))
+	   
+	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+		  (dolist (option list)
+		    (cl-who:htm
+		      (:span :class "dropdown-item" 			      
+			       (:input :type "hidden"
+				       :value (frmt "~A" (item-hash option)))
+			       (slot-value option (getf full-type :key-accessor))))))))))
+
+(defmethod render-input-val ((type (eql :data-group)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql :data-list)) field item &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql :data-member)) field item 
+			     &key &allow-other-keys)
+;;  (break "~A ~A" item parent-item )
+  (let* ((name (getf field :name))
+	 (full-type (cdr (getf field :db-type)))
+	;; (data-spec (get-data-spec (getf full-type :data-spec)))
+	 (list ;;(fetch-all (collection-name data-spec) :result-type 'list)
+	  )
 	 (selected (find (slot-value item name)  
 			    list :test #'equalp)))
 
     
-    (monkey-html-lisp:htm
+    (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" name) :value "")
@@ -263,10 +377,10 @@
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		    (dolist (option list)
-		      (monkey-html-lisp:htm
+		      (cl-who:htm
 			(:span :class "dropdown-item" 			      
 			       (:input :type "hidden"
-				       :value (frmt "~A" (xdb2:id option)))
+				       :value (frmt "~A" (item-hash option)))
 			       (slot-value option (getf full-type :key-accessor))))))))))
 
 (defun grid-js-render-form-values (renderer spec-name form-id 
@@ -309,7 +423,7 @@
 	       (js-pair "action"
 			(or action ""))
 	       (js-pair "item-id" (or item-id ""))
-	      
+
 	       (js-pair "pages"
 			(or (parameter "pages") 10))
 	       (js-pair "page"
@@ -323,34 +437,34 @@
       (if (equalp (ensure-parse-integer 
 		   (get-context-data-spec-attribute spec-name
 						    :expand-id)) 
-		  (xdb2:id item))
-	  (monkey-html-lisp:htm
+		  (item-hash item))
+	  (with-html-string
 	    (:button
 	     :name "expand" :type "submit" 
 	     :class "btn btn-outline-primary btn-sm active "				 
 	     :aria-pressed "true"
 	     :onclick (grid-js-render "cl-wfx:ajax-grid" spec-name
 				      :action "unexpand"
-				    ;;  :item-id (xdb2::id item)
+				    ;;  :item-id (item-hash item)
 				      )
 	     "-"))
-	  (monkey-html-lisp:htm
+	  (with-html-string
 	    (:button ;;:tabindex -1 ;;when disabled
 	     :name "expand" :type "submit" 
 	     :class "btn btn-outline-primary btn-sm border-0"
 	     :aria-pressed "false"
 	     :onclick (grid-js-render "cl-wfx:ajax-grid" spec-name
 				      :action "expand"
-				      :item-id (xdb2::id item))
+				      :item-id (item-hash item))
 	     "+")))))
 
 
 (defun render-grid-buttons (spec-name item)
-  (let ((permissions (permissions (context-spec *context*))))
+  (let ((permissions (getx (context-spec *context*) :permissions)))
   ;;  (break "permissions ~A" (context-spec *context*))
     (dolist (permission permissions)
       (cond ((equalp permission :update)
-	     (monkey-html-lisp:htm
+	     (with-html-string
 	       
 	       (:button ;;:tabindex -1 ;;when disabled
 		:name "edit" :type "submit" 
@@ -358,43 +472,43 @@
 		(if (and (parameter "item-id")
 			 (string-equal 
 			  (parameter "item-id") 
-			  (frmt "~A" (xdb2:id item))))
+			  (frmt "~A" (item-hash item))))
 		    "btn btn-outline-primary btn-sm active"
 		    "btn btn-outline-primary btn-sm")
 		:aria-pressed 
 		(if (and (parameter "item-id")
 			 (string-equal 
 			  (parameter "item-id") 
-			  (frmt "~A" (xdb2:id item))))
+			  (frmt "~A" (item-hash item))))
 		    "true"
 		    "false")
 		:onclick 
 		(grid-js-render "cl-wfx:ajax-grid" spec-name
 				:action "edit"
-				:item-id (xdb2::id item)
+				:item-id (item-hash item)
 				
 				)
 		"Edit")))
 	    ((equalp permission :delete)
-	     (monkey-html-lisp:htm
+	     (with-html-string
 	       (:button ;;:tabindex -1 ;;when disabled
 		:name "edit" :type "submit" 
 		:class (if (and (parameter "item-id")
 				(string-equal 
 				 (parameter "item-id") 
-				 (frmt "~A" (xdb2:id item))))
+				 (frmt "~A" (item-hash item))))
 			   "btn btn-outline-primary btn-sm active"
 			   "btn btn-outline-primary btn-sm")
 		:aria-pressed (if (and (parameter "item-id")
 				       (string-equal 
 					(parameter "item-id") 
-					(frmt "~A" (xdb2:id item))))
+					(frmt "~A" (item-hash item))))
 				  "true"
 				  "false")
 		:onclick 
 		(grid-js-render "cl-wfx:ajax-grid" spec-name
 				:action "delete"
-				:item-id (xdb2::id item)
+				:item-id (item-hash item)
 				)
 		"Delete")))))))
 
@@ -407,9 +521,9 @@
   (set-context-data-spec-attribute spec-name :parent-spec parent-spec)
   
   (set-context-data-spec-attribute (parameter "data-spec")
-				   :item-id (xdb2::id item))
+				   :item-id (item-hash item))
   
-  (monkey-html-lisp:htm
+  (with-html-string
     (:div :class "card" :id (string-downcase (frmt "grid-edit-~A"  spec-name))
 	  (:div :class "card-header"
 		(frmt "Editing... ~A" (string-capitalize spec-name)))
@@ -430,7 +544,7 @@
 							    'data-list))
 					       ))
 					
-				  (monkey-html-lisp:htm					  
+				  (cl-who:htm					  
 				    (:div :class (if (getf field :editable)
 						     "form-group row"
 						     "form-group row disabled")
@@ -455,7 +569,7 @@
 		    (setf (gethash :validation-errors (cache *context*)) nil)
 		    (setf (gethash :validation-error-item-id (cache *context*)) nil)
 			  
-		    (monkey-html-lisp:htm
+		    (cl-who:htm
 		      (:div :class "row"
 			    (:div :clas "col"
 				  (frmt "Errors ~S"
@@ -489,7 +603,7 @@
 			     "Cancel")))))))
 
 (defun render-grid-col-filter (spec-name col-name)
-  (monkey-html-lisp:htm
+  (with-html-string
 	(:input :class "w-100"
 		:type "text" 
 		:name (frmt "~A-filter" col-name) 
@@ -534,47 +648,47 @@
     (reverse header-fields)))
 
 (defun render-filter-row (spec-name fields sub-p subs)
-  (monkey-html-lisp:htm
+  (with-html-string
     (:div :class "collapse" :id "collapseFilter"
      (:div :class "row"	
 	   (when subs
-	     (monkey-html-lisp:htm
+	     (cl-who:htm
 	       (:div :class "col-sm-1"
 		     " ")))
 	   
 	   (dolist (half (rough-half-list (get-header-fields fields) 7))
-	     (monkey-html-lisp:htm
+	     (cl-who:htm
 	     ;;  (break "f half ~A" half)
 	       (:div :class "col"
 		     (:div :class "row no-gutters"
 			   (dolist (field half)
 			     (let* ((name (getf field :name)))
 			       
-			       (monkey-html-lisp:htm
+			       (cl-who:htm
 				 (:div :class "col"
-				       (monkey-html-lisp:htm
+				       (cl-who:htm
 					 (render-grid-col-filter 
 					  spec-name name))))))))))
 	   (if sub-p
-	       (monkey-html-lisp:htm	      
+	       (cl-who:htm	      
 		 (:div :class "col-sm-2"))
-	       (monkey-html-lisp:htm	      
+	       (cl-who:htm	      
 		 (:div :class "col-sm-2"
 		       (render-grid-search spec-name)))
 	       
 	     )))))
 
 (defun render-header-row (spec-name fields sub-p subs)
-  (monkey-html-lisp:htm
+  (with-html-string
     (:div :class "row"	
 	  (when subs
-	    (monkey-html-lisp:htm
+	    (cl-who:htm
 	      (:div :class "col-sm-1"
 		    " ")))
 	  
 	  (dolist (half (rough-half-list (get-header-fields fields) 7))
 	  ;;  (break "h half ~A" half)
-	    (monkey-html-lisp:htm
+	    (cl-who:htm
 	      (:div :class "col"
 		    (:div :class "row no-gutters"
 			;;  (break "wtf ~A" half)
@@ -583,7 +697,7 @@
 			    (let* ((name (getf field :name))
 				   (label (getf field :label)))
 						  
-			      (monkey-html-lisp:htm
+			      (cl-who:htm
 				(:div :class "col text-left"
 				      (:h6 (if label
 					       label
@@ -593,9 +707,9 @@
 							    :test #'equalp))))))))))))
 	  
 	  (if sub-p
-	    (monkey-html-lisp:htm	      
+	    (cl-who:htm	      
 	      (:div :class "col-sm-2"))
-	    (monkey-html-lisp:htm	      
+	    (cl-who:htm	      
 	      (:div :class "col-sm-2"
 		    (render-grid-sizing spec-name)))
 	    
@@ -639,7 +753,8 @@
 					    (cache *context*)))))))
     
     (when sub-level-p
-      (parse-data-spec-for-grid spec-name))  
+     ;; (parse-data-spec-for-grid spec-name)
+      )  
     
     (let ((fields (get-context-data-spec-attribute spec-name :data-fields))
 	  (subs))
@@ -648,21 +763,22 @@
 	(cond ((or (equalp (field-data-type field) 'data-group)
 		   (equalp (field-data-type field) 'data-list))
 	       (pushnew field subs))))
+      
       (dolist (item page-items)
-	(monkey-html-lisp:htm
+	(with-html
 	  (:div :class "row "
 		
-		(monkey-html-lisp:htm
+		(cl-who:htm
 		  (if subs
-		      (monkey-html-lisp:htm
+		      (cl-who:htm
 			(:div :class "col-sm-1"
 			      (render-expand-buttons subs spec-name item))))
 		  (dolist (half (rough-half-list (get-data-fields fields) 7))
-		    (monkey-html-lisp:htm
+		    (cl-who:htm
 		      (:div :class "col"
 			    (:div :class "row no-gutters"
 				  (dolist (field half)
-				    (monkey-html-lisp:htm 
+				    (cl-who:htm 
 				      (:div 
 				       :class "col text-left text-truncate"
 				       
@@ -685,7 +801,7 @@
 		   (string-equal (or (parameter "item-id") 
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
-				 (frmt "~A" (xdb2:id item))))
+				 (frmt "~A" (item-hash item))))
 			    
 	      (render-grid-edit spec-name fields item
 				parent-item parent-spec sub-name))
@@ -693,7 +809,7 @@
 	  (when (equalp (ensure-parse-integer 
 			 (get-context-data-spec-attribute spec-name
 							  :expand-id)) 
-			(xdb2:id item))
+			(item-hash item))
 			  
 	    (unless sub-level-p
 	      (setf (gethash :root-item (cache *context*)) item))
@@ -702,9 +818,10 @@
 	      (let* ((attributes (cdr (getf sub :db-type)))
 		     (sub-data-spec (getf attributes :data-spec)))
 			      
-		(parse-data-spec-for-grid sub-data-spec)
+	;;	(parse-data-spec-for-grid sub-data-spec)
+		(set-context-data-spec-attribute spec-name :active-item item)
 			      
-		(monkey-html-lisp:htm
+		(cl-who:htm
 		  (:div :class "row"
 			(:div :class "col"
 			      (:div :class "card"
@@ -721,7 +838,7 @@
 				    (:div :class "card-block"
 					  (render-grid-data 
 					   sub-data-spec
-					   (item-val (field-data-type sub) sub item) 
+					   (getfx sub item) 
 					   (+ sub-level 1)
 					   (getf sub :name)
 					   item
@@ -739,11 +856,12 @@
 						       :onclick 
 								     
 						       (grid-js-render "cl-wfx:ajax-grid" 
-								       spec-name
-								       :action "new")
+								       sub-data-spec
+								       :action "new" )
 						       "+")))))))))))))
       
-      (when (equalp (parameter "action") "new")
+      (when (and (equalp (parameter "action") "new")
+		 (string-equal (parameter "data-spec") (frmt "~S" spec-name)))
 	(render-grid-edit spec-name fields 
 			  (make-instance spec-name) 
 			  parent-item
@@ -751,7 +869,7 @@
 			  sub-name)))))
 
 (defun render-grid-sizing (spec-name)
-  (monkey-html-lisp:htm
+  (with-html-string
     (:input :type "text" :name "pages" 
 	    :size 2
 	    :id "pages"
@@ -775,7 +893,7 @@
 	     (js-pair "action" "grid-sizing")))))
 
 (defun render-grid-search (spec-name)
-  (monkey-html-lisp:htm
+  (with-html-string
     (:input :type "text" 
 	    :name "search" 	   
 	    :id "search"
@@ -798,6 +916,7 @@
 	      (frmt "~A" 
 		    (frmt "~A" spec-name)))
 	     (js-pair "action" "grid-search")))))
+
 
 
 (defun fetch-grid-page-data (spec-name items)
@@ -890,7 +1009,7 @@
 	    (when (getf field :db-type)
 	      (when (or (equalp (field-data-type field) 'data-group)
 			(equalp (field-data-type field) 'data-list))
-		(dolist (sub-val (item-val (field-data-type field) field item))
+		(dolist (sub-val (getfx field item))
 		  (when sub-val
 		    (let* ((full-type (cdr (getf field :db-type)))
 			   (accessor (getf full-type :key-accessor))
@@ -923,18 +1042,22 @@
 	(when (getf field :db-type)
 	  (when (or (equalp (field-data-type field) 'data-group)
 		    (equalp (field-data-type field) 'data-list))
-	    (dolist (sub-val (item-val (field-data-type field) field item))
+	    (dolist (sub-val (getfx field item))
 	      
 		(when sub-val
 		  
 		  (let* ((full-type (cdr (getf field :db-type)))
 			 (accessor (getf full-type :key-accessor))	
 			 (accessor-accessor (getf full-type :accessor-accessor))
-			 (val (if (getf full-type :accessor-accessor)
+			 
+			 (val ))
+		    
+		  ;;  (break "~A~%~%~A ~A " field accessor accessor-accessor)
+		    (setf val (if accessor-accessor
 				  (slot-value (slot-value sub-val accessor)
 					      accessor-accessor)
 				  (slot-value sub-val accessor)
-				  )))
+				  ))
 		    (when val
 		      (when (search search-term 
 				    val
@@ -966,8 +1089,12 @@
     
     
     (unless (or search-p filter-p)
-      (setf items (fetch-all collection-name
-			     :result-type 'list)))
+      (dolist (license-code (getx (active-user) :selected-licenses))
+	
+	(setf items (append
+		     items
+		     (fetch-items (license-collection license-code collection-name)
+					 :result-type 'list)))))
     
     (when (or search-p filter-p)
       
@@ -988,9 +1115,9 @@
   
       (when items
 	(setf items
-	      (items-from-items 
+	      (find-in-item-list
 	       items
-	       :test (search-function spec-name search-term)))))
+	       (search-function spec-name search-term)))))
     
     (fetch-grid-page-data spec-name items)))
 
@@ -1002,7 +1129,7 @@
 	(how-many-pages (get-context-data-spec-attribute 
 		       spec-name :page-count)))
     
-    (monkey-html-lisp:htm
+    (with-html-string
       (:nav
        (:ul :class "pagination justify-content-end"
 	    
@@ -1036,7 +1163,7 @@
 				       how-many-pages
 				       )))
 	      (dotimes (i real-page-count)
-		(monkey-html-lisp:htm
+		(cl-who:htm
 		  (:li :class (if (equalp active-page (+ i 1))
 				  "page-item active"
 				  "page-item")
@@ -1060,7 +1187,7 @@
 				   (js-pair "action" "page"))
 			(+ i 1)))))
 	      
-	      (monkey-html-lisp:htm
+	      (cl-who:htm
 		(:li :class "page-item"
 		     (:button ;;:tabindex -1
 		      :name "page" :type "submit" 
@@ -1088,11 +1215,20 @@
 
 
 
+(defmethod action-handler ((action (eql :assign-campaign)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (setf (gethash :assign-campaign (cache *context*)) t))
+
+
+
 (defun render-grid (spec-name) 
   
-  ;;(break "shit ~A" (hunchentoot:post-parameters*))
+ ;;(break "shit ~A" (hunchentoot:post-parameters*))
   
-  (parse-data-spec-for-grid spec-name)
+ ;; (parse-data-spec-for-grid spec-name)
   
   (setf (gethash :root-data-spec (cache *context*)) spec-name)
   
@@ -1145,12 +1281,42 @@
  
   (let ((page-items (fetch-grid-data spec-name)))
     
-    (monkey-html-lisp:with-html	  
+    (when (gethash :assign-campaign (cache *context*))
+	(setf (gethash :assign-campaign (cache *context*)) nil)
+	(when (not (empty-p (parameter "campaign")))
+	  (let ((campaign (fetch-item "campaigns" 
+				      :test (lambda (doc)
+					      (equalp (item-hash doc) 
+						      (parse-integer (parameter "campaign")) )
+					      ))))
+	    (when campaign
+	      (dolist (company page-items)
+		(let ((exists-p)
+		      (campaigns-slot (intern "CAMPAIGNS" 'cl-bizhub))
+		      (campaign-slot (intern "CAMPAIGN" 'cl-bizhub))
+		      (company-campaign (intern "COMPANY-CAMPAIGN" 'cl-bizhub))
+		      )
+		  
+		  
+		  
+		  (dolist (campaignx (slot-value company campaigns-slot))
+		    (when (equalp (item-hash campaign)
+				  (item-hash (slot-value campaignx campaign-slot)))
+		      (setf exists-p t)))
+		  
+		  (unless exists-p
+		    (setf (slot-value company campaigns-slot)
+			  (append (slot-value company campaigns-slot) 
+				  (list (make-instance company-campaign
+						       :campaign campaign))))
+		    )))))))
+    
+    (with-html-string  
       (:div :class "card"
 	    (:h4 :class "card-title"
 		 (frmt "~A" (name (context-spec *context*)))
 		 (:button :class "btn btn-small btn-outline-secondary float-right"
-				:name "assign-campaign" 
+				:name "filter-grid" 
 			
 				:data-toggle "collapse" :href "#collapseFilter" 
 				:aria-expanded "false" :aria-controls="collapseFilter"
@@ -1169,41 +1335,59 @@
 					  :action "export")
 			  (:i :class "fa fa-download"))
 		 (when (string-equal (frmt "~A" spec-name) "company")
-		   (let ((campaigns (fetch-all "campaigns" :result-type 'list)))
-		     (monkey-html-lisp:htm
-		       (:button :class "btn btn-small btn-outline-success float-right"
-				:name "assign-campaign" 
-				:type "submit" 
-			
-				:aria-pressed "false"
-				:onclick 
-				(grid-js-render "cl-wfx:ajax-grid" 
-						spec-name
-						:action "assign-campain")
-				"<>")
-			       			       
-		       (:div :class "dropdown float-right"
-			     (:input :type "hidden" :class "selected-value" 
-				     :name "campaign" :value "")
-			     (:button :class "btn btn-secondary dropdown-toggle"
-				      :type "button"
-				      :data-toggle "dropdown"
-				      :aria-haspopup "true" :aria-expanded "false"
-				      (if (parameter "campaign")
-					  (parameter "campaign")
-					  "Assign Campaign"))
-	   
-			     (:div :class "dropdown-menu" 
-				   ;; :aria-labelledby "campaign"
-				   (dolist (option campaigns)
-				     (monkey-html-lisp:htm
-				       (:span :class "dropdown-item" 			     
-					      (:input :type "hidden"
-						      :value (frmt "~A" (xdb2:id option)))
-					      (frmt "~A" 
-						    (slot-value 
-						     option 
-						     (intern "NAME" 'cl-bizhub))))))))))))
+		   (let ((items))
+		     (dolist (license-code (getx (active-user) :selected-license-codes))
+		       (setf items 
+			     (append items (fetch-items 
+					    (license-collection license-code "campaigns")
+					    :result-type 'list))))
+		     (let ((campaigns items))
+		       (cl-who:htm
+			(:form :method "post" :id "assign-campaign-id"
+			       (:button :class "btn btn-small btn-outline-success float-right"
+					:name "assign-campaign" 
+					:type "submit" 
+					
+					:aria-pressed "false"
+					:onclick 
+					(grid-js-render-form-values
+					 "cl-wfx:ajax-grid" 
+					 spec-name
+					 "assign-campaign-id"
+					 :widget-id nil 
+					 :action "assign-campaign"
+					 
+					 )
+					
+					
+					"<>")
+			       
+			       
+			       
+			       
+			       
+			       (:div :class "dropdown float-right"
+				     (:input :type "hidden" :class "selected-value" 
+					     :name "campaign" :value "")
+				     (:button :class "btn btn-secondary dropdown-toggle"
+					      :type "button"
+					      :data-toggle "dropdown"
+					      :aria-haspopup "true" :aria-expanded "false"
+					      (if (parameter "campaign")
+						  (parameter "campaign")
+						  "Assign Campaign"))
+				     
+				     (:div :class "dropdown-menu" 
+					   ;; :aria-labelledby "campaign"
+					   (dolist (option campaigns)
+					     (cl-who:htm
+					      (:span :class "dropdown-item" 			     
+						     (:input :type "hidden"
+							     :value (frmt "~A" (item-hash option)))
+						     (frmt "~A" 
+							   (slot-value 
+							    option 
+							    (intern "NAME" 'cl-bizhub))))))))))))))
 	    (:div :class "card-header"
 		  (render-grid-header spec-name
 				      (get-context-data-spec-attribute 
@@ -1231,7 +1415,12 @@
 			      (render-grid-paging spec-name)))))
       )))
 
-
+(defun db-type (field)
+  (if (listp (getf field :db-type))
+		     (or (getf (getf field :db-type) :complex-type)
+			 (getf (getf field :db-type) :type))
+		     (getf field :db-type))
+  )
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (render-grid (gethash :root-data-spec (cache *context*))))
@@ -1242,7 +1431,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
   
-  (let* ((spec-name (read-symbol-from-string (parameter "data-spec")))
+  (let* ((spec-name (read-no-eval (parameter "data-spec")))
 	 (fields (get-context-data-spec-attribute 
 		  spec-name
 		  :data-fields))
@@ -1264,25 +1453,35 @@
 	  (setf item (make-instance spec-name)))
 	
 	(dolist (field fields)
+	  
 	  (when (and (getf field :editable)
-			 (getf field :db-type)
-			 (and
-			  (not (equalp (field-data-type field) 'data-group))
-			  (not (equalp (field-data-type field) 'data-list))))
-		(let ((valid (if (equalp (field-data-type field) 'list-item)
-				 (validate-item-val (field-data-type field) 
-						    field 
-						    item 
-						    (parameter (getf field :name)))
-				 (list t nil))))
-		  (unless (first valid)
-		    (pushnew 
-		     (list (getf field :name) (second valid))
-		     (gethash :validation-errors (cache *context*))))
+		     (getf field :db-type)
+		     (and
+		      (not (equalp (field-data-type field) 'data-group))
+		      (not (equalp (field-data-type field) 'data-list))))
+	    (let ((valid (if (equalp (field-data-type field) 'list-item)
+			     (validate-sfx (db-type field)
+						field 
+						item 
+						(parameter (getf field :name)))
+			     (list t nil))))
+	      
+	      (unless (first valid)
+		(pushnew 
+		 (list (getf field :name) (second valid))
+		 (gethash :validation-errors (cache *context*))))
 		  
-		  (when (first valid)
-		    (set-item-val (field-data-type field) field item 
-				  (parameter (getf field :name)))))))
+	      (when (first valid)
+		(if (equalp (field-data-type field) :hierarchical)
+		    (setf (getfx field item 
+				 
+				 :source (get-context-data-spec-attribute 
+					  (field-type-val field :data-spec) 
+					  :active-item))
+			  (parameter (getf field :name)))
+		    (setf (getfx field item) 
+				  (parameter (getf field :name))))))))
+	
 	
 	;;TODO: is this still needed????
 	;;Doing this to keep edit window open.
@@ -1290,29 +1489,26 @@
 	  (setf (gethash :validation-error-item-id
 			 (cache *context*))
 		(parameter "data-id")))
-	
+
 	(unless (gethash :validation-errors (cache *context*))
 	  
-	  (dolist (field fields)
-	    (when (and (getf field :editable)
-		       (getf field :db-type)
-		       (and (not (equalp (field-data-type field) 'data-group))
-			    (not (equalp (field-data-type field) 'data-list))))
-		(set-item-val (field-data-type field) field item 
-			      (parameter (getf field :name)))))
+
 	 
+	  
+
 	  ;;Append parent-slot only if new
-	  (when (and parent-slot (not (xdb2:id item)))
+	  (when (and parent-slot (not (item-hash item)))
 	    
 	    (setf (slot-value parent-item parent-slot)
 		  (append (slot-value parent-item parent-slot)
 			  (list item))))
 	  
 	  
-	  (persist-data (gethash :root-item (cache *context*))
-			    :collection-name (get-context-data-spec-attribute 
-					      (gethash :root-data-spec (cache *context*))
-					      :collection-name))
+	  (persist-item (license-collection "00000" (get-context-data-spec-attribute 
+					     (gethash :root-data-spec (cache *context*))
+					     :collection-name)
+					    )
+			(gethash :root-item (cache *context*)))
 	  
 	  (set-context-data-spec-attribute spec-name :parent-item nil)
 	  (set-context-data-spec-attribute spec-name :edit-item nil)

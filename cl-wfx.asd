@@ -1,10 +1,55 @@
+(defsystem "cl-wfx"
+  :description "A simple web system framework.."
+  :version "0.0.1"
+  :author "Phil Marneweck <phil@psychedelic.co.za>"
+  :licence "MIT"
+  :depends-on ("alexandria" 
+	       "cl-ppcre"
+	       "ironclad"
+	       "bordeaux-threads"
+	       "cl-naive-store"
+	       "hunchentoot"
+	       "cl-who"
+	       "split-sequence"
+	       "ht-simple-ajax"
+	       "cl-json"
+	       )
+  :components ((:file "packages")
+               (:file "common" :depends-on ("packages"))	       
+	       (:file "system" :depends-on ("common"))
+	       (:file "session" :depends-on ("system"))
+	       (:file "data" :depends-on ("system"))
+	       
+	       (:file "user" :depends-on ("system" "data"))
+	       (:file "license" :depends-on ("data"))
+	       (:file "entity" :depends-on ("license"))
+	       (:file "context" :depends-on ("system"))
+	       (:file "context-spec" :depends-on ("data"))
+	       (:file "module" :depends-on ("system" "context-spec"))
+	       (:file "request" :depends-on ("context" "context-spec" "module"))
+	       (:file "data-type-fields" :depends-on ("system" "context-spec"))
+	       (:file "hunchentoot/common" :depends-on ("request"))
+	       (:file "hunchentoot/ajax")
+	       (:file "hunchentoot/system" 
+		      :depends-on ("system" "request" "hunchentoot/common"))
+	       (:file "hunchentoot/request" :depends-on ("hunchentoot/system" ))
+	       (:file "hunchentoot/grid" 
+		      :depends-on ("hunchentoot/request"))
+	       (:file "hunchentoot/context" 
+		      :depends-on ("hunchentoot/grid"))
+	       
+	       ))
+
+#|
 (defsystem cl-wfx
   :name "cl-wfx"
   :version "0.1"
   :depends-on (;;:closer-mop 
 	       :monkey-lisp
 		  :monkey-html-lisp
-	       :alexandria :ironclad :split-sequence :xdb2 
+	       :alexandria 
+	       :ppcre
+	       :ironclad :split-sequence :xdb2 
 			   :hunchentoot :ht-simple-ajax :cl-who :cl-json 
 			   :parse-number
 			   :csv-parser
@@ -16,19 +61,20 @@
   :serial t
   :components ((:file "package")
 	       (:file "common")
-	       (:file "script")
-	       (:file "data")
-	       (:file "data-spec")
+	     ;;  (:file "script")
+	     ;;  (:file "data")
+	     ;;  (:file "data-spec")
 	       
 	       
-	       (:file "xdb/data-spec")
-	       (:file "xdb/common")
-	       (:file "context-spec")
-	       (:file "xdb/context-spec")
+	     ;;  (:file "xdb/data-spec")
+	     ;;  (:file "xdb/common")
+	     ;;  (:file "context-spec")
+	    ;;   (:file "xdb/context-spec")
 	       
 	       
 	       (:file "context")
 	       (:file "user")
+	       #|
 	       (:file "license")
 	       (:file "module")		       
 	       (:file "system")
@@ -53,8 +99,10 @@
 			  (:file "system")			  
 			  (:file "request")
 			  ))
+	       |#
 	     ))
 
 
 
 
+|#

@@ -41,13 +41,9 @@
 	 (*system* system)
 	 (*session* (start-session system))
 	 (*context* (request-context request))
-	 (*module* (module *context*))
-	 )
+	 (*module* (module *context*)))
     (declare (special *system* *context* *session* *request*))
-    (break "system-request")
-    (process-sys-request *context* request )
-
-    ))
+    (process-sys-request *context* request )))
 
 (defvar *context-id-lock* (bordeaux-threads:make-lock))
 
@@ -56,29 +52,19 @@
   (format nil "~:@(~36r~)" (random (expt 2 32))))
 
 (defun generate-new-context (module session name)
-  
   (let* ((contexts (contexts session))
-	 (context-spec (data-from-items (contexts module)
-				       :test (lambda (item)
-					    ;;TODO: split the id-string comaparison out in own method
-					    
-					       (or (string-equal name (name item))
-						   (string-equal name 
-								 (string-downcase 
-								  (id-string (name item))))
-						   ))))
+	 (context-spec 
+	  (find-in-item-list (getx module :contexts)
+			     (lambda (item)
+				   (or (string-equal name (getx item :name))
+				       (string-equal name 
+						     (string-downcase 
+						      (id-string (getx item :name))))))))
 	 
 	 (context (make-instance 'context 
 				 :module module
 				 :context-spec context-spec)))
-    
-    ;;TODO: figure this shit out! NID and RID
-    (unless context-spec
-     ;; (break "~A ~A ~A" context-spec name (type-of name))
-      
-      )
-    
-    
+       
     (bordeaux-threads:with-lock-held (*context-id-lock*)
       (loop for id = (generate-context-id)
 	 unless (gethash id contexts)
@@ -87,7 +73,7 @@
 	 return id))
     context))
 
-(defmethod start-context ((module module) (session session) context-name  &key id request)
+(defmethod start-context ((module item) (session session) context-name  &key id request)
   (let* ((id (or id (parameter* "contextid" request)))
 	 (context (if id
 		     (or (gethash id (contexts session))

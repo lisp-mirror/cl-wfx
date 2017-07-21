@@ -2,7 +2,7 @@
 ;;TODO: How to replace global with tmp-directory from system in image-dispathcer
 (defparameter *tmp-directory* #p"~/hunchentoot-upload/")
 
-(defclass hunch-system (web-system hunchentoot:easy-acceptor)
+(defclass hunch-system (system hunchentoot:easy-acceptor)
   ((site-url :initarg :site-url
              :initform (error "site-url should be provided")
              :accessor site-url
@@ -26,13 +26,12 @@ because hunchentoot does not have vhosts by default.")
 	      :initform "/images")
    (default-context :initarg :default-context
 	      :accessor default-context
-	      :initform nil)
-   ))
+	      :initform nil)))
+
 
 (defmacro define-ajax (system name lambda-list &body body)
    `(ht-simple-ajax:defun-ajax ,name ,lambda-list ((ajax-processor ,system))
        ,@body))
-
 
 (defun %image-processor ()
   (let ((uri (hunchentoot:url-decode (hunchentoot:request-uri*))))

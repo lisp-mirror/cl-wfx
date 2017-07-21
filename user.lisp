@@ -1,234 +1,231 @@
 (in-package :cl-wfx)
 
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  (:data-spec 
-   :name user-preference
-   :label "User Preference"
-   :data-fields
-   ((:name name 
-	   :initarg :name
-	   :accessor name)
-    (:name preference 
-	   :initarg :preference
-	   :accessor preference))
-   :metaclass xdb2:storable-versioned-class
-   (:documentation
-    "User preference, used to store user specific UI and 
-system settings.")))
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  (:data-spec 
-   :name user-profile
-   :label "User Profile"
-   :super-classes (license-doc)
-   :data-fields
-   ((:name name 
-	   :initarg :name
-	   :initform nil
-	   :accessor name
-	   :db-type string
-	   :display t
-	   :editable t) 
-      (:name context-permissions 
-	     :initarg :context-permissions
-	     :accessor context-permissions
-	     :initform nil
-	     :db-type (data-group :data-spec user-permission)
-	     ))
-   :metaclass xdb2:storable-versioned-class
-   :collection-name "user-profiles"
-   :collection-type :license
-   :default-initargs (:top-level t)
-   (:documentation
-      "Predetermined user settings used to set up users according 
-to role or some other criteria.")))
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  (:data-spec 
-   :name user-permission
-   :label "User Permission"
-   :data-fields
-   ((:name context-spec 
-	   :initarg :context-spec
-	   :accessor context-spec
-	   :initform nil
-	   :db-type (data-member context-spec 
-				 :key-accessor context-name)
-	   :key t)
-      (:name permissions 
-	     :initarg :permissions
-       :accessor permissions
-       :initform nil
-       :db-type (list :type keyword)))
-   :metaclass xdb2:storable-versioned-class)
-  )
-
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  (:data-spec 
-   :name user
-   :label "User"
-   :super-classes ()
-   :data-fields
-   ((:name email 
-	   :initarg :email
-	   :accessor email
-	   :key t
-	   :db-type email
-	   :display t
-	   :editable t
-	   :documentation	     
-	   "User email address used as unique identifier for a user, 
-must be valid email to enable confirmation.")
-    (:name password 
-	   :initarg :password
-	   :accessor password
-	   :db-type number)
-    (:name salt 
-	   :initarg :salt
-	   :accessor salt
-	   :db-type string)
-    (:name license-codes
-	   :initarg :license-codes
-	   :accessor license-codes
-	   :initform nil
-	   :db-type (list :type string)
-	   :key t
-	   :display t
-	   :editable t)
-    (:name preferences 
-	   :initarg :preferences
-	   :accessor preferences
-	   :initform nil
-	   :db-type (list user-preference)
-	   :display t
-	   :editable t) 
-    (:name super-user-p 
-	   :initarg :super-user-p
-	   :accessor super-user-p
-	   :initform nil
-	   :documentation		    
-	   "If t none of the permission security applies to the user.")
-    (:name status 
-	   :initarg :status
-	   :accessor :status
-	   :initform nil
-	   :db-type (list-item :type cl-wfx::keyword 
-			       :list (:active :suspended :locked :disabled))
-	   :display t
-	   :editable t
-	   :documentation "Active, Suspended, Locked Out, Disabled"))
-   :metaclass xdb2:storable-versioned-class
-   :collection-name "users"
-   :collection-type :system
-   :default-initargs (:top-level t)
+(add-core-definitions
+ '((:data-type
+    (:name "user-permission"
+     :label "User Permission"
+     :top-level-p nil
+     :fields ((:name :context-spec
+		     :label "Context Spec"
+		     :db-type (:type :item
+				     :data-type "context-spec"
+				     :collection "context-specs"
+				     :key-accessor :name)
+		     :key t
+		     :attributes (:display t :editable t)) 
+	      (:name :permissions 
+		     :label "Permissions"
+		     :db-type (:type :list
+				     :list-type :keyword
+				     :delimiter " ")
+		     :attibutes (:display t :editable t))))
+    :destinations (:core))
+   
+   (:data-type
+    (:name "user-profile"
+     :label "User Profile"
+     :top-level-p t
+     :fields ((:name :name
+		     :label "Name"
+		     :db-type :string
+		     :key t
+		     :attributes 
+		     (:display t :editable t)) 
+	      (:name :context-permissions 
+		     :label "Context Permissions"
+		     :key nil
+		     :db-type (:type :list
+				     :list-type :item
+				     :data-type "user-permission"
+				     :key-accessor :context-spec
+				     :accessor-accossor :name)
+		     :attibutes (:display t :editable t)))
+     :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
+    :destinations (:core :license))
  
-   (:documentation
-    "User with enough attributes to implement basic login and ui security."))
-  )
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor) 
-  (:data-spec 
-   :name license-user
-   :label "License User"
-   :super-classes (license-doc)
-   :data-fields
-   ((:name email 
-	   :initarg :email
-	     :accessor email
+   (:collection
+    (:name "user-profiles"
+     :label "User Profiles"
+     :data-type "user-profile")
+    :destinations (:core :license))
+   
+   (:data-type
+    (:name "user-preference"
+     :label "User Preference"
+      :top-level-p nil
+     :fields ((:name :name 
+		     :label "name"
+		     :db-type :string
+		     :key t
+		     :attributes (:display t :editable t)) 
+	      (:name :preference
+		     :label "Preference"
+		     :key nil
+		     :db-type :string
+		     :attributes (:display t :editable t)))
+     :documentation "")
+    :destinations (:core))
+   
+   (:data-type
+    (:name
+     "user"
+     :label "User"
+     :top-level-p t
+     :fields
+     ((:name :email
+	     :label "Email"
 	     :key t
-	     :db-type email
-	     :display t
-	     :editable t
+	     :db-type :email
+	     :attributes (:display t :editable t)
+	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
+      (:name :name
+	     :label "Name"
+	     :key nil
+	     :db-type :string
+	     :attributes (:display t :editable t))
+      (:name :phone-no
+	     :label "Phone No"
+	     :key nil
+	     :db-type :string
+	     :attributes (:display t :editable t))
+      (:name :password 
+	     :label "Password"
+	     :db-type :number
+	     :attributes nil)
+      (:name :salt 
+	     :label "Salt"
+	     :db-type :String
+	     :attributes nil)
+      (:name :license-codes 
+	     :label "License Codes"
+	     :db-type (:type :list 
+			     :list-type :string
+			     :delimiter ";" )
+	     :attributes (:display t :editable t))
+      (:name :permissions 
+	     :label "Permissions"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type :item
+			     :data-type "user-permission"
+			     :key-accessor :context-spec
+			     :accessor-accossor :name)
+	     :attibutes (:display t :editable t))     
+      (:name :accessible-entities 
+	     :label "Accessible Entities"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type :item 
+			     :data-type"entity"
+			     :collection "entities"
+			     :key-accessor :name)
+	     :attibutes (:display t :editable t))
+      (:name :preferences
+	     :label "Preferences"
+	     :db-type (:type :list
+			     :list-type :item
+			     :data-type "user-preference"
+			     :key-accessor :name)			  
+	     :attributes (:display t :editable t))      
+      (:name :super-user-p
+	     :label "Is Super User"
+	     :db-type :boolean
+	     :attributes nil
+	     :documentation "If t none of the permission security applies to the user.")
+      (:name :status
+	     :label "Status"
+	     :db-type (:type :list
+			     :list-type :keyword
+			     :list-values (:active :suspended :locked :disabled))
+	     :attributes (:display t :editable t)
+	     :documentation "Active, Suspended, Locked Out, Disabled"))
+     :documentation "User with enough attributes to implement basic login and ui security.")
+    :destinations (:core))
+   
+   (:collection
+    (:name "users"
+     :label "Users"
+     :name-space "core"
+     :data-type "user")
+    :destinations (:core))
+   
+   (:data-type
+    (:name
+     "license-user"
+     :label "License User"
+     :top-level-p t
+     :fields
+     ((:name :email
+	     :label "Email"
+	     :key t
+	     :db-type :email
+	     :attributes (:display t :editable t)
+	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
+      (:name :permissions 
+	     :label "Permissions"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type :item
+			     :data-type "user-permission"
+			     :key-accessor :context-spec
+			     :accessor-accossor :name)
+	     :attibutes (:display t :editable t))     
+      (:name :accessible-entities 
+	     :label "Accessible Entities"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type :item 
+			     :data-type"entity"
+			     :collection "entities"
+			     :key-accessor :name)
+	     :attibutes (:display t :editable t))
+      (:name :status
+	     :label "Status"
+	     :db-type (:type :list
+			     :list-type :keyword
+			     :list-values (:active :suspended :locked :disabled))
+	     :attributes (:display t :editable t)
+	     :documentation "Active, Suspended, Locked Out, Disabled"))
+     :documentation "User with enough attributes to implement basic login and ui security.")
+    :destinations (:core :license))
+ 
+   (:collection
+    (:name "license-users"
+     :label "License Users"
+     :data-type "user")
+    :destinations (:license))
+   
+   (:data-type
+    (:name
+     "active-user"
+     :label "Active User"
+     :top-level-p t
+     :fields
+     ((:name :email
+	     :label "Mail"
+	     :key t
+	     :db-type :email
+	     :attributes (:display t :editable t)
 	     :documentation	     
 	     "User email address used as unique identifier for a user, 
-must be valid email to enable confirmation.")
-
-      (:name permissions 
-	     :initarg :permissions
-		   :accessor permissions
-		   :initform nil
-		   :db-type (list user-permission)
-		   :display t
-		   :editable t
-		   :documentation "Context permissions for the user.")
-      (:name accessible-entities 
-	     :initarg :accessible-entities
-			   :accessor accessible-entities
-			   :initform nil
-			   :db-type (data-group :data-spec entity :accessor-key name)))
-   :metaclass xdb2:storable-versioned-class
-   :collection-name "license-users"
-   :collection-type :merge
-   :default-initargs (:top-level t)
- 
-   (:documentation
-      "User with enough attributes to implement basic login and ui security."))
-  )
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  (:data-spec 
-   :name user-action
-   :label "User Action"
-   :data-fields
-   ((:name user 
-	  :initarg :user
-	    :accessor :user
-	    :initform nil)
-      ;;  (action)
-      ;;  (action-reversal)
-      ;;  (date-time)
-      )
-   :metaclass xdb2:storable-versioned-class
-   :collection-name "user-actions"
-   :collection-type :license
-   :default-initargs (:top-level t)))
-
-(monkey-lisp:monkey-lisp (:processor-class cl-wfx::data-spec-processor)
-  ;;TODO: Is this not taken care of by sessions? No because it has to be persisted on a user level!
-  ;;TODO: How to define actions?
-  (:data-spec
-   :name active-user
-   :label "Active User"
-   :data-fields
-   ((:name user :initarg :user
-	   :accessor user
-	   :initform nil)
-    (:name action-history 
-	   :initarg :action-history
-	   :accessor action-history
-	   :initform nil
-	   :documentation "Actions by user since logon.")
-    (:name entities 
-	   :initarg :entities
-	   :accessor current-entities
-	   :initform nil)
-    (:name license-codes
-	   :initarg :license-codes
-	   :accessor license-codes
-	   :initform nil
-	   :db-type (list :type string)
-	   :key t
-	   :display t
-	   :editable t)
-    (:name current-action 
-	   :initarg :current-action
-	   :accessor current-action
-	   :initform nil
-	   :documentation "What is the user doing now?")
-    (:name system-state 
-	   :initarg :system-state
-	   :accessor system-state
-	   :initform nil
-	   :documentation "Temporary settings like date selection range?"))
-   :metaclass xdb2:storable-class
-   :collection-name "active-users"
-   :collection-type :license
-   :default-initargs (:top-level t)
-   
-   (:documentation "Register active users to be able to see what is going on 
-and possibly use for logging? Can be used to reapply state when 
-a user logs in again.")))
+must be valid email to enable confirmation.")      
+      (:name :selected-licenses 
+	     :label "Selected Licenses"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type "license"
+			     :collection "licenses"
+			     :key-accessor :code)
+	     :attibutes (:display t :editable t))      
+      (:name :selected-entities 
+	     :label "Selected Entities"
+	     :key nil
+	     :db-type (:type :list
+			     :list-type "entity"
+			     :collection "entities"
+			     :key-accessor :name)
+	     :attibutes (:display t :editable t))))
+    :destinations (:core))))
 
 (defvar *password-salt-length* 10)
 (defvar *min-passwrod-length* 5)
@@ -254,61 +251,77 @@ a user logs in again.")))
 (defgeneric check-password (user password)
   (:documentation "Check password given against user stored password."))
 
-(defmethod check-password ((user user) password)
+(defmethod check-password ((user item) password)
   (equalp
-   (password user)
-   (hash-password password (salt user))))
+   (getx user :password)
+   (hash-password password (getx user :salt))))
 
-(defun make-user (email password &key license-codes super-user-p)
+(defun make-user (email password &key name phone-no license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
-    (make-instance 'user 
-		   :license-codes license-codes
-		   :email email
-		   :password password
-		   :salt salt
-		   :super-user-p super-user-p)))
+    (persist-item (system-collection "users") (list :license-codes license-codes
+			   :email email
+			   :name name
+			   :phone-no phone-no
+			   :password password
+			   :salt salt
+			   :super-user-p super-user-p))))
 
 (defun change-user (user new-password &key )
   (when new-password
-    (setf (values (password user) (salt user))
+    (setf (values (getx user :password) (getx user :salt))
           (make-password new-password))))
 
 (defun get-user (email)  
-  (fetch-item "users"
-	     :test (lambda (doc)
-		     (string-equal email (email doc)))))
+  (fetch-item
+   (core-collection "users")
+   :test (lambda (item)
+	   (string-equal email (getx item :email)))))
 
-(defun find-users (criteria)
-  (if criteria
-      (fetch-items      
-       "users"
-      :test  criteria)
-      (data-items *sys-license-code*
-		  "users")))
 
 (defparameter *user* nil)
 
+(defgeneric ensure-user (system email password &key &allow-other-keys))
 
-(defmacro with-sys-user (system &body body)
+(defmethod ensure-user ((system system) email password 
+			&key name super-user-p &allow-other-keys)
+  (or (get-user email)
+      (make-user email password
+		 :name name
+		 :super-user-p super-user-p)))
+
+(defmethod ensure-core-user ((system system) &key &allow-other-keys)
+  (ensure-user "admin@cl-wfx.com" 
+	       :name "Core Admin"
+	       :super-user t))
+
+(defmethod ensure-system-user ((system system) &key &allow-other-keys)
+  (ensure-user (frmt "admin@~A.com" (name system)) 
+	       :name "System Admin"
+	       :super-user t))
+
+(defmacro with-core-user (system &body body)
   `(let* ((*system* ,system)	 
 	  (*user* (get-user "admin@cl-wfx.com"))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-instance 
-				 'cl-wfx::active-user
-				 :user *user*))))
+			  :user (make-item 
+				 :values (list :email "admin@cl-wfx.com" 
+					       :selected-licenses nil
+					       :selected-entities nil)))))
      (when *user*
        ,@body)))
+
 
 (defmacro with-user (system user &body body)
   `(let* ((*system* ,system)	 
 	  (*user* (get-user ,user))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-instance 
-				 'cl-wfx::active-user
-				 :user *user*))))
+			  :user (make-item 
+				 :values (list :email ,user 
+					       :selected-licenses nil
+					       :selected-entities nil)))))
      (when *user*
        ,@body)))
 
@@ -318,104 +331,12 @@ a user logs in again.")))
 
 
 (defun accessible-entities* (user)
-  (let ((license-user (cl-wfx::fetch-item "license-users"
-					  :test
-					  (lambda (doc)
-					    (string-equal (email doc)
-							  (email user))))))
-    (accessible-entities license-user)))
+  (let ((license-user (fetch-item "license-users"
+				  :test
+				  (lambda (item)
+				    (string-equal (getx item :email)
+						  (getx user :email))))))
+    (getx license-user :accessible-entities)))
 
-(defmethod match-entities ((doc user) entities)
-  (intersection (accessible-entities* doc) entities))
-
-(defun relevant-entities ()
-  (or (current-entities *session*)
-      (let ((items (fetch-all* (data *system*) 'entitiy)))
-	(if (and items (not (listp items)))
-	    (coerce items 'list)
-	    items))))
-
-#|
-(defun setup-permissions (user)
-  (let ((hash (make-hash-table :test #'equal)))
-    (cond ((super-user-p user)
-           (loop with entities = (coerce (entities) 'list)
-                 for (page . subs) in (permissions *context*)
-                 for perm = (alexandria:ensure-gethash page hash
-                                                       (make-permission page
-                                                                        (loop for sub in subs
-                                                                              collect (cons sub entities))))
-                 do
-                 (setf (permission-entities perm) entities)))
-          ((per-entity-permissions user)
-           (loop for (entity . permissions) in (permissions user)
-                 do
-                 (loop for (page . sub) in permissions
-                       for perm = (alexandria:ensure-gethash page hash (make-permission page))
-                       do
-                       (push entity (permission-entities perm))
-                       (loop for sub in sub
-                             do
-                             (push entity (alexandria:assoc-value (permission-sub-permissions perm)
-                                                                  sub :test #'equal))))))
-          (t
-           (loop for (page . sub) in (permissions user)
-                 for perm = (make-permission page (mapcar #'alexandria:ensure-list sub))
-                 do (setf (gethash page hash) perm))))
-    hash))
-
-
-
-
-(defun update-user-permissions ()
-  (let* ((current *current-permissions*)
-         (time (current-permissions-time current))
-         (user (current-user)))
-    (when (or (>= (effective-date user) time)
-              (>= (modified (entities-collection)) time))
-      (setf (current-permissions-permissions current) (setup-permissions user)
-            (current-permissions-time current) (get-universal-time))
-      (multiple-value-bind (context found) (session-value 'context)
-        (when found
-          (setf (session-value 'context)
-                (remove-if-not #'get-entity-by-id context)))))))
-
-(defun entity-context ()
-  (and (current-user)
-       (multiple-value-bind (context found) (session-value 'context)
-         (if found
-             context
-             (setf (context)
-                   (remove-if-not #'get-entity-by-id
-                                  (last-context (current-user))))))))
-
-
-;;TODO: Make sure user is set on session when login success
-
-(defgeneric setup-context-permissions (context))
-
-(defmethod setup-context-permissions ((context context))
-  (when (and context (session context) (user (session context)))
-    (update-user-permissions)
-    (let ((perm (gethash (context-name context)
-                         (permissions (user (session context))))))
-      (cond ((not perm)
-             nil)
-            ((permission-entities perm)
-             (let ((entities (mapcar #'alexandria:ensure-list (permission-entities perm))))
-               (loop for (sub . sub-entities) in (sub-permissions perm)
-                     do (loop for entity in sub-entities
-                              do
-                              (push sub (alexandria:assoc-value entities entity))))
-               (loop for entry in entities
-                     for (entity) = entry
-                     when (member (xid entity) (entity-context))
-                     collect entry)))
-            (t
-             (let ((sub (mapcar #'car (sub-permissions perm))))
-               (loop for xid in (entity-context)
-                     for entity = (get-entity-by-id xid)
-                     collect (cons entity sub))))))))
-
-
-|#
+(defmethod match-entities ((user item) entities)
+  (intersection (accessible-entities* user) entities))

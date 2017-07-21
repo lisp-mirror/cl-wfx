@@ -3,9 +3,6 @@
 ;;GLOBAL VARS and Shortcut functions ################################
 (defvar *sys-license-code* "000000")
 
-(defparameter *data-specs* nil
-  "On compile this is used to store system specs temporarily for loading into db.")
-
 (defvar *context* nil
   "Not to be set. Exposes the current context.")
 
@@ -20,35 +17,18 @@
 Notes:
 Dont set manually use with-system macro.")
 
-(defvar *theme* nil
-  "Not to be set by user. Used by convenience functions.")
 
-(defvar *current-theme* nil
-  "Active themearound a widget render, used by convenience functions. Not to be set by user.")
-
-(defvar *widget* nil
-  "Active widget around a widget render, used by convenience functions. Not to be set by user.")
-
-(defun current-user ()
-  (if (and (boundp '*session*) *session*) 
-      (if (user *session*)
-	  (user (user *session*)))))
-
-(defun active-user ()
-  (if (boundp '*session*)   
-      (if *session*
-	  (user *session*))))
+(defun read-no-eval (value)
+  (let ((*read-eval* nil))
+    (if value
+	(if (stringp value)
+	    (read-from-string value)
+	    (read value)))))
 
 
-;;Data
 
-(defgeneric getx (item identifier &key collection qualifier &allow-other-keys)
-  (:documentation "The getx method is to be used to get a piece of data from various structures. The purpose is to enable the use of different data structures, without having to change code. 
 
-Qualifier is an exstra test that can be applied to the objects retrieved from the collection and needs to be a (lambda (object)..return objects) or a function designator that operates in the same fasion. This was not intended to be specialized on lisp types because lisp allready has get functions for its collection types.
-key can really be anything, just document your implementation to help out others that want to use it.
-of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor to differentiate between getx's.
-"))
+
 
 ;;#############################STRINGS
 ;;FORMAT
@@ -68,6 +48,7 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
   (ppcre:regex-replace-all "[^A-Za-z0-9-_:.]"
                            (substitute #\- #\Space id) ""))
 
+#|
 (defun plural-name (name)
   (setf name (frmt "~A" name))
   (let ((last-char (char name (1- (length name)))))
@@ -80,15 +61,7 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
 	  (t
 	   (alexandria:symbolicate name 's)))))
 
-
-
-(defun read-symbol-from-string (string)
-  (let ((*read-eval* nil))
-    (if string
-	(if (stringp string)
-	    (read-from-string string)
-	    string))))
-
+|#
 
 ;;#####################VALUE CHECKS
 
@@ -105,12 +78,9 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
 (defun decode-iso-date (date)
   (ppcre:register-groups-bind ((#'parse-integer year)
                                (#'parse-integer month)
-                               (#'parse-integer day)) ("(\\d{4})-(\\d{1,2})-(\\d{1,2})" date)
+                               (#'parse-integer day)) 
+      ("(\\d{4})-(\\d{1,2})-(\\d{1,2})" date)
     (values year month day)))
-
-
-
-
 
 (defvar *short-months*
   #("Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"))
@@ -161,8 +131,6 @@ of should be of form form (of (eql :what-am-i-getting)) and is just a descriptor
                       (year (ensure-parse-integer (third date-split)))
                       (day (ensure-parse-integer (first date-split))))
                  (values year month day)))))))
-
-
 
 (defun decode-date (date &key time-zone)
   (etypecase date

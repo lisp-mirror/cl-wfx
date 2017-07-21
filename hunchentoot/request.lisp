@@ -44,7 +44,9 @@
 				&key &allow-other-keys)
   
   ;;TODO:: How to register actions?
-  (if (find (parameter "action") (list "save" "login" "logout") :test #'string-equal)
+  (if (find (parameter "action") 
+	    (list "save" "login" "logout" "assign-campaign") 
+	    :test #'string-equal)
       (action-handler (intern (string-upcase (parameter "action")) :keyword)
 		      context
 		      request))
