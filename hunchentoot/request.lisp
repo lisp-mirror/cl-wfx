@@ -25,11 +25,14 @@
 	   (mod (third split))
 	   (context (fourth split)))
       (declare (ignore sys))
-      
-      (setf sys-mod (get-module-short mod))
+
+      (setf sys-mod (get-module-short (get-store-from-short-mod 
+					  mod) "cor"))
+ 
       
       (unless sys-mod
-	(setf sys-mod (get-module-short "sys"))
+	(break "wtf no mod for request ? ~A ~A" mod (core-store))
+	(setf sys-mod (get-module-short (core-store) "sys"))
 	)
       
       (start-context sys-mod *session* context

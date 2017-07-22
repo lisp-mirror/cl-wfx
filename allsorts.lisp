@@ -10,7 +10,7 @@
 	     :initarg :name
 	     :accessor name
 	     :label "Name"
-	     :key t
+	     :key-p t
 	     :db-type symbol
 	     :display t
 	     :editable nil)

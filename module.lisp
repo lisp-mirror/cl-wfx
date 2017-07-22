@@ -7,13 +7,13 @@
      :top-level-p nil
      :fields ((:name :name
 		     :label "Name"
-		     :key t
+		     :key-p t
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")		    
 	      (:name :value
 		     :label "Value"
-		     :key t
+		     :key-p nil
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")))
@@ -25,13 +25,13 @@
      :top-level-p nil
      :fields ((:name :name
 		     :label "Name"
-		     :key t
+		     :key-p t
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")		    
 	      (:name :children
 		     :label "Children"
-		     :key t
+		     :key-p nil
 		     :db-type (:type :list
 				     :list-type :item
 				     :data-type "menu-item"
@@ -40,7 +40,7 @@
 		     :documentation "")
 	      (:name :context-spec
 		     :label "Context Spec"
-		     :key nil
+		     :key-p nil
 		     :db-type (:type :item
 				     :item-type "context-spec"
 				     :key-accessor :name
@@ -49,7 +49,7 @@
 		     :documentation "")
 	      (:name :context-parameters
 		     :label "Context Parameters"
-		     :key nil
+		     :key-p nil
 		     :db-type (:type :list
 				     :list-type :item
 				     :data-type "context-parameter"
@@ -64,13 +64,13 @@
      :top-level-p nil
      :fields ((:name :name
 		     :label "Name"
-		     :key t
+		     :key-p t
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")		    
 	      (:name :menu-items
 		     :label "Menu Items"
-		     :key t
+		     :key-p nil
 		     :db-type (:type :list
 				     :list-type :item
 				     :data-type "menu-item"
@@ -85,19 +85,19 @@
      :top-level-p t
      :fields ((:name :name
 		     :label "Name"
-		     :key t
+		     :key-p t
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :module-short
 		     :label "Module Short"
-		     :key t
+		     :key-p nil
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :contexts
 		     :label "Contexts"
-		     :key t
+		     :key-p nil
 		     :db-type (:type :list
 				     :list-type :item
 				     :data-type "context-spec"
@@ -107,7 +107,7 @@
 		     :documentation "")
 	      (:name :menu
 		     :label "Menu"
-		     :key t
+		     :key-p nil
 		     :db-type (:type :list
 				     :list-type :item
 				     :data-type "menu"
@@ -119,11 +119,11 @@
    (:collection
     (:name "modules"
      :label "Modules"
-     :data-type "modules")
+     :data-type "module")
     :destinations (:core :system :license))))
 
-(defun get-module (collection module-name)  
-  (fetch-item collection
+(defun get-module (store module-name)   
+  (fetch-item (get-collection store "modules" )
 	      :test (lambda (item)
 		      (string-equal module-name (getx item :module-name)))))
 
@@ -132,8 +132,9 @@
     (if (string-equal (getx context :name) context-name)
 	(return-from get-module-context context))))
 
-(defun get-module-short (collection module-short)  
-  (fetch-item collection
+(defun get-module-short (store module-short)  
+  (fetch-item (get-collection store "modules")
 	     :test (lambda (item)
-		     (string-equal module-short (getx item :module-name)))))
+		    
+		     (string-equal module-short (getx item :module-short)))))
 

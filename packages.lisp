@@ -34,6 +34,7 @@
    
    ;;#### 
    :load-context-specs
+   :load-modules
    
    :init-sys-universe
    :init-universe-definitions
@@ -42,6 +43,8 @@
    :core-collection
    :system-collection
    :license-collecton
+   
+   :hunch-system
    ))
 
 

@@ -118,7 +118,6 @@ Calls in :after in order:
     (declare (special *system*))
     
     (load-context-specs system)
-    
     (load-modules system)
     
     (setf (system-status system) :started)))

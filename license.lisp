@@ -7,19 +7,19 @@
 	   :top-level-p t
 	   :fields ((:name :license-code
 			   :label "License Code"
-			   :key t
+			   :key-p t
 			   :db-type :string
 			   :attributes (:display t :editable t)
 			   :documentation "")		    
 		    (:name :license-holder
 			   :label "License Holder"
-			   :key t
+			   :key-p nil
 			   :db-type :string
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		    (:name :modules
 			   :label "License Modules"
-			   :key t
+			   :key-p nil
 			   :db-type (:type :list
 					   :list-type :item
 					   :data-type "module"
@@ -28,13 +28,13 @@
 			   :documentation "")
 		    (:name :license-date
 			   :label "License Date"
-			   :key t
+			   :key-p nil
 			   :db-type :date
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		    (:name :license-status
 			   :label "License Status"
-			   :key t
+			   :key-p nil
 			   :db-type (:type :list
 					   :list-type :keyword
 					   :list-values (:demo :suspended :active))

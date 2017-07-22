@@ -27,6 +27,7 @@
 	       (:file "context-spec" :depends-on ("data"))
 	       (:file "module" :depends-on ("system" "context-spec"))
 	       (:file "request" :depends-on ("context" "context-spec" "module"))
+	       (:file "system-load" :depends-on ("request" ))
 	       (:file "data-type-fields" :depends-on ("system" "context-spec"))
 	       (:file "hunchentoot/common" :depends-on ("request"))
 	       (:file "hunchentoot/ajax")

@@ -101,7 +101,7 @@ because hunchentoot does not have vhosts by default.")
 				   (system-web-folder system)))
 	 
 	 (file-dispatcher-web (hunchentoot:create-folder-dispatcher-and-handler
-			       (frmt "~Asys/web/" (site-url system)) 
+			       (frmt "~Acor/web/" (site-url system)) 
 			       (web-folder system)))
 	 )
     

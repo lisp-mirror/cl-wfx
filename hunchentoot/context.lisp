@@ -5,7 +5,7 @@
   (with-html-string
     (:div :class "row"
 	  (:div :class "card col-5"
-		(:img :class "card-image-top" :src "../sys/web/images/logo.png")
+		(:img :class "card-image-top" :src "../cor/web/images/logo.png")
 		
 		(:div :class "card-block"
 		      (:h4 :class "card-title"
@@ -38,14 +38,23 @@
 		(:div :class "card-footer"
 		      (gethash :login-error (cache *context*)))))))
 
+(defun get-store-from-short-mod (mod)
+  (cond ((equalp mod "cor")
+	 (core-store))
+	((equalp mod "sys")
+	 (system-store))
+	(t
+	 (license-store mod))))
+
 (defun context-url (spec module)
-  (let ((spec (or spec (get-context-spec (default-context *system*)))))
+  (let ((spec (or spec (get-context-spec (get-store-from-short-mod 
+					  (getx module :module-short))
+					 (default-context *system*)))))
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
 	   (id-string (if module
 			  (getx module :module-short)
-			  "sys"
-			  )))
+			  "cor")))
 	  (if (and spec (url spec))
 	      (url spec)
 	      (string-downcase 
@@ -117,14 +126,14 @@
 
   (hunchentoot:remove-session hunchentoot:*session*)
   
-  (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*))))
+  (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
 
 
 (defun user-mods ()
   (fetch-items "modules"
 	       :test
 	       (lambda (item)
-		 (and (not (string-equal "System Admin" (getx item :name)))
+		 (and (not (string-equal "Core" (getx item :name)))
 			  item))
 	       :result-type 'list))
 
@@ -133,9 +142,9 @@
       (getx (first (getx mod :menu)) :menu-items)))
 
 (defun system-menu ()
-  (let ((sys-mod (fetch-item "modules"
+  (let ((sys-mod (fetch-item (core-collection "modules")
 			      :test (lambda (item)
-				      (string-equal "System Admin" (getx item :name))))))    
+				      (string-equal "Core" (getx item :name))))))    
     (if sys-mod
 	(getx (first (getx sys-mod :menu)) :menu-items))))
 
@@ -250,7 +259,8 @@
       (pushnew (cdr parameter) (getx (active-user) :license-codes)))))
 
 (defun render-page (menu-p body)
-  (with-html
+  
+  (with-html-string
     (:html
      (:head
       "<link rel=\"stylesheet\"
@@ -283,7 +293,7 @@
       (if (not menu-p)	 
 	  (cl-who:htm
 	   (:div :class "container"
-		 body))
+		 (cl-who:str body)))
 	  (cl-who:htm
 	   (:nav 
 	    :class "navbar sticky-top navbar-toggleable-md hidden-print"
@@ -300,7 +310,7 @@
 			  (:span :class "navbar-toggler-icon"))))
 	    
 	    (:a :class "navbar-brand" :href "#" 
-		(:img :src "../sys/web/images/logo-small.png")
+		(:img :src "../cor/web/images/logo-small.png")
 		(name *system*))
 	    (:div :class "collapse navbar-collapse" :id "menushit"
 		  (:span :class "navbar-text mr-auto"
@@ -319,7 +329,7 @@
 			(:div :class "dropdown-menu":aria-labelledby "userDropdown"
 			      
 			      (let ((sys-mod 
-				     (fetch-item "modules"
+				     (fetch-item (core-collection "modules")
 						 :test (lambda (item)
 							 (string-equal
 							  "System Admin" 
@@ -471,14 +481,15 @@
 (defun check-user-access ()
   (unless (current-user)
 	     
-    (hunchentoot:redirect (frmt "~Asys/login" (site-url *system*)))
+    (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*)))
 	     )
   )
-(defmethod setup-context ((module item) (spec item) system)  
+(defmethod setup-context ((module item) (spec item) system) 
+  
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 
-	   (string-upcase (id-string (name spec))) 
+	   (string-upcase (id-string (getx spec :name))) 
 	   '-page)  
 	  :uri ,(if (getx spec :url)
 		    (getx spec :url)
@@ -497,20 +508,16 @@
 (defmethod setup-context-login ((module item) (spec item) system)  
   (eval
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
-					(string-upcase (id-string (name spec))) 
+					(string-upcase (id-string (getx spec :args))) 
 					'-page)  
 				       :uri ,(frmt "~A~A/~A" (site-url system) 
 						   (string-downcase 
 						    (id-string 
 						     (getx module :module-short)))
-						   (if (url spec)
-						       (url spec)
+						   (if (getx spec :url)
+						       (getx spec :url)
 						       (string-downcase 
-							(id-string (name spec)))))  
+							(id-string (getx spec :name)))))  
 				       :allow-other-keys t) ,(getx spec :args)
-      
-      (with-html-string
-	  "<!itemtype html>"
-	  (render-page nil
-	   (render-login))))))
+      (render-page nil (render-login)))))
 

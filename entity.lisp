@@ -7,25 +7,25 @@
 	   :top-level-p t
 	   :fields ((:name :name
 			   :label "Name"
-			   :key t
+			   :key-p t
 			   :db-type :string
 			   :attributes (:display t :editable t)
 			   :documentation "")		    
 		    (:name :entity-type
 			   :label "Entity Type"
-			   :key nil
+			   :key-p nil
 			   :db-type :string
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		    (:name :root-p
 			   :label "Root Entity"
-			   :key nil
+			   :key-p nil
 			   :db-type :boolean
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		    (:name :children
 			   :label "Children"
-			   :key nil
+			   :key-p nil
 			   :db-type (:type :list
 					   :list-type :item
 					   :data-type "entity"
@@ -36,13 +36,13 @@
 			   :documentation "")
 		  		    (:name :license-status
 			   :label "License Status"
-			   :key nil
+			   :key-p nil
 			   :db-type (:type :list
 					   :list-type :keyword
 					   :list-values (:demo :suspended :active))
 			   :attributes (:display t :editable t)
-			   :documentation ""))))
-   :destinations (:license)))
+			   :documentation "")))
+    :destinations (:license))))
 
 (defgeneric match-context-entities (item))
 
