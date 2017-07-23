@@ -1,16 +1,23 @@
 (in-package :cl-wfx)
 
+(defun complex-type (field)
+  (if (listp (getf field :db-type))
+      (or (dig :db-type :complex-type)
+	  (dig :db-type :type))
+      (getf field :db-type)))
+
 (defun field-data-type (field)
-  (getf (getf field ::db-type) :type))
+  (getf (getf field :db-type) :type))
 
-(defun set-context-data-spec-attribute (spec-name attribute value)
-  (let ((spec (read-no-eval spec-name)))
-    (setf (gethash attribute (gethash (frmt "~S" spec) (cache *context*)) ) value)))
 
-(defun get-context-data-spec-attribute (spec-name attribute)
-  (let ((spec (read-no-eval spec-name)))
-    (when (gethash (frmt "~S" spec) (cache *context*))
-	  (gethash attribute (gethash (frmt "~S" spec) (cache *context*))))))
+
+(defun grid-fetch-items (name collection-name &key test (result-type 'list))
+  (let ((items))
+    (dolist (store (getcx name :stores))
+      (setf items (append items (fetch-items (get-collection store collection-name)
+					     :test test
+					     :result-type result-type))))
+    items))
 
 
 (defun print-item-val-s* (field item)
@@ -24,7 +31,7 @@
   (let ((*print-case* :downcase))
     (frmt "~A"
 	  (getfx 
-		    field 
+	   field 
 		    item))))
 
 (defmethod print-item-val ((type (eql :symbol)) field item &key &allow-other-keys)
@@ -58,54 +65,65 @@
       "checked"
       ""))
 
-(defmethod print-item-val ((type (eql :list)) field item &key &allow-other-keys)
-  (let* ((full-type (cdr (getf field :db-type)))
-	 (delimiter (getf full-type :delimiter))
+(defmethod print-item-val ((type (eql :key-value)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql :value-list)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql :key-value-list)) field item &key &allow-other-keys)
+   (print-item-val-s* field item))
+
+(defmethod print-item-val ((type (eql :value-string-list)) 
+			   field item &key &allow-other-keys)
+  (let* ((delimiter (dig field :db-type :delimiter))
 	 (val))
-;;    (break "delimiter ~A" delimiter)
-    (dolist (x (getsfx type field item))
+    (dolist (x (getsfx (dig field :db-type :type) field item))
       (setf val 
 	    (if val
 		(concatenate 'string val delimiter 
-			     (if (getf full-type :type 'keyword)
+			     (if (equalp (dig field :db-type :type)
+					 :keyword)
 				 (string-downcase (frmt "~S" x))
 				 x))
-		(if (getf full-type :type 'keyword)
+		(if (equalp (dig field :db-type :type)
+					 :keyword)
 		    (string-downcase (frmt "~S" x))
 		    x))))
     val))
 
-(defmethod print-item-val ((type (eql :list-item)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :list-items)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql :data-group)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :collection-items))
+			   field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql :data-list)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :contained-item)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
 
-(defmethod print-item-val ((type (eql :data-member)) field item &key &allow-other-keys)
+(defmethod print-item-val ((type (eql :collection-contained-item)) 
+			   field item &key &allow-other-keys)
+   (print-item-val-s* field item))
 
-  (let ((full-type (cdr (getf field :db-type)))
-	 (item-val (getfx 
-			     field 
-			     item)))    
+(defmethod print-item-val ((type (eql :collection)) field item &key &allow-other-keys)
+
+  (let ((item-val (getfx 
+		   field 
+		   item)))    
     (when item-val
       (frmt "~A" (slot-value 
 		  item-val
-		  (getf full-type :key-accessor))))))
+		  (dig :db-type :accessor))))))
 
-(defmethod print-item-val ((type (eql :data-child-member)) field item 
+(defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key &allow-other-keys)
-
-  (let ((full-type (cdr (getf field :db-type)))
-	 (item-val (getfx 
-			     field 
-			     item)))    
+;;TODO: Sort this shit out need to loop tree
+  (let ((item-val (getfx field item)))    
     (when item-val
-      (frmt "~A" (slot-value 
+      (frmt "~A" (getx 
 		  item-val
-		  (getf full-type :key-accessor))))))
+		  (dig :db-type :accessor))))))
 
 (defgeneric render-input-val (type field item &key &allow-other-keys))
 
@@ -212,10 +230,11 @@
 	    field 
 	    item))))))
 
-(defmethod render-input-val ((type (eql :list)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :value-string-list)) 
+			     field item &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (full-type (cdr (getf field :db-type)))
-	 (delimiter (getf full-type :delimiter)))
+
+	 (delimiter (dig field :db-type :delimiter)))
     
     (if (not (getf field :editable))
 	(with-html-string
@@ -225,7 +244,7 @@
 	   :name name :cols 20 :rows 3
 	   :disabled "disabled"
 	   (print-item-val 
-	    type
+	    (dig field :db-type :type)
 	    field 
 	    item))
 	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
@@ -236,22 +255,18 @@
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
-
 	   (print-item-val 
-	    type
+	    (dig field :db-type :type)
 	    field 
 	    item))
 	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
 					   "#\Space"
-					   delimiter))))
-	)))
+					   delimiter)))))))
 
-(defmethod render-input-val ((type (eql :list-item)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :value-list)) field item &key &allow-other-keys)
   (let* ((name (getf field :name))
-
-	 (list (field-type-val field :values))
-	 (selected (find (getfx field item) list :test #'equalp))
-	 )
+	 (list (dig :db-type :values))
+	 (selected (find (getfx field item) list :test #'equalp)))
 
     (with-html-string
       (:div :class "dropdown"
@@ -270,25 +285,24 @@
 		      (:span :class "dropdown-item" 
 			     (:input :type "hidden"
 				     :value (frmt "~S" option))
-			  (frmt "~S" option)))))
-	    
-	    ))))
+			  (frmt "~S" option)))))))))
 
-(defmethod render-input-val ((type (eql :data-group)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :collection-items)) 
+			     field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :data-list)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :list-items)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :data-member)) field item 
+
+
+(defmethod render-input-val ((type (eql :collection)) field item 
 			     &key &allow-other-keys)
-;;  (break "~A ~A" item parent-item )
-  (let* ((name (getf field :name))
-	 (full-type (cdr (getf field :db-type)))
 
-	 (list ;;(fetch-items (collection data-spec) :result-type 'list)
-	  )
-	 (selected (find (slot-value item name)  
+  (let* ((name (getf field :name))
+	 (list (grid-fetch-items (dig field :db-type :data-type)
+				 (dig field :db-type :collection)))
+	 (selected (find (getx item name)  
 			    list :test #'equalp)))
     (with-html-string
       (:div :class "dropdown"
@@ -301,7 +315,7 @@
 		     (if selected
 			 (slot-value
 			  selected
-			    (getf full-type :key-accessor))))
+			    (dig field :db-type :accessor))))
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -311,17 +325,15 @@
 				     :value (frmt "~S" option))
 			  (frmt "~S" option)))))))))
 
-(defmethod render-input-val ((type (eql :data-child-member)) field item 
+(defmethod render-input-val ((type (eql :hierarchical)) field item 
 			     &key &allow-other-keys)
-;;  (break "~A ~A" item parent-item )
-  (let* ((name (getf field :name))
-	 (full-type (cdr (getf field :db-type)))
 
-	 (list (slot-value (get-context-data-spec-attribute 
-			    (getf full-type :source-data-spec) 
+  (let* ((name (getf field :name))
+	 (list (slot-value (getcx
+			    (dig field :db-type :data-type) 
 			    :active-item)
-			   (getf full-type :source-accessor)))
-	 (selected (find (slot-value item name)  
+			   (dig field :db-type :child-accessor)))
+	 (selected (find (getx item name)  
 			    list :test #'equalp)))
     (with-html-string
       (:div :class "dropdown"
@@ -334,7 +346,7 @@
 		     (if selected
 			 (slot-value
 			  selected
-			  (getf full-type :key-accessor))))
+			  (dig field :accessor))))
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -342,23 +354,24 @@
 		      (:span :class "dropdown-item" 			      
 			       (:input :type "hidden"
 				       :value (frmt "~A" (item-hash option)))
-			       (slot-value option (getf full-type :key-accessor))))))))))
+			       (getx option (dig field :accessor))))))))))
 
-(defmethod render-input-val ((type (eql :data-group)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :collection-items))
+			     field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :data-list)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :list-items)) field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :data-member)) field item 
+(defmethod render-input-val ((type (eql :collection)) field item 
 			     &key &allow-other-keys)
-;;  (break "~A ~A" item parent-item )
+
   (let* ((name (getf field :name))
-	 (full-type (cdr (getf field :db-type)))
-	;; (data-spec (get-data-spec (getf full-type :data-spec)))
-	 (list ;;(fetch-all (collection-name data-spec) :result-type 'list)
-	  )
-	 (selected (find (slot-value item name)  
+
+
+	 (list (grid-fetch-items (dig field :db-type :data-type)
+				 (dig field :db-type :collection)))
+	 (selected (find (getx item name)  
 			    list :test #'equalp)))
 
     
@@ -371,9 +384,9 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (slot-value
+			 (getx
 			  selected
-			    (getf full-type :key-accessor))))
+			    (dig :db-type :accessor))))
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		    (dolist (option list)
@@ -381,11 +394,11 @@
 			(:span :class "dropdown-item" 			      
 			       (:input :type "hidden"
 				       :value (frmt "~A" (item-hash option)))
-			       (slot-value option (getf full-type :key-accessor))))))))))
+			       (getx option (dig :db-type :accessor))))))))))
 
 (defun grid-js-render-form-values (renderer spec-name form-id 
 				   &key widget-id action item-id )
-  (let ((active-page (get-context-data-spec-attribute 
+  (let ((active-page (getcx 
 		      spec-name :active-page)))
     (js-render-form-values 
      renderer
@@ -397,7 +410,7 @@
      (js-pair "action" (or action ""))
      
      (js-pair "item-id" (or item-id
-			    (get-context-data-spec-attribute 
+			    (getcx 
 			     spec-name :item-id)
 			    ""))
     
@@ -405,14 +418,10 @@
      (js-pair "pages"
 	      (or (parameter "pages") 10))
      (js-pair "page"
-	      (or active-page 1))
-     
-    		      
-     ))
-  )
+	      (or active-page 1)))))
 
 (defun grid-js-render (renderer spec-name &key widget-id action item-id)
-  (let ((active-page (get-context-data-spec-attribute 
+  (let ((active-page (getcx 
 		      spec-name :active-page)))
 
     (js-render renderer
@@ -435,7 +444,7 @@
 ;;  (break "subs ~A" subs)
   (if subs
       (if (equalp (ensure-parse-integer 
-		   (get-context-data-spec-attribute spec-name
+		   (getcx spec-name
 						    :expand-id)) 
 		  (item-hash item))
 	  (with-html-string
@@ -515,14 +524,13 @@
 
 (defun render-grid-edit (spec-name fields item parent-item parent-spec sub-name)
   
-  (set-context-data-spec-attribute spec-name :list-field-name sub-name)
-  (set-context-data-spec-attribute spec-name :edit-item item)
-  (set-context-data-spec-attribute spec-name :parent-item parent-item)
-  (set-context-data-spec-attribute spec-name :parent-spec parent-spec)
+  (setf (getcx spec-name :list-field-name) sub-name)
+  (setf (getcx spec-name :edit-item) item)
+  (setf (getcx spec-name :parent-spec) parent-item)
+  (setf (getcx spec-name :parent-spec) parent-spec)
+  (setf (getcx (parameter "data-spec") :item-id) (item-hash item))
   
-  (set-context-data-spec-attribute (parameter "data-spec")
-				   :item-id (item-hash item))
-  
+    
   (with-html-string
     (:div :class "card" :id (string-downcase (frmt "grid-edit-~A"  spec-name))
 	  (:div :class "card-header"
@@ -610,7 +618,7 @@
 
 		:id (frmt "~A-filter" col-name)
 		:value (or (parameter (frmt "~A-filter" col-name))
-			   (get-context-data-spec-attribute 
+			   (getcx 
 			    spec-name (frmt "~A-filter" col-name))
 			   "")
 		:onkeydown
@@ -738,8 +746,7 @@
 				   'data-group))
 		      (not (equalp (field-data-type field)
 				   'data-list))))
-	(pushnew field data-fields)
-	))
+	(pushnew field data-fields)))
     (reverse data-fields))
   
   
@@ -756,10 +763,10 @@
      ;; (parse-data-spec-for-grid spec-name)
       )  
     
-    (let ((fields (get-context-data-spec-attribute spec-name :data-fields))
+    (let ((fields (getcx spec-name :data-fields))
 	  (subs))
       
-      (dolist (field (get-context-data-spec-attribute spec-name :data-fields))
+      (dolist (field (getcx spec-name :data-fields))
 	(cond ((or (equalp (field-data-type field) 'data-group)
 		   (equalp (field-data-type field) 'data-list))
 	       (pushnew field subs))))
@@ -807,7 +814,7 @@
 				parent-item parent-spec sub-name))
 			
 	  (when (equalp (ensure-parse-integer 
-			 (get-context-data-spec-attribute spec-name
+			 (getcx spec-name
 							  :expand-id)) 
 			(item-hash item))
 			  
@@ -819,7 +826,7 @@
 		     (sub-data-spec (getf attributes :data-spec)))
 			      
 	;;	(parse-data-spec-for-grid sub-data-spec)
-		(set-context-data-spec-attribute spec-name :active-item item)
+		(setf (getcx spec-name :active-item) item)
 			      
 		(cl-who:htm
 		  (:div :class "row"
@@ -831,7 +838,7 @@
 				    (:div :class "card-header"
 					  (render-grid-header
 					   sub-data-spec
-					   (get-context-data-spec-attribute 
+					   (getcx 
 					    sub-data-spec :data-fields)
 							 
 					   t))
@@ -874,7 +881,7 @@
 	    :size 2
 	    :id "pages"
 	    :value (or  (parameter "pages")
-			(get-context-data-spec-attribute 
+			(getcx 
 			 spec-name :show-pages-count)
 			10)
 	    :onkeydown
@@ -898,7 +905,7 @@
 	    :name "search" 	   
 	    :id "search"
 	    :value (or (parameter "search")
-			     (get-context-data-spec-attribute 
+			     (getcx 
 			      spec-name :search)
 			     "")
 	    :onkeydown
@@ -921,57 +928,55 @@
 
 (defun fetch-grid-page-data (spec-name items)
   
-  (set-context-data-spec-attribute spec-name :data-count (length items))
+  (setf (getcx spec-name :data-count) (length items))
    
  
-  (set-context-data-spec-attribute spec-name :show-pages-count 
-				   (if (not (empty-p (parameter "pages")))
-				       (parse-integer (parameter "pages"))
-				       (or (get-context-data-spec-attribute 
-					    spec-name :show-pages-count)
-					   10)))
+  (setf (getcx spec-name :show-pages-count) 
+	(if (not (empty-p (parameter "pages")))
+	    (parse-integer (parameter "pages"))
+	    (or (getcx 
+		 spec-name :show-pages-count)
+		10)))
     
-  (set-context-data-spec-attribute spec-name :active-page
-				   (if (not (empty-p (parameter "page")))
-				       (parse-integer (parameter "page"))
-				       (or (get-context-data-spec-attribute 
-					    spec-name :active-page)
-					   1)))
+  (setf (getcx spec-name :active-page)
+	(if (not (empty-p (parameter "page")))
+	    (parse-integer (parameter "page"))
+	    (or (getcx 
+		 spec-name :active-page)
+		1)))
 
 
   (multiple-value-bind (page-count rem)
-      (floor (get-context-data-spec-attribute spec-name :data-count) 
-	     (get-context-data-spec-attribute spec-name :show-pages-count))
+      (floor (getcx spec-name :data-count) 
+	     (getcx spec-name :show-pages-count))
      
-    (set-context-data-spec-attribute spec-name :page-count page-count)
-    (set-context-data-spec-attribute spec-name :page-count-remaining rem))
+    (setf (getcx spec-name :page-count) page-count)
+    (setf (getcx spec-name :page-count-remaining) rem))
     
-  (set-context-data-spec-attribute 
-   spec-name :start-page-count 
-   (- (* (get-context-data-spec-attribute 
-	  spec-name :active-page) 
-	 (get-context-data-spec-attribute 
-	  spec-name :show-pages-count)) 
-      (get-context-data-spec-attribute 
-       spec-name :show-pages-count)))
+  (setf (getcx spec-name :start-page-count) 
+	(- (* (getcx 
+	       spec-name :active-page) 
+	      (getcx 
+	       spec-name :show-pages-count)) 
+	   (getcx 
+	    spec-name :show-pages-count)))
     
-  (set-context-data-spec-attribute 
-   spec-name :end-page-count 
-   (if (< (* (get-context-data-spec-attribute 
-	      spec-name :active-page)
-	     (get-context-data-spec-attribute 
-	      spec-name :show-pages-count)) 
-	  (get-context-data-spec-attribute 
-	   spec-name :data-count))
-       (* (get-context-data-spec-attribute 
-	   spec-name :active-page)
-	  (get-context-data-spec-attribute 
-	   spec-name :show-pages-count))))
+  (setf (getcx spec-name :end-page-count) 
+	(if (< (* (getcx 
+		   spec-name :active-page)
+		  (getcx 
+		   spec-name :show-pages-count)) 
+	       (getcx 
+		spec-name :data-count))
+	    (* (getcx 
+		spec-name :active-page)
+	       (getcx 
+		spec-name :show-pages-count))))
   
   (when items
     (subseq items 
-	    (get-context-data-spec-attribute spec-name :start-page-count) 
-	    (get-context-data-spec-attribute spec-name :end-page-count))))
+	    (getcx spec-name :start-page-count) 
+	    (getcx spec-name :end-page-count))))
 
 (defun found-nil-p (list)
   (dolist (item list)
@@ -994,14 +999,14 @@
   (lambda (item)
 		       
     (let ((found nil))
-      (dolist (field (get-context-data-spec-attribute 
+      (dolist (field (getcx 
 		      spec-name 
 		      :filter-fields))
 	(let ((filter-term 
 	       (or
 		(parameter 
 		 (frmt "~A-filter" (getf field :name)))
-		(get-context-data-spec-attribute 
+		(getcx 
 		 spec-name (frmt "~A-filter" 
 				 (getf field :name))))))
 	  (when filter-term
@@ -1036,7 +1041,7 @@
   (lambda (item)
     
     (let ((found nil))
-      (dolist (field (get-context-data-spec-attribute 
+      (dolist (field (getcx 
 		      spec-name 
 		      :data-fields))
 	(when (getf field :db-type)
@@ -1077,41 +1082,33 @@
 	item))))
 
 (defun fetch-grid-data (spec-name)
-  (let* ((items)
-	 (collection-name (get-context-data-spec-attribute 
+  (let* ((items )
+	 (collection-name (getcx 
 			   spec-name :collection-name))
 	 (search-term (or (parameter "search") 
-			  (get-context-data-spec-attribute 
+			  (getcx 
 			   spec-name :search)))
 	 (search-p (not (empty-p search-term)))
-	 (filter-p (get-context-data-spec-attribute 
+	 (filter-p (getcx 
 				   spec-name :filter)))
     
     
+    
     (unless (or search-p filter-p)
-      (dolist (license-code (getx (active-user) :selected-licenses))
-	
-	(setf items (append
-		     items
-		     (fetch-items (license-collection license-code collection-name)
-					 :result-type 'list)))))
+      (setf items (grid-fetch-items spec-name collection-name)))
     
     (when (or search-p filter-p)
       
-      (if (get-context-data-spec-attribute 
+      (if (getcx 
 	   spec-name 
 	   :filter-fields)
 	  
 	  (setf items
-		(fetch-items  
-		 collection-name
-		 :test (filter-function spec-name)
-		 :result-type 'list))
+		(grid-fetch-items spec-name collection-name
+				  :test (filter-function spec-name)))
 	  (setf items
-		    (fetch-items  
-		     collection-name
-		     :test (search-function spec-name search-term)
-		     :result-type 'list)))
+		(grid-fetch-items spec-name collection-name
+				  :test (search-function spec-name search-term))))
   
       (when items
 	(setf items
@@ -1122,11 +1119,11 @@
     (fetch-grid-page-data spec-name items)))
 
 (defun render-grid-paging (spec-name)  
-  (let ((active-page (get-context-data-spec-attribute 
+  (let ((active-page (getcx 
 		      spec-name :active-page))
-	(how-many-rem (get-context-data-spec-attribute 
+	(how-many-rem (getcx 
 		       spec-name :page-count-remaining))
-	(how-many-pages (get-context-data-spec-attribute 
+	(how-many-pages (getcx 
 		       spec-name :page-count)))
     
     (with-html-string
@@ -1139,9 +1136,7 @@
 		  :class (if (> active-page 1)
 			     
 			     "btn page-link"
-			     "btn page-link disabled"
-			     )
-		  
+			     "btn page-link disabled")		  
 		  :onclick 
 		  (js-render "cl-wfx:ajax-grid"
 			     "grid-table"
@@ -1223,72 +1218,103 @@
   (setf (gethash :assign-campaign (cache *context*)) t))
 
 
+(defun getcx (&rest indicators)
+  (let* ((indicator (pop indicators))
+	(place (gethash indicator (cache *context*))))
+ 
+    (if indicators
+	(naive-dig place indicators)
+	place)))
 
-(defun render-grid (spec-name) 
-  
- ;;(break "shit ~A" (hunchentoot:post-parameters*))
-  
- ;; (parse-data-spec-for-grid spec-name)
-  
-  (setf (gethash :root-data-spec (cache *context*)) spec-name)
-  
-  (setf (gethash :root-item (cache *context*)) nil)
-  
-  (set-context-data-spec-attribute spec-name :list-field-name nil)
-  
-  (set-context-data-spec-attribute spec-name
-				   :search (or (parameter "search")
-					       (get-context-data-spec-attribute 
-						spec-name :search)))
-  (set-context-data-spec-attribute spec-name
-				     :filter t)
-  
-  
-  (when (equalp (parameter "action") "filter")
-    (set-context-data-spec-attribute spec-name
-				     :filter t))
-  
-  (when (equalp (parameter "action") "un-filter")
-    (set-context-data-spec-attribute spec-name
-				     :filter nil))
-
-  (when (equalp (parameter "action") "grid-col-filter")
-    (let ((fields (get-context-data-spec-attribute 
-		      spec-name :filter-fields)))
-      (dolist (field (get-context-data-spec-attribute 
-		      spec-name :data-fields))
-	(when (parameter (frmt "~A-filter" (getf field :name)))
-	  
-	  (pushnew field fields)
-	  
-	  
-	  (set-context-data-spec-attribute 
-	   spec-name (frmt "~A-filter" (getf field :name))
-	   (parameter (frmt "~A-filter" (getf field :name))))))
-      
-      (set-context-data-spec-attribute 
-	 spec-name :filter-fields fields)))
-  
-  
-  (when (equalp (parameter "action") "expand")
+(defun (setf getcx) (value &rest indicators)
+  (let* ((indicator (pop indicators))
+	(place (gethash indicator (cache *context*))))
     
-    (set-context-data-spec-attribute (parameter "data-spec")
-				     :expand-id (parameter "item-id")))
+    (if indicators
+	(setf (gethash indicator (cache *context*)) 
+	      (set-naive-dig place indicators value))
+	(setf (gethash indicator (cache *context*)) value))))
+
+
+(defun set-grid-filter (data-type-name)
+   ;;(setf (getcx name :filter) t)
+    
+    (when (equalp (parameter "action") "filter")
+      (setf (getcx data-type-name :filter) t))
+  
+    (when (equalp (parameter "action") "un-filter")
+      (setf (getcx data-type-name :filter) nil))
+
+    
+    (when (equalp (parameter "action") "grid-col-filter")
+      (let ((fields (getcx data-type-name :filter-fields)))
+	(dolist (field (getcx data-type-name :fields))
+	  (when (parameter (frmt "~A-filter" (getf data-type-name :name)))
+	  
+	    (pushnew field fields)
+	  
+	    (setf (getcx data-type-name
+			 (intern (string-upcase (frmt "~A-filter" (getf field :name)))
+				 ))		  
+		  (parameter (frmt "~A-filter" (getf field :name))))))
+      
+	(setf (getcx data-type-name :filter-fields)fields))))
+
+
+
+
+(defun set-grid-context (collection-name data-type-name)
+  (let* ((context-spec (context-spec *context*))
+	 (collection (find-collection-def *system*   
+					  (getx context-spec collection-name))))
+    
+    
+    (setf  (gethash :root-data-spec (cache *context*)) 
+	   (getf collection :data-type))
+    
+    
+    (setf (getcx data-type-name :collection) collection)
+    
+    (setf (getcx data-type-name :collection-name) collection)
+    
+    (setf (getcx data-type-name :stores) (collection-stores *system* collection))
+    
+    (setf (getcx data-type-name :data-type) (find-type-def *system* 
+						 data-type-name))
+    
+    (setf (getcx data-type-name :fields) (getf (getcx data-type-name :data-type) :fields))
+    
+    (setf (getcx data-type-name :root-item) nil)
+    
+    (setf (getcx data-type-name :list-field-name) nil)
+    
+    (setf (getcx data-type-name :search) (or (parameter "search")
+				   (getcx data-type-name :search)))
+    
+    
+   
+    )
+  )
+
+(defun set-grid-expand (data-type-name)
+    (when (equalp (parameter "action") "expand")    
+      (setf (getcx data-type-name :expand-id) (parameter "item-id")))
   
   (when (equalp (parameter "action") "unexpand")    
-    (set-context-data-spec-attribute (parameter "data-spec")
-				     :expand-id nil))
- 
-  (let ((page-items (fetch-grid-data spec-name)))
-    
-    (when (gethash :assign-campaign (cache *context*))
+    (setf (getcx data-type-name :expand-id ) nil))
+  
+  )
+
+(defun campaign-shit (page-items)
+  (when (gethash :assign-campaign (cache *context*))
 	(setf (gethash :assign-campaign (cache *context*)) nil)
 	(when (not (empty-p (parameter "campaign")))
-	  (let ((campaign (fetch-item "campaigns" 
-				      :test (lambda (doc)
-					      (equalp (item-hash doc) 
-						      (parse-integer (parameter "campaign")) )
-					      ))))
+	  (let ((campaign 
+		 (fetch-item "campaigns" 
+			     :test (lambda (doc)
+				     (equalp (item-hash doc) 
+					     (parse-integer (parameter "campaign")) )
+				     ))))
 	    (when campaign
 	      (dolist (company page-items)
 		(let ((exists-p)
@@ -1310,11 +1336,85 @@
 				  (list (make-instance company-campaign
 						       :campaign campaign))))
 		    )))))))
+  )
+
+(defun more-campaign-shit (name)
+  (when (string-equal (frmt "~A" name) "company")
+    (with-html-string
+      (let ((items))
+	(setf items 
+		(append items (wfx-fetch-items 
+			       "campaigns"
+			       :result-type 'list)))
+	(let ((campaigns items))
+	  (cl-who:htm
+	   (:form :method "post" :id "assign-campaign-id"
+		  (:button :class "btn btn-small btn-outline-success float-right"
+			   :name "assign-campaign" 
+			   :type "submit" 
+			   
+			   :aria-pressed "false"
+			   :onclick 
+			   (grid-js-render-form-values
+			    "cl-wfx:ajax-grid" 
+			    name
+			    "assign-campaign-id"
+			    :widget-id nil 
+			    :action "assign-campaign"
+			    
+			    )
+			   
+			   
+			   "<>")
+		  
+		  
+		  
+		  
+		  
+		  (:div :class "dropdown float-right"
+			(:input :type "hidden" :class "selected-value" 
+				:name "campaign" :value "")
+			(:button :class "btn btn-secondary dropdown-toggle"
+				 :type "button"
+				 :data-toggle "dropdown"
+				 :aria-haspopup "true" :aria-expanded "false"
+				 (if (parameter "campaign")
+				     (parameter "campaign")
+				     "Assign Campaign"))
+			
+			(:div :class "dropdown-menu" 
+			      ;; :aria-labelledby "campaign"
+			      (dolist (option campaigns)
+				(cl-who:htm
+				 (:span :class "dropdown-item" 			     
+					(:input :type "hidden"
+						:value (frmt "~A" (item-hash option)))
+					(frmt "~A" 
+					      (slot-value 
+					       option 
+					       (intern "NAME" 'cl-bizhub))))))))))))))
+  )
+
+(defun render-grid (collection-name data-type-name) 
+ 
+  
+  
+  
+  (set-grid-context collection-name data-type-name)
+  
+  (set-grid-filter data-type-name)
+  
+  (set-grid-expand (parameter "data-spec"))
+  
+ 
+  (let ((page-items (fetch-grid-data data-type-name)))
+    
+    (campaign-shit page-items)
     
     (with-html-string  
       (:div :class "card"
 	    (:h4 :class "card-title"
-		 (frmt "~A" (name (context-spec *context*)))
+		 (frmt "~A" (getx (context-spec *context*) :name))
 		 (:button :class "btn btn-small btn-outline-secondary float-right"
 				:name "filter-grid" 
 			
@@ -1331,71 +1431,18 @@
 			  :aria-pressed "false"
 			  :onclick 
 			  (grid-js-render "cl-wfx:ajax-grid" 
-					  spec-name
+					  data-type-name
 					  :action "export")
 			  (:i :class "fa fa-download"))
-		 (when (string-equal (frmt "~A" spec-name) "company")
-		   (let ((items))
-		     (dolist (license-code (getx (active-user) :selected-license-codes))
-		       (setf items 
-			     (append items (fetch-items 
-					    (license-collection license-code "campaigns")
-					    :result-type 'list))))
-		     (let ((campaigns items))
-		       (cl-who:htm
-			(:form :method "post" :id "assign-campaign-id"
-			       (:button :class "btn btn-small btn-outline-success float-right"
-					:name "assign-campaign" 
-					:type "submit" 
-					
-					:aria-pressed "false"
-					:onclick 
-					(grid-js-render-form-values
-					 "cl-wfx:ajax-grid" 
-					 spec-name
-					 "assign-campaign-id"
-					 :widget-id nil 
-					 :action "assign-campaign"
-					 
-					 )
-					
-					
-					"<>")
-			       
-			       
-			       
-			       
-			       
-			       (:div :class "dropdown float-right"
-				     (:input :type "hidden" :class "selected-value" 
-					     :name "campaign" :value "")
-				     (:button :class "btn btn-secondary dropdown-toggle"
-					      :type "button"
-					      :data-toggle "dropdown"
-					      :aria-haspopup "true" :aria-expanded "false"
-					      (if (parameter "campaign")
-						  (parameter "campaign")
-						  "Assign Campaign"))
-				     
-				     (:div :class "dropdown-menu" 
-					   ;; :aria-labelledby "campaign"
-					   (dolist (option campaigns)
-					     (cl-who:htm
-					      (:span :class "dropdown-item" 			     
-						     (:input :type "hidden"
-							     :value (frmt "~A" (item-hash option)))
-						     (frmt "~A" 
-							   (slot-value 
-							    option 
-							    (intern "NAME" 'cl-bizhub))))))))))))))
+		 )
 	    (:div :class "card-header"
-		  (render-grid-header spec-name
-				      (get-context-data-spec-attribute 
-				       spec-name 
+		  (render-grid-header data-type-name
+				      (getcx
+				       data-type-name 
 				       :data-fields)
 				      nil))
 	    (:div :class "card-block"
-		  (render-grid-data spec-name page-items 0 nil nil nil))
+		  (render-grid-data data-type-name page-items 0 nil nil nil))
 	
 	    (:div :class "card-footer"
 		  (:div :class "row"	  
@@ -1408,22 +1455,18 @@
 				
 			       :onclick 
 			       (grid-js-render "cl-wfx:ajax-grid" 
-					       spec-name 
+					       data-type-name 
 						     
 					       :action "new")
 			       "+")
-			      (render-grid-paging spec-name)))))
-      )))
+			      (render-grid-paging data-type-name))))))))
 
-(defun db-type (field)
-  (if (listp (getf field :db-type))
-		     (or (getf (getf field :db-type) :complex-type)
-			 (getf (getf field :db-type) :type))
-		     (getf field :db-type))
-  )
+
+
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  (render-grid (gethash :root-data-spec (cache *context*))))
+  (render-grid (getx (context-spec *context*) :name) 
+		(parameter "data-spec")))
 
 
 (defmethod action-handler ((action (eql :save)) 
@@ -1432,20 +1475,20 @@
 			   &key &allow-other-keys)
   
   (let* ((spec-name (read-no-eval (parameter "data-spec")))
-	 (fields (get-context-data-spec-attribute 
+	 (fields (getcx 
 		  spec-name
 		  :data-fields))
-	 (parent-slot (get-context-data-spec-attribute 
+	 (parent-slot (getcx 
 				spec-name :list-field-name)))
     
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
        
     (when fields
-      (let ((item (get-context-data-spec-attribute 
+      (let ((item (getcx 
 			 spec-name
 			 :edit-item))
-	    (parent-item (get-context-data-spec-attribute 
+	    (parent-item (getcx 
 			  spec-name
 			  :parent-item)))
 	
@@ -1460,7 +1503,7 @@
 		      (not (equalp (field-data-type field) 'data-group))
 		      (not (equalp (field-data-type field) 'data-list))))
 	    (let ((valid (if (equalp (field-data-type field) 'list-item)
-			     (validate-sfx (db-type field)
+			     (validate-sfx (complex-type field)
 						field 
 						item 
 						(parameter (getf field :name)))
@@ -1475,7 +1518,7 @@
 		(if (equalp (field-data-type field) :hierarchical)
 		    (setf (getfx field item 
 				 
-				 :source (get-context-data-spec-attribute 
+				 :source (getcx 
 					  (field-type-val field :data-spec) 
 					  :active-item))
 			  (parameter (getf field :name)))
@@ -1504,14 +1547,14 @@
 			  (list item))))
 	  
 	  
-	  (persist-item (license-collection "00000" (get-context-data-spec-attribute 
+	  (persist-item (license-collection "00000" (getcx 
 					     (gethash :root-data-spec (cache *context*))
 					     :collection-name)
 					    )
 			(gethash :root-item (cache *context*)))
 	  
-	  (set-context-data-spec-attribute spec-name :parent-item nil)
-	  (set-context-data-spec-attribute spec-name :edit-item nil)
-	  (set-context-data-spec-attribute spec-name :item-id nil))))))
+	  (setf (getcx spec-name :parent-item) nil)
+	  (setf (getcx spec-name :edit-item) nil)
+	  (setf (getcx spec-name :item-id) nil))))))
 
 

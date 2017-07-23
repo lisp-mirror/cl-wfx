@@ -51,15 +51,20 @@
   (declare (optimize speed))
   (format nil "~:@(~36r~)" (random (expt 2 32))))
 
+
+(defun find-context-in-module (module name)
+  (find-in-item-list (getx module :contexts)
+		     (lambda (item)
+		       (or (string-equal name (getx item :name))
+			   (string-equal name 
+					 (string-downcase 
+						      (id-string (getx item :name)))))))
+  )
+
 (defun generate-new-context (module session name)
   (let* ((contexts (contexts session))
 	 (context-spec 
-	  (find-in-item-list (getx module :contexts)
-			     (lambda (item)
-				   (or (string-equal name (getx item :name))
-				       (string-equal name 
-						     (string-downcase 
-						      (id-string (getx item :name))))))))
+	  (find-context-in-module module name))
 	 
 	 (context (make-instance 'context 
 				 :module module

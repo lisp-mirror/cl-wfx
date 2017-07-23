@@ -11,63 +11,62 @@
 	    
   (persist-item (core-collection "context-specs")
 		'(:name "Login"
-		  :permissions (:update :delete)
+		  :permissions nil
 		  :for-everyone t))
   
   (persist-item (core-collection "context-specs")    
-		'(:name "Data Specs"
-		  :permissions (:update :delete :search)
-		  :for-everyone t 
-		  :data-spec "data-spec"))
+		'(:name "Data Types"
+		  :permissions (:filter :search)
+		  :collection "data-types"))
   
   
   (persist-item (core-collection "context-specs")
 		'(:name "Context Specs"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "context-spec"))
+		  :collection "context-specs"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "Modules"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "module"))
+		  :collection "modules"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "Licenses"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "license"))
+		  :collection "licenses"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "Entities"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "entity"))
+		  :collection "entities"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "Users"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "user"))
+		  :collection "users"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "License Users"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "license-user"))
+		  :collection "license-users"))
   
   (persist-item (core-collection "context-specs")
 		'(:name "Allsorts"
 		  :permissions (:update :delete)
 		  :for-everyone t 
-		  :data-spec "allsort")))
+		  :collection "allsorts")))
 
 (defun make-menu-item (name context-spec)
   (list :name name
 	:context-spec context-spec))
 
-(defgeneric setup-context-login (module context-spec system))
+(defgeneric setup-context-login (module context-spec system &key &allow-other-keys))
 
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
@@ -78,8 +77,7 @@
 	    (list :name "Core"
 		  :module-short "cor"
 		  :menu (list 
-			 (list
-			  :menu-name "System")))))
+			 ))))
     (setf (getf sys-mod :contexts)
 	  (remove-if #'not (list
 			    ;;  (get-context-spec "theme")
@@ -98,11 +96,7 @@
 			    ;; (get-context-spec "import-data")
 			    
 			    )))
-    
-    
- 
-    
-    
+   
     
     (let ((menu-items (loop for spec in (getf sys-mod :contexts)
 			 when spec
@@ -119,10 +113,13 @@
 					      :name "action"
 					      :value "logout"))))))
       
-      (setf (getf (first (getf sys-mod :menu)) :menu-items) menu-items))
- 
-    (let ((mod (persist-item (core-collection "modules") sys-mod)))
       
+      
+      (setf (getf sys-mod :menu) 
+	    (list :menu-name "System"
+		  :menu-items  menu-items)))
+ 
+    (let ((mod (persist-item (core-collection "modules") sys-mod)))      
       (dolist (spec (getx mod :contexts))
 	(setup-context mod spec *system*))
 

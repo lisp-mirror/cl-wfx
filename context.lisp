@@ -24,7 +24,7 @@
 (defgeneric start-context (module session context-name &key &allow-other-keys)
   (:documentation "Creates a context instance."))
 
-(defgeneric setup-context (module context-spec system)
+(defgeneric setup-context (module context-spec system  &key &allow-other-keys)
   (:documentation "To be used to setup a context instance.."))
 
 (defgeneric init-context (context session )

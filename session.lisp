@@ -25,6 +25,10 @@
    (user :initarg :user
 	 :accessor user
 	 :initform nil
+	 :documentation "user")
+   (active-user :initarg :active-user
+		:accessor active-session-user
+		:initform nil
 	 :documentation "active-user")
    (contexts :initarg :contexts
 	     :accessor contexts
@@ -88,13 +92,12 @@
 
 (defun current-user ()
   (if (and (boundp '*session*) *session*) 
-      (if (user *session*)
-	  (user (user *session*)))))
+      (user *session*)))
 
 (defun active-user ()
   (if (boundp '*session*)   
       (if *session*
-	  (user *session*))))
+	  (active-session-user *session*))))
 
 
 

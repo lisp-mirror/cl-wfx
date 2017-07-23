@@ -145,9 +145,13 @@
    (:collection
     (:name "users"
      :label "Users"
-     :name-space "core"
      :data-type "user")
-    :destinations (:core))
+    :destinations (:core)
+    :access (:stores
+	     (:core
+	      (:user-levels
+	       (:core (:update :delete :lookup))
+	       (:system (:update :delete :lookup))))))
    
    (:data-type
     (:name
@@ -193,7 +197,14 @@
     (:name "license-users"
      :label "License Users"
      :data-type "user")
-    :destinations (:license))
+    :destinations (:license)
+    :access
+    (:stores		  
+      (:license
+       (:user-levels
+	(:core (:update :delete :lookup))
+	(:system (:update :delete :lookup))
+	(:license (:update :delete :lookup))))))
    
    (:data-type
     (:name
@@ -225,7 +236,19 @@ must be valid email to enable confirmation.")
 			     :collection "entities"
 			     :key-accessor :name)
 	     :attibutes (:display t :editable t))))
-    :destinations (:core))))
+    :destinations (:core))
+   
+   (:collection
+    (:name "active-users"
+     :label "Active Users"
+     :data-type "active-user")
+    :destinations (:core)
+    :access
+    (:stores
+     (:core
+      (:user-levels
+       (:core (:update :delete :lookup))
+       (:system (:update :delete :lookup))))))))
 
 (defvar *password-salt-length* 10)
 (defvar *min-passwrod-length* 5)
@@ -259,20 +282,21 @@ must be valid email to enable confirmation.")
 (defun make-user (email password &key name phone-no license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
-    (persist-item (system-collection "users") (list :license-codes license-codes
-			   :email email
-			   :name name
-			   :phone-no phone-no
-			   :password password
-			   :salt salt
-			   :super-user-p super-user-p))))
+     (persist-item (core-collection "users") 
+			       (list :license-codes license-codes
+				     :email email
+				     :name name
+				     :phone-no phone-no
+				     :password password
+				     :salt salt
+				     :super-user-p super-user-p))))
 
 (defun change-user (user new-password &key )
   (when new-password
     (setf (values (getx user :password) (getx user :salt))
           (make-password new-password))))
 
-(defun get-user (email)  
+(defun get-user (email) 
   (fetch-item
    (core-collection "users")
    :test (lambda (item)
@@ -291,12 +315,16 @@ must be valid email to enable confirmation.")
 		 :super-user-p super-user-p)))
 
 (defmethod ensure-core-user ((system system) &key &allow-other-keys)
-  (ensure-user "admin@cl-wfx.com" 
+  (ensure-user system
+	       "admin@cl-wfx.com" 
+	       "admin"
 	       :name "Core Admin"
 	       :super-user t))
 
 (defmethod ensure-system-user ((system system) &key &allow-other-keys)
-  (ensure-user (frmt "admin@~A.com" (name system)) 
+  (ensure-user system 
+	       (frmt "admin@~A.com" (name system)) 
+	       "admin"
 	       :name "System Admin"
 	       :super-user t))
 

@@ -38,28 +38,23 @@
 		(:div :class "card-footer"
 		      (gethash :login-error (cache *context*)))))))
 
-(defun get-store-from-short-mod (mod)
-  (cond ((equalp mod "cor")
-	 (core-store))
-	((equalp mod "sys")
-	 (system-store))
-	(t
-	 (license-store mod))))
+
 
 (defun context-url (spec module)
+
   (let ((spec (or spec (get-context-spec (get-store-from-short-mod 
-					  (getx module :module-short))
+					  (digx module :module-short))
 					 (default-context *system*)))))
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
 	   (id-string (if module
-			  (getx module :module-short)
+			  (digx module :module-short)
 			  "cor")))
-	  (if (and spec (url spec))
-	      (url spec)
+	  (if (and spec (digx spec :url))
+	      (digx spec :url)
 	      (string-downcase 
 	       (id-string (if spec
-			      (name spec)
+			      (digx spec :name)
 			      (default-context *system*))))))))
 
 (defmethod on-success (user)
@@ -70,24 +65,25 @@
     ;;(hunchentoot:remove-session *session*)
     )
   
+ ;; (break "~A" (core-collection "active-users"))
+  
   (let ((active-user (fetch-item (core-collection "active-users")
 				:test (lambda (item)
-					(equal (parameter "user") (getx item :email))))))
+					(equal (parameter "user") (digx item :email))))))
     (unless active-user
       (setf active-user (persist-item (core-collection "active-users")
-				      '(:email (getx item :email) 
+				      '(:email (digx item :email) 
 					:selected-licenses nil
-					:selected-entities nil)
+					:selected-entities nil))))
 
-				      )))
-
-    (setf (user *session*) active-user))
+    (setf (user *session*) user)
+    (setf (active-session-user *session*) active-user))
   
   ;;(init-user-session user)
 
 ;;  (log-login "Login" (email login) "Passed" "Login passed.")
 
-  (hunchentoot:redirect (context-url nil nil)))
+  (hunchentoot:redirect (context-url nil *module*)))
 
 (defmethod on-failure ()
  ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
@@ -97,20 +93,17 @@
 (defun validate-user (email password)
   (let ((user (get-user email)))
     (unless (and user (check-password user password))      
-      (setf user nil)
-      ;;(setf (message widget) "Email or password incorrect")
-      )
+      (setf user nil))
     user))
 
 (defmethod action-handler ((action (eql :login)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
-  
+
   (when (and (parameter "email") (parameter "password"))
     (let ((user (validate-user (parameter "email") (parameter "password"))))
-      
-        (if user
+      (if user
           (on-success user)
           (on-failure )))))
 
@@ -130,29 +123,29 @@
 
 
 (defun user-mods ()
-  (fetch-items "modules"
-	       :test
-	       (lambda (item)
-		 (and (not (string-equal "Core" (getx item :name)))
+  (wfx-fetch-items "modules"
+		   :test
+		   (lambda (item)
+		     (and (not (string-equal "Core" (digx item :name)))
 			  item))
-	       :result-type 'list))
+		   :result-type 'list))
 
 (defun mod-menu (mod)
   (if mod
-      (getx (first (getx mod :menu)) :menu-items)))
+      (digx (first (digx mod :menu)) :menu-items)))
 
 (defun system-menu ()
   (let ((sys-mod (fetch-item (core-collection "modules")
 			      :test (lambda (item)
-				      (string-equal "Core" (getx item :name))))))    
+				      (string-equal "Core" (digx item :name))))))    
     (if sys-mod
-	(getx (first (getx sys-mod :menu)) :menu-items))))
+	(digx (first (digx sys-mod :menu)) :menu-items))))
 
 
 (defun accessible-entity (entity accessible-entities)
   (if (find entity accessible-entities)
       (return-from accessible-entity entity)
-      (dolist (entity (getx entity :children))
+      (dolist (entity (digx entity :children))
 	(if (find entity accessible-entities)
 	    (return-from accessible-entity entity)
 	    (accessible-entity entity accessible-entities))))
@@ -162,7 +155,7 @@
   (let ((roots))
     (dolist (entity (fetch-items (license-collection license-code "entities")
 				 :result-type 'list))
-      (when (getx entity :root-p)
+      (when (digx entity :root-p)
 	(when (accessible-entity entity accessible-entities)
 	  (pushnew entity roots)
 	  )))
@@ -177,7 +170,7 @@
 		      (dotimes (i level)
 			(cl-who:htm "&nbsp;"))
 		      (if (find entity accessible-entities)
-			  (if (find entity (current-entities (active-user)))
+			  (if (find entity (digx (active-user) :selected-entities))
 			      (cl-who:htm
 				(:input :class "form-check-input" :type "checkbox" 
 					:name "tree-entity-id" 
@@ -190,8 +183,8 @@
 			    (:input :class "form-check-input" :type "checkbox" 
 				    :disabled "")))
 		      (name entity))))
-    (if (getx entity :children)
-	(dolist (entity (getx entity :children))
+    (if (digx entity :children)
+	(dolist (entity (digx entity :children))
 	  (render-entity-check entity 
 			       (+ level 1) 
 			       accessible-entities)))))
@@ -202,7 +195,7 @@
     (:form
      (dolist (entity (accessible-entity-roots license-code accessible-entities))
        ;; (break "~A ~A" entity (item-hash entity))
-       (when (getx entity :root-p)      
+       (when (digx entity :root-p)      
 	 (render-entity-check entity 0 accessible-entities)))
      (:button
       :name "set-entities" 
@@ -218,16 +211,16 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (current-entities (active-user)) nil)
+  (setf (digx (active-user) :selected-entities) nil)
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
       
       (dolist (entity (accessible-entities* (current-user)))
 	(if (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
-	    (pushnew entity (current-entities (active-user))))))))
+	    (pushnew entity (digx (active-user) :selected-entities)))))))
 
 (defun render-licence-codes ()
-  (dolist (code (getx (current-user) :license-codes))
+  (dolist (code (digx (current-user) :license-codes))
 			    
     (with-html-string
       
@@ -235,7 +228,8 @@
 	    (:div :class "form-check"
 		  
 		  (:div :class "form-check-label"
-			(if (find code (getx (active-user) :license-codes) :test #'string-equal)
+			(if (find code (digx (active-user) :license-codes) 
+				  :test #'string-equal)
 			    (cl-who:htm
 			      (:input :class "form-check-input" :type "checkbox" 
 				      :name "license-id" 
@@ -253,10 +247,10 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (current-entities (active-user)) nil)
+  (setf (digx (active-user) :selected-entities) nil)
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
-      (pushnew (cdr parameter) (getx (active-user) :license-codes)))))
+      (pushnew (cdr parameter) (digx (active-user) :license-codes)))))
 
 (defun render-page (menu-p body)
   
@@ -314,7 +308,7 @@
 		(name *system*))
 	    (:div :class "collapse navbar-collapse" :id "menushit"
 		  (:span :class "navbar-text mr-auto"
-			 (frmt "Entities: ~A" (current-entities (active-user))))
+			 (frmt "Entities: ~A" (digx (active-user) :selected-entities)))
 		  
 		  (:div :class "nav-item dropdown"
 			
@@ -325,51 +319,46 @@
 			    :aria-haspopup="true"
 			    :aria-expanded "false" 
 			    (if (current-user) 
-				(cl-who:htm (getx (current-user) :email))))
+				(cl-who:htm (digx (current-user) :email))))
 			(:div :class "dropdown-menu":aria-labelledby "userDropdown"
 			      
 			      (let ((sys-mod 
 				     (fetch-item (core-collection "modules")
 						 :test (lambda (item)
 							 (string-equal
-							  "System Admin" 
-							  (getx item :name))))))
+							  "Core" 
+							  (digx item :name))))))
 				
-				
-				(dolist (item (getx (first (getx sys-mod :menu))
-						    :menu-items))
-				  
+			;;	(break "sys-mod ~A" sys-mod)
+				(dolist (item (digx sys-mod :menu :menu-items))
+
 				  (let ((parameters))
 				    
-				    (dolist (param (getx item :context-parameters))
+				    (dolist (param (digx item :context-parameters))
 				      
 				      (setf parameters 
 					    (if parameters
 						(frmt "~A&~A=~A" 
 						      parameters
-						      (getx param :name)
-						      (getx param :value))
+						      (digx param :name)
+						      (digx param :value))
 						(frmt "~A=~A" 
-						      (getx param :name)
-						      (getx param :value)))))
-				    
+						      (digx param :name)
+						      (digx param :value)))))
+				  
 				    (cl-who:htm
 				     (:a :class "dropdown-item"
 					 :href 
 					 (if parameters
 					     (frmt "~A?~A" 
 						   (context-url 
-						    (context-spec item)
+						    (digx item :context-spec)
 						    sys-mod)
 						   parameters)
 					     (context-url 
-					      (context-spec item)
+					      (digx item :context-spec)
 					      sys-mod))
-					 (getx item :name)
-					 
-					 )))))))
-		  
-		  ))
+					 (digx item :name))))))))))
 	   (:nav :class "navbar"
 		 (if (current-user)
 		     (cl-who:htm 
@@ -402,15 +391,16 @@
 			     :id "exNavbarLeft"
 			     (:nav :class "nav nav-pills flex-column"
 				   (dolist (mod (user-mods))
-				     (dolist (menu (getx mod :menu))
+				     (break "user-mods ~A" mod)
+				     (dolist (menu (digx mod :menu))
 
-				       (dolist (item (getx menu :menu-items))
+				       (dolist (item (digx menu :menu-items))
 					 (cl-who:htm
 					  (:a :class 
 					      "nav-link ~A"
 					      :href (url 
-						     (context-spec item))
-					      (getx item :name))))))))
+						     (digx item :context-spec))
+					      (digx item :name))))))))
 		       
 		       (:div  :class "col" :id "grid-table"
 			      body)
@@ -434,14 +424,12 @@
 			     (:div :class "row bg-faded"
 				   "Accessible Entities")
 			     (:div :class "row"
-				   (dolist (license-code (getx (active-user) 
+				   (dolist (license-code (digx (active-user) 
 								 :selected-licenses))
 				       (cl-who:htm
 					(render-entity-tree 
 					 license-code
-					 (accessible-entities* (current-user))))))
-			     
-			     )))))
+					 (accessible-entities* (current-user)))))))))))
 
 
       "<script>$(itemument).on('click', '.dropdown-item', function(){
@@ -484,40 +472,51 @@
     (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*)))
 	     )
   )
-(defmethod setup-context ((module item) (spec item) system) 
+(defmethod setup-context ((module item) (context-spec item) (system hunch-system)  
+			  &key &allow-other-keys) 
   
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 
-	   (string-upcase (id-string (getx spec :name))) 
+	   (string-upcase (id-string (digx context-spec :name))) 
 	   '-page)  
-	  :uri ,(if (getx spec :url)
-		    (getx spec :url)
+	  :uri ,(if (digx context-spec :url)
+		    (digx context-spec :url)
 		    (frmt "~A~A/~A" (site-url system) 
 			  (string-downcase 
-			   (id-string (getx module :module-short)))
+			   (id-string (digx module :module-short)))
 			  (string-downcase 
-			   (id-string (getx spec :name)))))  
-	  :allow-other-keys t) ,(getx spec :args)
+			   (id-string (digx context-spec :name)))))  
+	  :allow-other-keys t) ,(digx context-spec :args)
       
       (check-user-access)
       (with-html
 	"<!itemtype html>"
-	(render-page t (render-grid ,(getx spec :collection) ,(getx spec :stores)))))))
+	(render-page t (render-grid 
+			,(digx context-spec :name)
+			,(getf
+			  (find-collection-def *system* 
+					       (digx context-spec :collection))
+			  :data-type)))))))
 
-(defmethod setup-context-login ((module item) (spec item) system)  
+(defmethod setup-context-login ((module item) (context-spec item) (system hunch-system)
+				&key &allow-other-keys)  
   (eval
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
-					(string-upcase (id-string (getx spec :args))) 
+					(string-upcase 
+					 (id-string (digx context-spec :args))) 
 					'-page)  
 				       :uri ,(frmt "~A~A/~A" (site-url system) 
 						   (string-downcase 
 						    (id-string 
-						     (getx module :module-short)))
-						   (if (getx spec :url)
-						       (getx spec :url)
+						     (digx module :module-short)))
+						   (if (digx context-spec :url)
+						       (digx context-spec :url)
 						       (string-downcase 
-							(id-string (getx spec :name)))))  
-				       :allow-other-keys t) ,(getx spec :args)
-      (render-page nil (render-login)))))
+							(id-string 
+							 (digx context-spec :name)))))  
+				       :allow-other-keys t) ,(digx context-spec :args)
+      (with-html
+	"<!itemtype html>"
+	(render-page nil (render-login))))))
 

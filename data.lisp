@@ -2,6 +2,7 @@
 
 (defparameter *core-store-definitions* nil)
 
+
 (defun add-core-definitions (definitions)  
 ;;  (break "???? ~A" definitions)
   (setf *core-store-definitions* 
@@ -61,8 +62,7 @@
 
 (defmethod init-system-universe ((system system) &key &allow-other-keys)
   (unless (data-definitions system)
-    (warn (frmt "init-system ~A" (data-definitions system)))
-    )
+    (warn (frmt "init-system ~A" (data-definitions system))))
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name (name system)))
@@ -99,3 +99,41 @@
 
 (defun license-collection (license-code name)
   (get-collection (license-store license-code) name))
+
+(defun get-store-from-short-mod (mod)
+  (cond ((equalp mod "cor")
+	 (core-store))
+	((equalp mod "sys")
+	 (system-store))
+	(t
+	 (license-store mod))))
+
+
+(defun find-collection-def (system name)
+  (dolist (def (append *core-store-definitions* (data-definitions system)))
+
+    (let ((col (dig def :collection)))     
+ ;;     (break "~A ~A" col name)
+      (when (and col (string-equal (getf col :name) name))
+	(return-from find-collection-def col)))))
+
+(defun find-type-def (system name)
+  (dolist (def (append *core-store-definitions* (data-definitions system)))
+    (let ((col (dig def :data-type)))     
+      (when (and col (string-equal (getf col :name) name))
+	(return-from find-type-def col)))))
+
+(defun collection-stores (system collection)
+  (let ((stores))
+    (dolist (dest (digx (if (stringp collection)
+			    (find-collection-def system collection)
+			    collection) 
+			:destinations))
+      (cond ((equalp dest "cor")
+	     (push (core-store) stores))
+	    ((equalp dest "sys")
+	     (push (system-store) stores))
+	    (t
+	     (dolist (lic (getx (active-user) :selected-license))
+	       (push (license-store lic) stores)))))
+    stores))

@@ -40,7 +40,20 @@
 					   :list-values (:demo :suspended :active))
 			   :attributes (:display t :editable t)
 			   :documentation "")))
-    :destinations (:core))))
+    :destinations (:core))
+   
+   (:collection
+    (:name "licenses"
+     :label "Licenses"
+     :data-type "license")
+    :destinations (:core)
+    :access
+    (:stores
+     (:core
+      (:user-levels
+       (:core (:update :delete :lookup))
+       (:system (:update :delete :lookup))
+       (:license (:lookup))))))))
 
 (defun get-license (code)
   (fetch-item (core-collection "licenses")
@@ -61,28 +74,30 @@
 
 (defgeneric assign-license-code (license)
   (:documentation "Assigns a code to the license. Uses a thread lock in :around to ensure unique code."))
-
 (defmethod assign-license-code :around ((license item))
-  (bordeaux-threads:with-lock-held (*license-code-lock*)
-      (call-next-method)))
+  )
 
 (defmethod assign-license-code ((license item))
-  (let ((code (generate-new-license-code)))
+  (let ((code ))
     (setf (getx license :license-code) code)))
 
-(defun make-license (license-holder &optional code)
-  (let ((license (make-item :values
-			    (list :license-code code
-				  :license-holder license-holder
-				  :license-date (get-universal-time)
-				  :license-status :active))))
-    (unless code
-      (assign-license-code license))
-    
-    (persist-item (core-collection "licenses") license)
-    
-    (init-license-universe (universe *system*) 
-			   (getx license :license-code))))
+(defun make-license (system license-holder &optional code)
+  
+  (bordeaux-threads:with-lock-held (*license-code-lock*)
+   
+    (let ((license (make-item :values
+			      (list :license-code (if  code
+						       code
+						       (generate-new-license-code)
+						       )
+				    :license-holder license-holder
+				    :license-date (get-universal-time)
+				    :license-status :active))))
+           
+      (persist-item (core-collection "licenses") license)
+      
+      (init-license-universe system
+			     (getx license :license-code)))))
 
 
 (defgeneric make-license-package (system-name license-code))
@@ -96,5 +111,5 @@
 
 
 (defmethod ensure-demo-license ((system system) &key &allow-other-keys)
-  (make-license "Demo" "000000"))
+  (make-license system "Demo" "000000"))
 

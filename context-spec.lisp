@@ -48,10 +48,26 @@
      :destinations (:core :license)))
    
    (:collection
-    (:name "context-specs"
-     :label "Context Specs"
-     :data-type "context-spec")
-    :destinations (:core :system :license))))
+      (:name "context-specs"
+	     :label "Context Specs"
+	     :data-type "context-spec")
+      :destinations (:core :system :license)
+      :access
+      (:stores
+       (:core
+	(:user-levels
+	 (:core (:update :delete :lookup))))
+       (:system
+	(:user-levels
+	 (:core (:update :delete :lookup))
+	 (:system (:update :delete :lookup))
+	 (:license (:view :copy :lookup))))
+       (:license
+	(:user-levels
+	 (:core (:update :delete :lookup))
+	 (:system (:update :delete :lookup))
+	 (:license (:update :delete :lookup))))))
+   ))
 
 (defun get-context-spec (store name)
   (fetch-item (get-collection store "context-specs")

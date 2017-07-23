@@ -39,6 +39,11 @@
      :complex-type :key-value-list ;;((:key "1" :val "Ones") (:key "2" :val "Twos"))
      :value-type :string	   ;;or any other basic type
      )
+    
+    (:type :list 
+     :complex-type :p-list ;;((:key "1" :val "Ones" :key "2" :val (:can :go :down (:a :bit)))
+   
+     )
 			     
     (:type :list
      :complex-type :collection-items 
@@ -49,7 +54,7 @@
      )
 			     
     (:type :list
-     :complex-type :item ;;item not in a collection
+     :complex-type :list-items ;;item not in a collection
      :data-type "user-permission"
      :accessor (:context-spec :etc))
 			     

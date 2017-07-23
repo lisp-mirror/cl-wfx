@@ -120,7 +120,22 @@
     (:name "modules"
      :label "Modules"
      :data-type "module")
-    :destinations (:core :system :license))))
+    :destinations (:core :system :license)
+    :access
+    (:stores
+     (:core
+      (:user-levels
+       (:core (:update :delete :lookup))))
+     (:system
+      (:user-levels
+       (:core (:update :delete :lookup))
+       (:system (:update :delete :lookup))
+       (:license (:lookup))))
+     (:license
+      (:user-levels
+       (:core (:update :delete :lookup))
+       (:system (:update :delete :lookup))
+       (:license (:update :delete :lookup))))))))
 
 (defun get-module (store module-name)   
   (fetch-item (get-collection store "modules" )

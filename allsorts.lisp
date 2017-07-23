@@ -36,6 +36,20 @@
 	     :display t
 	     :editable t))
      
+     (:stores
+		   (:core
+		    (:user-levels
+		     (:core (:update :delete :lookup))))
+		   (:system
+		    (:user-levels
+		     (:core (:update :delete :lookup))
+		     (:system (:update :delete :lookup))))
+		   (:license
+		    (:user-levels
+		     (:core (:update :delete :lookup))
+		     (:system (:update :delete :lookup))
+		     (:license (:update :delete :lookup)))))
+     
   
      :metaclass xdb2:storable-versioned-class
      :collection-name ""

@@ -42,7 +42,20 @@
 					   :list-values (:demo :suspended :active))
 			   :attributes (:display t :editable t)
 			   :documentation "")))
-    :destinations (:license))))
+    :destinations (:license))
+   
+   (:collection
+    (:name "entities"
+     :label "Entities"
+     :data-type "entity")
+    :destinations (:core :license)
+    :access
+    (:stores		  
+     (:license
+      (:user-levels
+       (:core (:update :delete :lookup))
+       (:system (:update :delete :lookup))
+       (:license (:update :delete :lookup))))))))
 
 (defgeneric match-context-entities (item))
 

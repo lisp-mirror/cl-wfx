@@ -31,9 +31,8 @@
  
       
       (unless sys-mod
-	(break "wtf no mod for request ? ~A ~A" mod (core-store))
-	(setf sys-mod (get-module-short (core-store) "sys"))
-	)
+	(warn (frmt "No mod for request ? ~A ~A" mod (core-store)))
+	(setf sys-mod (get-module-short (core-store) "sys")))
       
       (start-context sys-mod *session* context
 		     :id (or (parameter "i") (parameter "contextid"))
@@ -46,29 +45,29 @@
 				(request hunch-request)
 				&key &allow-other-keys)
   
-  ;;TODO:: How to register actions?
-  (if (find (parameter "action") 
-	    (list "save" "login" "logout" "assign-campaign") 
-	    :test #'string-equal)
-      (action-handler (intern (string-upcase (parameter "action")) :keyword)
-		      context
-		      request))
-  (cond ((parameter "set-licenses")
-	 (action-handler :set-licenses
-			 context
-			 request))
-	((parameter "set-entities")
-	 (action-handler :set-entities
-			 context
-			 request))
-      )
-  
-  ;;TODO: why checking for ajax?
-  (unless (ajax-request-p (request-object request))
-    ;;synq data
-    ;;fire events
+    ;;TODO:: How to register actions? Contexs spec permissions?
+    (if (find (parameter "action") 
+	      (list "save" "login" "logout" "assign-campaign") 
+	      :test #'string-equal)
+	(action-handler (intern (string-upcase (parameter "action")) :keyword)
+			context
+			request))
+    (cond ((parameter "set-licenses")
+	   (action-handler :set-licenses
+			   context
+			   request))
+	  ((parameter "set-entities")
+	   (action-handler :set-entities
+			   context
+			   request))
+	  )
     
-    ))
+    ;;TODO: why checking for ajax?
+    (unless (ajax-request-p (request-object request))
+      ;;synq data
+      ;;fire events
+      
+      ))
 
 
 (defmethod system-request ((acceptor hunch-system) (request hunch-request) 
@@ -103,7 +102,7 @@
 	
 	 (unless *context*
 	   (bad-request *request*))
-	 
+;;	 (break "~A" *context*)
 	 (when *context*
 	   (system-request acceptor *request*))	 
 	 

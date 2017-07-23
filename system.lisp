@@ -108,19 +108,23 @@ Calls in :after in order:
 	    (equalp (system-status system) :stopped) )
     (call-next-method)))
 
-(defmethod start-sys ((system system) &key &allow-other-keys) 
-  (ensure-core-user system)
-  (ensure-system-user system)
-  (ensure-demo-license))
+(defmethod start-sys ((system system) &key &allow-other-keys)
+)
 
 (defmethod start-sys :after ((system system) &key &allow-other-keys)
   (let ((*system* system))
     (declare (special *system*))
-    
+
+    (ensure-core-user system)
+    (ensure-system-user system)
+    (ensure-demo-license system)
+  
     (load-context-specs system)
     (load-modules system)
     
-    (setf (system-status system) :started)))
+    (setf (system-status system) :started)
+   
+    ))
 
 
 (defgeneric stop-sys (system &key &allow-other-keys)
