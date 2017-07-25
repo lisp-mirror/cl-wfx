@@ -57,7 +57,8 @@
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name "core"))
-  
+  (dolist (def *core-store-definitions*)
+    (pushnew def (data-definitions system)))
   (init-definitions (universe *system*) :core "core" *core-store-definitions*))
 
 (defmethod init-system-universe ((system system) &key &allow-other-keys)
@@ -89,7 +90,7 @@
   (get-collection (core-store) name))
 
 (defun system-store ()
-  (get-store (universe *system*) "app"))
+  (get-store (universe *system*) (name *system*)))
 
 (defun system-collection (name)
   (get-collection (system-store) name))
@@ -110,30 +111,45 @@
 
 
 (defun find-collection-def (system name)
-  (dolist (def (append *core-store-definitions* (data-definitions system)))
-
-    (let ((col (dig def :collection)))     
- ;;     (break "~A ~A" col name)
-      (when (and col (string-equal (getf col :name) name))
-	(return-from find-collection-def col)))))
+  (let ((definitions (data-definitions system)))
+    (dolist (def definitions)
+      (let ((col (dig def :collection)))  
+	(when (and col (string-equal (dig col :name) name))
+	  (return-from find-collection-def def))))))
 
 (defun find-type-def (system name)
-  (dolist (def (append *core-store-definitions* (data-definitions system)))
-    (let ((col (dig def :data-type)))     
-      (when (and col (string-equal (getf col :name) name))
-	(return-from find-type-def col)))))
+  (let ((definitions (data-definitions system)))
+    (dolist (def definitions)
+      (let ((col (dig def :data-type)))  
+
+	(when (and col (string-equal (dig col :name) name))
+	  (return-from find-type-def def))))))
 
 (defun collection-stores (system collection)
   (let ((stores))
-    (dolist (dest (digx (if (stringp collection)
-			    (find-collection-def system collection)
-			    collection) 
-			:destinations))
-      (cond ((equalp dest "cor")
-	     (push (core-store) stores))
-	    ((equalp dest "sys")
-	     (push (system-store) stores))
-	    (t
-	     (dolist (lic (getx (active-user) :selected-license))
-	       (push (license-store lic) stores)))))
-    stores))
+
+ 
+      (dolist (dest (digx (if (stringp collection)
+			      (find-collection-def system collection)
+			      collection) 
+			  :destinations))
+      
+      
+	(cond ((equalp dest :core)
+	       (push (core-store) stores))
+	      ((equalp dest :system)
+	       (push (system-store) stores))
+	      (t
+	       (dolist (lic (digx (active-user) :selected-license))
+		 (push (license-store lic) stores)))))
+
+      (remove-if #'not stores)))
+
+
+(defun wfx-fetch-items (collection-name &key test (result-type 'list))
+  (let ((items))
+    (dolist (store (collection-stores *system* collection-name))
+      (setf items (append items (fetch-items (get-collection store collection-name)
+					     :test test
+					     :result-type result-type))))
+    items))

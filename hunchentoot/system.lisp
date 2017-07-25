@@ -86,6 +86,7 @@ because hunchentoot does not have vhosts by default.")
     
   (hunchentoot:start system)
 
+
   (let* ((ajax-processor
 	  (make-instance 'ht-simple-ajax:ajax-processor
 			 :server-uri (frmt "~Aajax" (site-url system))))
@@ -100,10 +101,16 @@ because hunchentoot does not have vhosts by default.")
 				   (frmt "~Aweb/" (site-url system)) 
 				   (system-web-folder system)))
 	 
+	 
 	 (file-dispatcher-web (hunchentoot:create-folder-dispatcher-and-handler
 			       (frmt "~Acor/web/" (site-url system)) 
 			       (web-folder system)))
+	 
+	 
 	 )
+    
+    
+   
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
     (pushnew image-processor hunchentoot:*dispatch-table*)

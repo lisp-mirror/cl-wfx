@@ -106,6 +106,12 @@
 (defmethod getsfx ((type (eql :string)) field item &key &allow-other-keys)
   (getsfx* field item))
 
+(defmethod getsfx ((type (eql :number)) field item &key &allow-other-keys)
+   (getsfx* field item))
+
+(defmethod getsfx ((type (eql :integer)) field item &key &allow-other-keys)
+   (getsfx* field item))
+
 (defmethod getsfx ((type (eql :date)) field item &key &allow-other-keys)
   (getsfx* field item))
 
@@ -118,30 +124,36 @@
 (defmethod getsfx ((type (eql :boolean)) field item &key &allow-other-keys)
   (getsfx* field item))
 
-(defmethod getsfx ((type (eql :list)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :key-value)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :list-item)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :value-string-list)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :data-group)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :value-list)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :data-list)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :key-value-list)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :data-member)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :collection)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :data-child-member)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :collection-items)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-
-(defmethod getsfx ((type (eql :number)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :list-items)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :integer)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :hierarchical)) field item &key &allow-other-keys)
    (getsfx* field item))
+
+(defmethod getsfx ((type (eql :contained-item)) field item &key &allow-other-keys)
+   (getsfx* field item))
+
+(defmethod getsfx ((type (eql :collection-contained-item)) field item &key &allow-other-keys)
+   (getsfx* field item))
+
 
 (defun field-type-val (field key)
   (Let ((type (getf field :db-type)))
@@ -204,57 +216,14 @@
 			 &key &allow-other-keys)
   (set-getsfx* field item value))
 
-
-(defmethod (setf getsfx) (value (type (eql :value-string-list)) field item   
-			 &key &allow-other-keys)
-  (let* ((name (getf field :name))
-	 (delimiter (coerce (field-type-val field :delimiter) 'character))
-	 (type (field-type-val field :type))
-	 (split (split-sequence:split-sequence delimiter value))
-	 (list))
-    (dolist (x split)
-      (if (equalp type 'keyword)
-	  (setf list (append list 
-			     (list (intern (string-upcase (trim-whitespace x)) 
-					   :KEYWORD))))
-	  (setf list (append list (list (trim-whitespace x))))))
-    (setf (getx item name) list)))
-
-
-(defmethod validate-sfx ((type (eql :value-list)) field item value
-			 &key &allow-other-keys)
-  (let* ((list (field-type-val field :values))
-	 (*read-eval* nil)
-	 (valid (find (if (not (equalp (field-type-val field :type) :string))
-			  (read-from-string value)
-			  value)
-		      list :test #'equalp)))
- 
-    (values valid (if (not valid)
-		    (frmt "Value not one of ~S" list)))))
-
-
-(defmethod (setf getsfx) (value (type (eql :value-list)) field item 
-			 &key &allow-other-keys)
-  (setf (getsfx (field-type-val field :type) field item) value))
-
-
-(defmethod (setf getsfx) (value (type (eql :script)) field item   &key &allow-other-keys)
-  (setsfx-read* field item value #'consp "~S is not a cons!"))
-
-
 (defmethod (setf getsfx) (value (type (eql :boolean)) field item   
 			 &key &allow-other-keys)
   (set-getsfx* field item value))
 
 
-(defmethod (setf getsfx) (value (type (eql :collection-items)) field item   
-			 &key &allow-other-keys)
-  (setsfx-read* field item value #'listp "~R is not a list!"))
+(defmethod (setf getsfx) (value (type (eql :script)) field item   &key &allow-other-keys)
+  (setsfx-read* field item value #'consp "~S is not a cons!"))
 
-
-(defun type-of-p (field value)
-  (equalp (class-name (class-of value)) (field-type-val field :data-type)))
 
 
 
@@ -301,6 +270,64 @@
 	  (error (frmt "~S is not of type ~A!" object (field-type-val field :data-type)))))
   |#
     (set-getsfx* field item nil))
+
+(defmethod (setf getsfx) ((type (eql :key-value)) field item value  
+			 &key source &allow-other-keys) 
+ 
+    (set-getsfx* field item nil))
+
+(defmethod (setf getsfx) (value (type (eql :value-string-list)) field item   
+			 &key &allow-other-keys)
+  (let* ((name (getf field :name))
+	 (delimiter (coerce (field-type-val field :delimiter) 'character))
+	 (type (field-type-val field :type))
+	 (split (split-sequence:split-sequence delimiter value))
+	 (list))
+    (dolist (x split)
+      (if (equalp type 'keyword)
+	  (setf list (append list 
+			     (list (intern (string-upcase (trim-whitespace x)) 
+					   :KEYWORD))))
+	  (setf list (append list (list (trim-whitespace x))))))
+    (setf (getx item name) list)))
+
+
+(defmethod validate-sfx ((type (eql :value-list)) field item value
+			 &key &allow-other-keys)
+  (let* ((list (field-type-val field :values))
+	 (*read-eval* nil)
+	 (valid (find (if (not (equalp (field-type-val field :type) :string))
+			  (read-from-string value)
+			  value)
+		      list :test #'equalp)))
+ 
+    (values valid (if (not valid)
+		    (frmt "Value not one of ~S" list)))))
+
+
+(defmethod (setf getsfx) (value (type (eql :key-value-list)) field item 
+			 &key &allow-other-keys)
+  (setf (getsfx (field-type-val field :type) field item) value))
+
+
+
+(defmethod (setf getsfx) (value (type (eql :collection-items)) field item   
+			 &key &allow-other-keys)
+  (setsfx-read* field item value #'listp "~R is not a list!"))
+
+
+(defmethod (setf getsfx) (value (type (eql :contained-item)) field item   
+			 &key &allow-other-keys)
+  (setsfx-read* field item value #'listp "~R is not a list!"))
+
+
+(defmethod (setf getsfx) (value (type (eql :collection-containde-item)) field item   
+			 &key &allow-other-keys)
+  (setsfx-read* field item value #'listp "~R is not a list!"))
+
+
+(defun type-of-p (field value)
+  (equalp (class-name (class-of value)) (field-type-val field :data-type)))
 
 
 

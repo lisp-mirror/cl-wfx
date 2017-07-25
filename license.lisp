@@ -93,7 +93,7 @@
 				    :license-holder license-holder
 				    :license-date (get-universal-time)
 				    :license-status :active))))
-           
+      
       (persist-item (core-collection "licenses") license)
       
       (init-license-universe system

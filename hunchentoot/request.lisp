@@ -18,21 +18,23 @@
   (let ((script-name (or (parameter "context-uri") 
 			 (hunchentoot:script-name (request-object request))))
 	(sys-mod))
-    
+
     (let* ((split
 	    (split-sequence:split-sequence #\/ script-name))
 	   (sys (second split))
 	   (mod (third split))
 	   (context (fourth split)))
       (declare (ignore sys))
-
-      (setf sys-mod (get-module-short (get-store-from-short-mod 
-					  mod) "cor"))
+      
+      (when (get-store-from-short-mod 
+	     mod)
+	(setf sys-mod (get-module-short (get-store-from-short-mod 
+					 mod) "cor")))
  
       
       (unless sys-mod
 	(warn (frmt "No mod for request ? ~A ~A" mod (core-store)))
-	(setf sys-mod (get-module-short (core-store) "sys")))
+	(setf sys-mod (get-module-short (core-store) "cor")))
       
       (start-context sys-mod *session* context
 		     :id (or (parameter "i") (parameter "contextid"))
@@ -88,6 +90,7 @@
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
  (with-debugging
+   ;;(break "~A" (hunchentoot:post-parameters*))
    (let ((dont (dont-process request)))
      (hunchentoot:start-session)
      (if (not dont)

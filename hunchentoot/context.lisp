@@ -36,7 +36,7 @@
 				      :value "login"
 				      "Login")))
 		(:div :class "card-footer"
-		      (gethash :login-error (cache *context*)))))))
+		      (cl-who:str (gethash :login-error (cache *context*))))))))
 
 
 
@@ -157,12 +157,11 @@
 				 :result-type 'list))
       (when (digx entity :root-p)
 	(when (accessible-entity entity accessible-entities)
-	  (pushnew entity roots)
-	  )))
+	  (pushnew entity roots))))
     roots))
 
 (defun render-entity-check (entity level accessible-entities)
-  (with-html-string
+  (with-html
     (:div :class "row"
 	  (:div :class "form-check"
 		    
@@ -237,9 +236,9 @@
 				      :checked ""))
 			    (cl-who:htm
 			      (:input :class "form-check-input" :type "checkbox" 
-				      :name "license-id" :value code)))
+				      :name "license-id" :value (cl-who:str code))))
 			
-			code)))))		      
+			(cl-who:str code))))))		      
   )
 
 (defmethod action-handler ((action (eql :set-licenses)) 
@@ -271,7 +270,13 @@
 <script src=\"../web/codemirror/mode/commonlisp/commonlisp.js\"></script>
 <script src=\"../web/codemirror/addon/edit/closebrackets.js\"></script>
 <script src=\"../web/codemirror/addon/edit/matchbrackets.js\"></script>
+
+
 <script src=\"../web/cl-wfx.js\"></script>
+
+
+
+
 <link rel=\"stylesheet\" href=\"../web/cl-wfx.css\">
 <link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
@@ -308,7 +313,7 @@
 		(name *system*))
 	    (:div :class "collapse navbar-collapse" :id "menushit"
 		  (:span :class "navbar-text mr-auto"
-			 (frmt "Entities: ~A" (digx (active-user) :selected-entities)))
+			 (cl-who:str (frmt "Entities: ~A" (digx (active-user) :selected-entities))))
 		  
 		  (:div :class "nav-item dropdown"
 			
@@ -319,7 +324,7 @@
 			    :aria-haspopup="true"
 			    :aria-expanded "false" 
 			    (if (current-user) 
-				(cl-who:htm (digx (current-user) :email))))
+				(cl-who:str (cl-who:htm (digx (current-user) :email)))))
 			(:div :class "dropdown-menu":aria-labelledby "userDropdown"
 			      
 			      (let ((sys-mod 
@@ -358,7 +363,7 @@
 					     (context-url 
 					      (digx item :context-spec)
 					      sys-mod))
-					 (digx item :name))))))))))
+					 (cl-who:str (digx item :name)))))))))))
 	   (:nav :class "navbar"
 		 (if (current-user)
 		     (cl-who:htm 
@@ -400,10 +405,10 @@
 					      "nav-link ~A"
 					      :href (url 
 						     (digx item :context-spec))
-					      (digx item :name))))))))
+					      (cl-who:str (digx item :name)))))))))
 		       
 		       (:div  :class "col" :id "grid-table"
-			      body)
+			      (cl-who:str body))
 		       
 		       (:div :class "collapse col-md-2 hidden-print " 
 			     :id "exNavbarRight" :style "background-color:#FFFFFF"
@@ -432,15 +437,16 @@
 					 (accessible-entities* (current-user)))))))))))
 
 
-      "<script>$(itemument).on('click', '.dropdown-item', function(){
+      "<script>$(document).on('click', '.dropdown-item', function(){
        var selVal = $(this).children().first();
        var selText = $(this).text();
        $(this).parents('.dropdown').find('.dropdown-toggle').html(selText);
        $(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
 });</script>"
       
-      (:script (frmt	      
-		 "function ajax_call(func, callback, args, widget_args) {
+      (:script 
+       (cl-who:str (frmt	      
+			 "function ajax_call(func, callback, args, widget_args) {
 
     var uri = '~Aajax/' + encodeURIComponent(func);
     var post_parameters = '&contextid=' + contextid.value;
@@ -464,7 +470,7 @@
 
     fetchURI(uri, callback, post_parameters);
 
-}" (site-url *system*)))))))
+}" (site-url *system*))))))))
 
 (defun check-user-access ()
   (unless (current-user)
@@ -472,9 +478,10 @@
     (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*)))
 	     )
   )
+
 (defmethod setup-context ((module item) (context-spec item) (system hunch-system)  
 			  &key &allow-other-keys) 
-  
+
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 
@@ -489,18 +496,19 @@
 			   (id-string (digx context-spec :name)))))  
 	  :allow-other-keys t) ,(digx context-spec :args)
       
+      
       (check-user-access)
-      (with-html
-	"<!itemtype html>"
-	(render-page t (render-grid 
-			,(digx context-spec :name)
-			,(getf
-			  (find-collection-def *system* 
-					       (digx context-spec :collection))
-			  :data-type)))))))
+      (with-html-string
+		    "<!itemtype html>"
+		    (cl-who:str (render-page t (render-grid 
+						,(digx context-spec :collection)
+						,(digx (find-collection-def *system* 
+									    (digx context-spec :collection))
+						       :collection :data-type))))))))
 
 (defmethod setup-context-login ((module item) (context-spec item) (system hunch-system)
 				&key &allow-other-keys)  
+  (break "?")
   (eval
    `(hunchentoot:define-easy-handler (,(alexandria:symbolicate 
 					(string-upcase 
@@ -516,7 +524,7 @@
 							(id-string 
 							 (digx context-spec :name)))))  
 				       :allow-other-keys t) ,(digx context-spec :args)
-      (with-html
+      (with-html-string
 	"<!itemtype html>"
-	(render-page nil (render-login))))))
+	(cl-who:str (render-page nil (render-login)))))))
 

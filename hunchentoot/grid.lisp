@@ -2,19 +2,28 @@
 
 (defun complex-type (field)
   (if (listp (getf field :db-type))
-      (or (dig :db-type :complex-type)
-	  (dig :db-type :type))
+      (or (dig field :db-type :complex-type)
+	  (dig field :db-type :type))
       (getf field :db-type)))
 
-(defun field-data-type (field)
-  (getf (getf field :db-type) :type))
+(defun simple-type (field)
+  (if (listp (getf field :db-type))
+      (dig field :db-type :type)
+      (getf field :db-type)))
 
 
 
-(defun grid-fetch-items (name collection-name &key test (result-type 'list))
+(defun grid-fetch-items (name collection &key test (result-type 'list))
   (let ((items))
     (dolist (store (getcx name :stores))
-      (setf items (append items (fetch-items (get-collection store collection-name)
+      (setf items (append items (fetch-items 
+				 (get-collection store 
+						 (if (stringp collection)
+						     
+						     collection
+						     (digx collection :collection :name)
+						     ))
+				 
 					     :test test
 					     :result-type result-type))))
     items))
@@ -22,17 +31,15 @@
 
 (defun print-item-val-s* (field item)
   (let ((*print-case* :downcase))
+    
     (frmt "~S"
-	  (getfx 
-		    field 
-		    item))))
+	  (getfx item field))))
 
 (defun print-item-val-a* (field item)
   (let ((*print-case* :downcase))
+;;    (break "~A ~% ~A" field item)
     (frmt "~A"
-	  (getfx 
-	   field 
-		    item))))
+	  (getfx item field))))
 
 (defmethod print-item-val ((type (eql :symbol)) field item &key &allow-other-keys)
    (print-item-val-s* field item))
@@ -129,17 +136,17 @@
 
 (defun render-input-val* (type field item)
   (let ((name (getf field :name)))
-    (if (not (getf field :editable))
+    (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
 		  :type "text"	     
 		  :value
-		  (print-item-val 
-		   type
-		   field 
-		   item)
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -147,10 +154,10 @@
 		  :name name 
 		  :type "text"	     
 		  :value
-		  (print-item-val 
-		   type
-		   field 
-		   item))))))
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item)))))))
 
 (defmethod render-input-val ((type (eql :symbol)) field item &key &allow-other-keys)
   (render-input-val* type field item))
@@ -179,7 +186,7 @@
     
     (with-html-string
       (:div :class "form-check" 
-	    (if (not (getf field :editable))
+	    (if (not (digx field :attributes :editable))
 		(cl-who:htm (:div :class "form-check-label"
 					    (:input
 					     :class "form-check-input"
@@ -208,27 +215,27 @@
 
 (defmethod render-input-val ((type (eql :script)) field item &key &allow-other-keys)
   (let ((name (getf field :name)))
-    (if (not (getf field :editable))
+    (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (print-item-val 
-	    type
-	    field 
-	    item)))
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 10
-	
-	   (print-item-val 
-	    type
-	    field 
-	    item))))))
+	   (cl-who:str
+	    (print-item-val 
+	     type
+	     field 
+	     item)))))))
 
 (defmethod render-input-val ((type (eql :value-string-list)) 
 			     field item &key &allow-other-keys)
@@ -236,32 +243,34 @@
 
 	 (delimiter (dig field :db-type :delimiter)))
     
-    (if (not (getf field :editable))
+    (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
 	   :disabled "disabled"
-	   (print-item-val 
-	    (dig field :db-type :type)
-	    field 
-	    item))
-	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-					   "#\Space"
-					   delimiter))))
+	   (cl-who:str (print-item-val 
+			(dig field :db-type :type)
+			field 
+			item)))
+	  (:span 
+	   (cl-who:str (frmt "Delimit by ~A" (if (string-equal delimiter " ")
+						 "#\Space"
+						 delimiter)))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
-	   (print-item-val 
-	    (dig field :db-type :type)
-	    field 
-	    item))
-	  (:span (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-					   "#\Space"
-					   delimiter)))))))
+	   (cl-who:str (print-item-val 
+			(dig field :db-type :type)
+			field 
+			item)))
+	  (:span (cl-who:str
+		  (frmt "Delimit by ~A" (if (string-equal delimiter " ")
+					    "#\Space"
+					    delimiter))))))))
 
 (defmethod render-input-val ((type (eql :value-list)) field item &key &allow-other-keys)
   (let* ((name (getf field :name))
@@ -277,7 +286,7 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (frmt "~S" selected)))
+			 (cl-who:str (frmt "~S" selected))))
 	  
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -285,7 +294,7 @@
 		      (:span :class "dropdown-item" 
 			     (:input :type "hidden"
 				     :value (frmt "~S" option))
-			  (frmt "~S" option)))))))))
+			     (cl-who:str (frmt "~S" option))))))))))
 
 (defmethod render-input-val ((type (eql :collection-items)) 
 			     field item &key &allow-other-keys)
@@ -313,17 +322,17 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (slot-value
-			  selected
-			    (dig field :db-type :accessor))))
-	   
+			 (cl-who:str (slot-value
+				      selected
+				      (dig field :db-type :accessor)))))
+	    
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
 		    (cl-who:htm
 		      (:span :class "dropdown-item" 
 			     (:input :type "hidden"
 				     :value (frmt "~S" option))
-			  (frmt "~S" option)))))))))
+			     (cl-who:str (cl-who:str (frmt "~S" option)))))))))))
 
 (defmethod render-input-val ((type (eql :hierarchical)) field item 
 			     &key &allow-other-keys)
@@ -344,9 +353,9 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (slot-value
-			  selected
-			  (dig field :accessor))))
+			 (cl-who:str (slot-value
+				      selected
+				      (dig field :accessor)))))
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -354,7 +363,7 @@
 		      (:span :class "dropdown-item" 			      
 			       (:input :type "hidden"
 				       :value (frmt "~A" (item-hash option)))
-			       (getx option (dig field :accessor))))))))))
+			       (cl-who:str (getx option (dig field :accessor)))))))))))
 
 (defmethod render-input-val ((type (eql :collection-items))
 			     field item &key &allow-other-keys)
@@ -384,9 +393,9 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (getx
-			  selected
-			    (dig :db-type :accessor))))
+			 (cl-who:str (getx
+				      selected
+				      (dig :db-type :accessor)))))
 	   
 	      (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		    (dolist (option list)
@@ -394,7 +403,7 @@
 			(:span :class "dropdown-item" 			      
 			       (:input :type "hidden"
 				       :value (frmt "~A" (item-hash option)))
-			       (getx option (dig :db-type :accessor))))))))))
+			       (cl-who:str (getx option (dig :db-type :accessor)))))))))))
 
 (defun grid-js-render-form-values (renderer spec-name form-id 
 				   &key widget-id action item-id )
@@ -405,7 +414,7 @@
      (or widget-id "grid-table")
      form-id
      (js-pair "data-spec"
-	      (frmt "~S" spec-name))
+	      (frmt "~A" spec-name))
      
      (js-pair "action" (or action ""))
      
@@ -413,9 +422,7 @@
 			    (getcx 
 			     spec-name :item-id)
 			    ""))
-    
-     
-     (js-pair "pages"
+      (js-pair "pages"
 	      (or (parameter "pages") 10))
      (js-pair "page"
 	      (or active-page 1)))))
@@ -428,7 +435,7 @@
 	       (or widget-id "grid-table")
 	      
 	       (js-pair "data-spec"
-			(frmt "~S" spec-name))
+			(frmt "~A" spec-name))
 	       (js-pair "action"
 			(or action ""))
 	       (js-pair "item-id" (or item-id ""))
@@ -444,8 +451,7 @@
 ;;  (break "subs ~A" subs)
   (if subs
       (if (equalp (ensure-parse-integer 
-		   (getcx spec-name
-						    :expand-id)) 
+		   (getcx spec-name :expand-id)) 
 		  (item-hash item))
 	  (with-html-string
 	    (:button
@@ -471,55 +477,56 @@
 (defun render-grid-buttons (spec-name item)
   (let ((permissions (getx (context-spec *context*) :permissions)))
   ;;  (break "permissions ~A" (context-spec *context*))
-    (dolist (permission permissions)
-      (cond ((equalp permission :update)
-	     (with-html-string
-	       
-	       (:button ;;:tabindex -1 ;;when disabled
-		:name "edit" :type "submit" 
-		:class
-		(if (and (parameter "item-id")
-			 (string-equal 
-			  (parameter "item-id") 
-			  (frmt "~A" (item-hash item))))
-		    "btn btn-outline-primary btn-sm active"
-		    "btn btn-outline-primary btn-sm")
-		:aria-pressed 
-		(if (and (parameter "item-id")
-			 (string-equal 
-			  (parameter "item-id") 
-			  (frmt "~A" (item-hash item))))
-		    "true"
-		    "false")
-		:onclick 
-		(grid-js-render "cl-wfx:ajax-grid" spec-name
-				:action "edit"
-				:item-id (item-hash item)
-				
-				)
-		"Edit")))
-	    ((equalp permission :delete)
-	     (with-html-string
-	       (:button ;;:tabindex -1 ;;when disabled
-		:name "edit" :type "submit" 
-		:class (if (and (parameter "item-id")
-				(string-equal 
-				 (parameter "item-id") 
-				 (frmt "~A" (item-hash item))))
-			   "btn btn-outline-primary btn-sm active"
-			   "btn btn-outline-primary btn-sm")
-		:aria-pressed (if (and (parameter "item-id")
-				       (string-equal 
-					(parameter "item-id") 
-					(frmt "~A" (item-hash item))))
-				  "true"
-				  "false")
-		:onclick 
-		(grid-js-render "cl-wfx:ajax-grid" spec-name
-				:action "delete"
-				:item-id (item-hash item)
-				)
-		"Delete")))))))
+    (with-html-string
+      (dolist (permission permissions)
+	(cond ((equalp permission :update)
+	       (cl-who:htm
+		 
+		 (:button ;;:tabindex -1 ;;when disabled
+		  :name "edit" :type "submit" 
+		  :class
+		  (if (and (parameter "item-id")
+			   (string-equal 
+			    (parameter "item-id") 
+			    (frmt "~A" (item-hash item))))
+		      "btn btn-outline-primary btn-sm active"
+		      "btn btn-outline-primary btn-sm")
+		  :aria-pressed 
+		  (if (and (parameter "item-id")
+			   (string-equal 
+			    (parameter "item-id") 
+			    (frmt "~A" (item-hash item))))
+		      "true"
+		      "false")
+		  :onclick 
+		  (grid-js-render "cl-wfx:ajax-grid" spec-name
+				  :action "edit"
+				  :item-id (item-hash item)
+				  
+				  )
+		  "Edit")))
+	      ((equalp permission :delete)
+	       (cl-who:htm
+		 (:button ;;:tabindex -1 ;;when disabled
+		  :name "edit" :type "submit" 
+		  :class (if (and (parameter "item-id")
+				  (string-equal 
+				   (parameter "item-id") 
+				   (frmt "~A" (item-hash item))))
+			     "btn btn-outline-primary btn-sm active"
+			     "btn btn-outline-primary btn-sm")
+		  :aria-pressed (if (and (parameter "item-id")
+					 (string-equal 
+					  (parameter "item-id") 
+					  (frmt "~A" (item-hash item))))
+				    "true"
+				    "false")
+		  :onclick 
+		  (grid-js-render "cl-wfx:ajax-grid" spec-name
+				  :action "delete"
+				  :item-id (item-hash item)
+				  )
+		  "Delete"))))))))
 
 
 (defun render-grid-edit (spec-name fields item parent-item parent-spec sub-name)
@@ -534,42 +541,42 @@
   (with-html-string
     (:div :class "card" :id (string-downcase (frmt "grid-edit-~A"  spec-name))
 	  (:div :class "card-header"
-		(frmt "Editing... ~A" (string-capitalize spec-name)))
+		(cl-who:str (frmt "Editing... ~A" (string-capitalize spec-name))))
 	  (:div :class "card-block"
 		(:div :class "row" 
-		      :id (frmt "~A" 
-				spec-name)
+		      :id (frmt "~A" spec-name)
 		      (:div :class "col" 
 			    
 			    (dolist (field fields)
 			      (let* ((name (getf field :name))
 				     (label (getf field :label)))
 				      
-				(when (and (getf field :display) 
-					   (and (not (equalp (field-data-type field)
-							     'data-group))
-						(not (equalp (field-data-type field)
-							    'data-list))
-					       ))
+				(when (and (digx field :attributes :display) 
+					   (and (not (equalp (complex-type field)
+							     :collection-items))
+						(not (equalp (complex-type field)
+							    :list-items))))
 					
 				  (cl-who:htm					  
-				    (:div :class (if (getf field :editable)
+				    (:div :class (if (digx field :attributes :editable)
 						     "form-group row"
 						     "form-group row disabled")
 					  (:label :for name 
 						  :class "col-sm-2 col-form-label" 
-						  (if label
-						      label
-						      (string-capitalize 
-						       (substitute 
-							#\Space  
-							(character "-")  
-							(format nil "~A" name) 
-							:test #'equalp))))
+						  (cl-who:str
+						   (if label
+						       label
+						       (string-capitalize 
+							(substitute 
+							 #\Space  
+							 (character "-")  
+							 (format nil "~A" name) 
+							 :test #'equalp)))))
 					  (:div :class "col"
-						(render-input-val 
-						 (field-data-type field) 
-						 field item :parent-item parent-item))))))))))
+						(cl-who:str
+						 (render-input-val 
+						  (simple-type field) 
+						  field item :parent-item parent-item)))))))))))
 	  (:div :class "card-footer"
 		(when (gethash :validation-errors (cache *context*))
 		  (let ((errors (gethash :validation-errors (cache *context*))))
@@ -580,8 +587,9 @@
 		    (cl-who:htm
 		      (:div :class "row"
 			    (:div :clas "col"
-				  (frmt "Errors ~S"
-					errors))))))
+				  (cl-who:str
+				   (frmt "Errors ~S"
+					 errors)))))))
 			 
 		(:div :class "row"
 		      (:div :class "col"
@@ -629,7 +637,7 @@
 		 "cl-wfx:ajax-grid"
 		 "grid-table"
 		 (js-pair "data-spec"
-			  (frmt "~S" spec-name))
+			  (frmt "~A" spec-name))
 		 (js-pair "action" "grid-col-filter")))))
 
 (defun rough-half-list (list &optional (half-if-length 2))
@@ -647,11 +655,11 @@
 (defun get-header-fields (fields)
   (let ((header-fields))
     (dolist (field fields)
-      (when (and (getf field :display) 
-		 (and (not (equalp (field-data-type field)
-				   'data-group))
-		      (not (equalp (field-data-type field)
-				   'data-list))))
+      (when (and (digx field :attributes :display) 
+		 (and (not (equalp (complex-type field)
+				   :collection-items))
+		      (not (equalp (complex-type field)
+				   :list-items))))
 	(pushnew field header-fields)))
     (reverse header-fields)))
 
@@ -666,7 +674,6 @@
 	   
 	   (dolist (half (rough-half-list (get-header-fields fields) 7))
 	     (cl-who:htm
-	     ;;  (break "f half ~A" half)
 	       (:div :class "col"
 		     (:div :class "row no-gutters"
 			   (dolist (field half)
@@ -674,7 +681,7 @@
 			       
 			       (cl-who:htm
 				 (:div :class "col"
-				       (cl-who:htm
+				       (cl-who:str
 					 (render-grid-col-filter 
 					  spec-name name))))))))))
 	   (if sub-p
@@ -682,70 +689,65 @@
 		 (:div :class "col-sm-2"))
 	       (cl-who:htm	      
 		 (:div :class "col-sm-2"
-		       (render-grid-search spec-name)))
-	       
-	     )))))
+		       (cl-who:str (render-grid-search spec-name)))))))))
 
 (defun render-header-row (spec-name fields sub-p subs)
   (with-html-string
     (:div :class "row"	
 	  (when subs
 	    (cl-who:htm
-	      (:div :class "col-sm-1"
-		    " ")))
-	  
+	     (:div :class "col-sm-1"
+		   " ")))
+	
 	  (dolist (half (rough-half-list (get-header-fields fields) 7))
-	  ;;  (break "h half ~A" half)
+	    ;;  (break "h half ~A" half)
 	    (cl-who:htm
-	      (:div :class "col"
-		    (:div :class "row no-gutters"
-			;;  (break "wtf ~A" half)
-			  (dolist (field half)
-			    
-			    (let* ((name (getf field :name))
-				   (label (getf field :label)))
-						  
-			      (cl-who:htm
-				(:div :class "col text-left"
-				      (:h6 (if label
-					       label
-					       (string-capitalize 
-						(substitute #\Space  (character "-")  
-							    (format nil "~A" name) 
-							    :test #'equalp))))))))))))
-	  
+	     (:div :class "col"
+		   (:div :class "row no-gutters"
+			 ;;  (break "wtf ~A" half)
+			 (dolist (field half)
+				  
+			   (let* ((name (getf field :name))
+				  (label (getf field :label)))
+				    
+			     (cl-who:htm
+			      (:div :class "col text-left"
+				    (:h6 (cl-who:str
+					  (if label
+					      label
+					      (string-capitalize 
+					       (substitute #\Space  (character "-")  
+							   (format nil "~A" name) 
+							   :test #'equalp)))))))))))))
+		 
 	  (if sub-p
-	    (cl-who:htm	      
-	      (:div :class "col-sm-2"))
-	    (cl-who:htm	      
-	      (:div :class "col-sm-2"
-		    (render-grid-sizing spec-name)))
-	    
-	    )))
-  )
+	      (cl-who:htm	      
+	       (:div :class "col-sm-2"))
+	      (cl-who:htm	      
+	       (:div :class "col-sm-2"
+		     (cl-who:str
+		      (render-grid-sizing spec-name))))))))
 
 (defun render-grid-header (spec-name fields sub-p)
   (let ((subs))
-    
     (dolist (field fields)
-      (cond ((or (equalp (field-data-type field) 'data-group)
-		 (equalp (field-data-type field) 'data-list))
+      (cond ((or (equalp (simple-type field) :collection-list)
+		 (equalp (simple-type field) :item-list))
 	     (pushnew field subs))))
-    (unless sub-p
-	 (render-filter-row spec-name fields sub-p subs)
-      )
-    (render-header-row spec-name fields sub-p subs)
-    
-    ))
+    (with-html-string
+	(unless sub-p	  
+	  (cl-who:str (render-filter-row spec-name fields sub-p subs)))
+      
+	(cl-who:str (render-header-row spec-name fields sub-p subs)))))
 
 (defun get-data-fields (fields)
   (let ((data-fields))
     (dolist (field fields)
-      (when (and (getf field :display) 
-		 (and (not (equalp (field-data-type field)
-				   'data-group))
-		      (not (equalp (field-data-type field)
-				   'data-list))))
+      (when (and (digx field :attributes :display) 
+		 (and (not (equalp (complex-type field)
+				   :collection-items))
+		      (not (equalp (complex-type field)
+				   :item-list))))
 	(pushnew field data-fields)))
     (reverse data-fields))
   
@@ -754,126 +756,137 @@
 
 (defun render-grid-data (spec-name page-items sub-level sub-name parent-item parent-spec)  
   (let ((sub-level-p (or
-		   
 		      (not (equalp spec-name 
 				   (gethash :root-data-spec 
 					    (cache *context*)))))))
     
     (when sub-level-p
-     ;; (parse-data-spec-for-grid spec-name)
+      ;; (parse-data-spec-for-grid spec-name)
       )  
     
-    (let ((fields (getcx spec-name :data-fields))
-	  (subs))
-      
-      (dolist (field (getcx spec-name :data-fields))
-	(cond ((or (equalp (field-data-type field) 'data-group)
-		   (equalp (field-data-type field) 'data-list))
-	       (pushnew field subs))))
-      
-      (dolist (item page-items)
-	(with-html
-	  (:div :class "row "
-		
-		(cl-who:htm
-		  (if subs
+    (with-html-string
+      (let ((fields (getcx spec-name :fields))
+	    (subs))
+	
+	(dolist (field (getcx spec-name :fields))
+	  (cond ((or (equalp (simple-type field) 'data-group)
+		     (equalp (simple-type field) 'data-list))
+		 (pushnew field subs))))
+	
+	(dolist (item page-items)
+	    (cl-who:htm
+	      (:div :class "row "
+			   
+		    (if subs
+			(cl-who:htm
+			  (:div :class "col-sm-1"
+				(render-expand-buttons subs spec-name item))))
+		  
+		    (dolist (half (rough-half-list (get-data-fields fields) 7))
 		      (cl-who:htm
-			(:div :class "col-sm-1"
-			      (render-expand-buttons subs spec-name item))))
-		  (dolist (half (rough-half-list (get-data-fields fields) 7))
-		    (cl-who:htm
-		      (:div :class "col"
-			    (:div :class "row no-gutters"
-				  (dolist (field half)
-				    (cl-who:htm 
-				      (:div 
-				       :class "col text-left text-truncate"
-				       
-				       (let ((val (print-item-val 
-						   (field-data-type field) field item)))
-					 (if (> (length val) 100)
-					     (subseq val 0 100)
-					     val))
-				       ))))))))
-
-		(:div :class "col-sm-2"
-		      (:div :class "btn-group float-right"
-			    (render-grid-buttons spec-name item ))))
-			
-	  (if (and (or (and (equalp (parameter "action") "edit")
-			    (parameter "item-id")) 
-		       (gethash :validation-error-item-id
-				(cache *context*)))
-		   (string-equal (parameter "data-spec") (frmt "~S" spec-name))
-		   (string-equal (or (parameter "item-id") 
-				     (gethash :validation-error-item-id
-					      (cache *context*)))
-				 (frmt "~A" (item-hash item))))
-			    
-	      (render-grid-edit spec-name fields item
-				parent-item parent-spec sub-name))
-			
-	  (when (equalp (ensure-parse-integer 
-			 (getcx spec-name
-							  :expand-id)) 
-			(item-hash item))
-			  
-	    (unless sub-level-p
-	      (setf (gethash :root-item (cache *context*)) item))
-			  
-	    (dolist (sub subs)
-	      (let* ((attributes (cdr (getf sub :db-type)))
-		     (sub-data-spec (getf attributes :data-spec)))
-			      
-	;;	(parse-data-spec-for-grid sub-data-spec)
-		(setf (getcx spec-name :active-item) item)
-			      
-		(cl-who:htm
-		  (:div :class "row"
 			(:div :class "col"
-			      (:div :class "card"
-				    (:h4 :class "card-title"
-					 (frmt "~A" (string-capitalize
-						     (getf sub :name))))
-				    (:div :class "card-header"
-					  (render-grid-header
-					   sub-data-spec
-					   (getcx 
-					    sub-data-spec :data-fields)
+			      (:div :class "row no-gutters"
+				    (dolist (field half)
+				      (cl-who:htm
+					(:div 
+					 :class "col text-left text-truncate"
+					
+					 (let ((val (print-item-val 
+						      (complex-type field) field item)))
+					   ;;(break "~A" val)
+					    (if (> (length val) 100)
+						(cl-who:str 
+						 (subseq val 0 100))
+						(cl-who:str 
+						 val)))
+					 
+					 )))))))
+
+		    (:div :class "col-sm-2"
+			  (:div :class "btn-group float-right"
+				(cl-who:htm
+				  (render-grid-buttons spec-name item ))))))
+	    
+	    
+	    (if (and (or (and (equalp (parameter "action") "edit")
+			       (parameter "item-id")) 
+			  (gethash :validation-error-item-id
+				   (cache *context*)))
+		      (string-equal (parameter "data-spec") (frmt "~A" spec-name))
+		      (string-equal (or (parameter "item-id") 
+					(gethash :validation-error-item-id
+						 (cache *context*)))
+				    (frmt "~A" (item-hash item))))
+		 
+		(cl-who:str
+		 (render-grid-edit spec-name fields item
+					      parent-item parent-spec sub-name)))
+	
+	    (when (equalp (ensure-parse-integer 
+			    (getcx spec-name
+				   :expand-id)) 
+			   (item-hash item))
+	       
+	       (unless sub-level-p
+		 (setf (gethash :root-item (cache *context*)) item))
+	       
+	       (dolist (sub subs)
+		 (let* ((attributes (cdr (getf sub :db-type)))
+			(sub-data-spec (getf attributes :data-spec)))
+		   
+		   ;;	(parse-data-spec-for-grid sub-data-spec)
+		   (setf (getcx spec-name :active-item) item)
+		   
+		   (cl-who:htm
+		    (:div :class "row"
+			  (:div :class "col"
+				(:div :class "card"
+				      (:h4 :class "card-title"
+					   (frmt "~A" (string-capitalize
+						       (getf sub :name))))
+				      (:div :class "card-header"
+					    (cl-who:str
+					     (render-grid-header
+					      sub-data-spec
+					      (getcx 
+					       sub-data-spec :fields)
+					      
+							 t)))
+				      (:div :class "card-block"
+					    (render-grid-data 
+					     sub-data-spec
+					     (getfx sub item) 
+					     (+ sub-level 1)
+					     (getf sub :name)
+					     item
+					     spec-name
+					     ))
+				      (:div :class "card-footer"
+					    (:div :class "row"	  
+						  (:div :class "col"
+							(:button
+							 :name "new" :type "submit" 
+							 :class "btn btn-outline-success"
 							 
-					   t))
-				    (:div :class "card-block"
-					  (render-grid-data 
-					   sub-data-spec
-					   (getfx sub item) 
-					   (+ sub-level 1)
-					   (getf sub :name)
-					   item
-					   spec-name
-					   ))
-				    (:div :class "card-footer"
-					  (:div :class "row"	  
-						(:div :class "col"
-						      (:button
-						       :name "new" :type "submit" 
-						       :class "btn btn-outline-success"
-								     
-						       :aria-pressed "false"
-								     
-						       :onclick 
-								     
-						       (grid-js-render "cl-wfx:ajax-grid" 
-								       sub-data-spec
-								       :action "new" )
-						       "+")))))))))))))
-      
-      (when (and (equalp (parameter "action") "new")
-		 (string-equal (parameter "data-spec") (frmt "~S" spec-name)))
-	(render-grid-edit spec-name fields 
-			  (make-instance spec-name) 
-			  parent-item
-			  parent-spec
-			  sub-name)))))
+							 :aria-pressed "false"
+							 
+							 :onclick 
+							 
+							 (grid-js-render "cl-wfx:ajax-grid" 
+									 sub-data-spec
+									 :action "new" )
+							 "+")))))))))))
+	    
+	    )
+	
+	(when (and (equalp (parameter "action") "new")
+		   (string-equal (parameter "data-spec") (frmt "~A" spec-name)))
+	  (cl-who:str
+	   (render-grid-edit spec-name fields 
+			     (make-item ) 
+			     parent-item
+			     parent-spec
+			     sub-name)))))))
 
 (defun render-grid-sizing (spec-name)
   (with-html-string
@@ -892,7 +905,7 @@
 	     "cl-wfx:ajax-grid"
 	     "grid-table"
 	     (js-pair "data-spec"
-		      (frmt "~S" spec-name))
+		      (frmt "~A" spec-name))
 
 	     (js-pair
 	      "grid-name" 
@@ -916,7 +929,7 @@
 	     "cl-wfx:ajax-grid"
 	     "grid-table"
 	     (js-pair "data-spec"
-		      (frmt "~S" spec-name))
+		      (frmt "~A" spec-name))
 	     
 	     (js-pair
 	      "grid-name" 
@@ -1012,8 +1025,8 @@
 	  (when filter-term
 			       
 	    (when (getf field :db-type)
-	      (when (or (equalp (field-data-type field) 'data-group)
-			(equalp (field-data-type field) 'data-list))
+	      (when (or (equalp (simple-type field) 'data-group)
+			(equalp (simple-type field) 'data-list))
 		(dolist (sub-val (getfx field item))
 		  (when sub-val
 		    (let* ((full-type (cdr (getf field :db-type)))
@@ -1028,7 +1041,7 @@
 			  (push nil found)
 			  )))))
 	      (let ((val (print-item-val 
-			  (field-data-type field) field item)))
+			  (simple-type field) field item)))
 		(if (filter-found-p filter-term val)
 		    (push t found)
 		    (push nil found)))))))
@@ -1043,10 +1056,10 @@
     (let ((found nil))
       (dolist (field (getcx 
 		      spec-name 
-		      :data-fields))
+		      :fields))
 	(when (getf field :db-type)
-	  (when (or (equalp (field-data-type field) 'data-group)
-		    (equalp (field-data-type field) 'data-list))
+	  (when (or (equalp (simple-type field) 'data-group)
+		    (equalp (simple-type field) 'data-list))
 	    (dolist (sub-val (getfx field item))
 	      
 		(when sub-val
@@ -1071,7 +1084,7 @@
 			  
 			  (setf found t))))))))
 	  (let ((val (print-item-val 
-		      (field-data-type field) field item)))
+		      (simple-type field) field item)))
 	    (when val
 	      (when (search search-term 
 			    val
@@ -1096,6 +1109,7 @@
     
     (unless (or search-p filter-p)
       (setf items (grid-fetch-items spec-name collection-name)))
+    
     
     (when (or search-p filter-p)
       
@@ -1126,7 +1140,7 @@
 	(how-many-pages (getcx 
 		       spec-name :page-count)))
     
-    (with-html-string
+    (with-html
       (:nav
        (:ul :class "pagination justify-content-end"
 	    
@@ -1141,7 +1155,7 @@
 		  (js-render "cl-wfx:ajax-grid"
 			     "grid-table"
 			     (js-pair "data-spec"
-				      (frmt "~S" spec-name))
+				      (frmt "~A" spec-name))
 			     (js-pair "pages"
 				      (or (parameter "pages") 10))
 			     (js-pair "page"
@@ -1157,7 +1171,7 @@
 				       (+ how-many-pages 1)
 				       how-many-pages
 				       )))
-	      (dotimes (i real-page-count)
+	      (dotimes (i real-page-count)		
 		(cl-who:htm
 		  (:li :class (if (equalp active-page (+ i 1))
 				  "page-item active"
@@ -1170,7 +1184,7 @@
 			(js-render "cl-wfx:ajax-grid"
 				   "grid-table"
 				   (js-pair "data-spec"
-					    (frmt "~S" spec-name))
+					    (frmt "~A" spec-name))
 				   (js-pair "pages"
 					    (or (parameter "pages") 10))
 				   (js-pair "page"
@@ -1180,7 +1194,7 @@
 					     "~A" 
 					     spec-name))
 				   (js-pair "action" "page"))
-			(+ i 1)))))
+			(cl-who:str (+ i 1))))))
 	      
 	      (cl-who:htm
 		(:li :class "page-item"
@@ -1195,7 +1209,7 @@
 		      (js-render "cl-wfx:ajax-grid"
 				 "grid-table"
 				 (js-pair "data-spec"
-					  (frmt "~S" spec-name))
+					  (frmt "~A" spec-name))
 				 (js-pair "pages"
 					  (or (parameter "pages") 10))
 				 (js-pair "page"
@@ -1264,10 +1278,8 @@
 
 
 (defun set-grid-context (collection-name data-type-name)
-  (let* ((context-spec (context-spec *context*))
-	 (collection (find-collection-def *system*   
-					  (getx context-spec collection-name))))
-    
+  (let* ((collection (find-collection-def *system*   
+					  collection-name)))
     
     (setf  (gethash :root-data-spec (cache *context*)) 
 	   (getf collection :data-type))
@@ -1276,25 +1288,21 @@
     (setf (getcx data-type-name :collection) collection)
     
     (setf (getcx data-type-name :collection-name) collection)
-    
-    (setf (getcx data-type-name :stores) (collection-stores *system* collection))
+
+     (setf (getcx data-type-name :stores) (collection-stores *system* collection-name))
     
     (setf (getcx data-type-name :data-type) (find-type-def *system* 
 						 data-type-name))
-    
-    (setf (getcx data-type-name :fields) (getf (getcx data-type-name :data-type) :fields))
+
+    (setf (getcx data-type-name :fields) 
+	  (dig (getcx data-type-name :data-type) :data-type :fields))
     
     (setf (getcx data-type-name :root-item) nil)
     
     (setf (getcx data-type-name :list-field-name) nil)
     
     (setf (getcx data-type-name :search) (or (parameter "search")
-				   (getcx data-type-name :search)))
-    
-    
-   
-    )
-  )
+				   (getcx data-type-name :search)))))
 
 (defun set-grid-expand (data-type-name)
     (when (equalp (parameter "action") "expand")    
@@ -1313,17 +1321,13 @@
 		 (fetch-item "campaigns" 
 			     :test (lambda (doc)
 				     (equalp (item-hash doc) 
-					     (parse-integer (parameter "campaign")) )
-				     ))))
+					     (parse-integer (parameter "campaign")))))))
 	    (when campaign
 	      (dolist (company page-items)
 		(let ((exists-p)
 		      (campaigns-slot (intern "CAMPAIGNS" 'cl-bizhub))
 		      (campaign-slot (intern "CAMPAIGN" 'cl-bizhub))
-		      (company-campaign (intern "COMPANY-CAMPAIGN" 'cl-bizhub))
-		      )
-		  
-		  
+		      (company-campaign (intern "COMPANY-CAMPAIGN" 'cl-bizhub)))
 		  
 		  (dolist (campaignx (slot-value company campaigns-slot))
 		    (when (equalp (item-hash campaign)
@@ -1360,16 +1364,10 @@
 			    name
 			    "assign-campaign-id"
 			    :widget-id nil 
-			    :action "assign-campaign"
-			    
-			    )
+			    :action "assign-campaign")
 			   
 			   
 			   "<>")
-		  
-		  
-		  
-		  
 		  
 		  (:div :class "dropdown float-right"
 			(:input :type "hidden" :class "selected-value" 
@@ -1396,17 +1394,13 @@
   )
 
 (defun render-grid (collection-name data-type-name) 
- 
-  
-  
-  
+
   (set-grid-context collection-name data-type-name)
   
   (set-grid-filter data-type-name)
   
   (set-grid-expand (parameter "data-spec"))
   
- 
   (let ((page-items (fetch-grid-data data-type-name)))
     
     (campaign-shit page-items)
@@ -1414,7 +1408,7 @@
     (with-html-string  
       (:div :class "card"
 	    (:h4 :class "card-title"
-		 (frmt "~A" (getx (context-spec *context*) :name))
+		 (cl-who:str (frmt "~A" (getx (context-spec *context*) :name)))
 		 (:button :class "btn btn-small btn-outline-secondary float-right"
 				:name "filter-grid" 
 			
@@ -1436,13 +1430,15 @@
 			  (:i :class "fa fa-download"))
 		 )
 	    (:div :class "card-header"
-		  (render-grid-header data-type-name
-				      (getcx
-				       data-type-name 
-				       :data-fields)
-				      nil))
+		  (cl-who:str (render-grid-header data-type-name
+						  (getcx
+						   data-type-name 
+						   :fields)
+						  nil)))
 	    (:div :class "card-block"
-		  (render-grid-data data-type-name page-items 0 nil nil nil))
+	
+		  (cl-who:str
+		   (render-grid-data data-type-name page-items 0 nil nil nil)))
 	
 	    (:div :class "card-footer"
 		  (:div :class "row"	  
@@ -1459,14 +1455,14 @@
 						     
 					       :action "new")
 			       "+")
-			      (render-grid-paging data-type-name))))))))
+			      (cl-who:str (render-grid-paging data-type-name)))))))))
 
 
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (render-grid (getx (context-spec *context*) :name) 
-		(parameter "data-spec")))
+	       (parameter "data-spec")))
 
 
 (defmethod action-handler ((action (eql :save)) 
@@ -1477,7 +1473,7 @@
   (let* ((spec-name (read-no-eval (parameter "data-spec")))
 	 (fields (getcx 
 		  spec-name
-		  :data-fields))
+		  :fields))
 	 (parent-slot (getcx 
 				spec-name :list-field-name)))
     
@@ -1493,16 +1489,16 @@
 			  :parent-item)))
 	
 	(unless item
-	  (setf item (make-instance spec-name)))
+	  (setf item (make-item)))
 	
 	(dolist (field fields)
 	  
-	  (when (and (getf field :editable)
+	  (when (and (digx field :attributes :editable)
 		     (getf field :db-type)
 		     (and
-		      (not (equalp (field-data-type field) 'data-group))
-		      (not (equalp (field-data-type field) 'data-list))))
-	    (let ((valid (if (equalp (field-data-type field) 'list-item)
+		      (not (equalp (simple-type field) 'data-group))
+		      (not (equalp (simple-type field) 'data-list))))
+	    (let ((valid (if (equalp (simple-type field) 'list-item)
 			     (validate-sfx (complex-type field)
 						field 
 						item 
@@ -1515,7 +1511,7 @@
 		 (gethash :validation-errors (cache *context*))))
 		  
 	      (when (first valid)
-		(if (equalp (field-data-type field) :hierarchical)
+		(if (equalp (simple-type field) :hierarchical)
 		    (setf (getfx field item 
 				 
 				 :source (getcx 
@@ -1535,10 +1531,6 @@
 
 	(unless (gethash :validation-errors (cache *context*))
 	  
-
-	 
-	  
-
 	  ;;Append parent-slot only if new
 	  (when (and parent-slot (not (item-hash item)))
 	    
@@ -1546,11 +1538,10 @@
 		  (append (slot-value parent-item parent-slot)
 			  (list item))))
 	  
-	  
-	  (persist-item (license-collection "00000" (getcx 
-					     (gethash :root-data-spec (cache *context*))
-					     :collection-name)
-					    )
+	 
+	  (persist-item (get-collection (store-from-stash :cor)
+					(getcx (gethash :root-data-spec (cache *context*))
+					       :collection-name))
 			(gethash :root-item (cache *context*)))
 	  
 	  (setf (getcx spec-name :parent-item) nil)
@@ -1558,3 +1549,10 @@
 	  (setf (getcx spec-name :item-id) nil))))))
 
 
+(defun store-from-stash (store-name)
+  (dolist (store (getcx (gethash :root-data-spec (cache *context*)) :stores))
+    (when (equalp store-name (getf store :name))
+      (return-from store-from-stash store)
+      )
+    )
+  )

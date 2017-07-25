@@ -72,4 +72,4 @@
 (defun get-context-spec (store name)
   (fetch-item (get-collection store "context-specs")
 	      :test (lambda (item)
-		      (equal name (getx item :name)))))
+		      (equalp name (getx item :name)))))

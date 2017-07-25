@@ -8,15 +8,16 @@
      :fields ((:name :context-spec
 		     :label "Context Spec"
 		     :db-type (:type :item
+				     :commplex-type :collection
 				     :data-type "context-spec"
 				     :collection "context-specs"
-				     :key-accessor :name)
+				     :accessor :name)
 		     :key t
 		     :attributes (:display t :editable t)) 
 	      (:name :permissions 
 		     :label "Permissions"
-		     :db-type (:type :list
-				     :list-type :keyword
+		     :db-type (:type :keyword
+				     :complex-type :value-string-list
 				     :delimiter " ")
 		     :attibutes (:display t :editable t))))
     :destinations (:core))
@@ -35,10 +36,9 @@
 		     :label "Context Permissions"
 		     :key nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :list-items
 				     :data-type "user-permission"
-				     :key-accessor :context-spec
-				     :accessor-accossor :name)
+				     :accessor (:context-spec :name))
 		     :attibutes (:display t :editable t)))
      :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
     :destinations (:core :license))
@@ -98,34 +98,33 @@
 	     :attributes nil)
       (:name :license-codes 
 	     :label "License Codes"
-	     :db-type (:type :list 
-			     :list-type :string
+	     :db-type (:type :string
+			     :complex-type :value-string-list
 			     :delimiter ";" )
 	     :attributes (:display t :editable t))
       (:name :permissions 
 	     :label "Permissions"
 	     :key nil
 	     :db-type (:type :list
-			     :list-type :item
+			     :complex-type :list-items
 			     :data-type "user-permission"
-			     :key-accessor :context-spec
-			     :accessor-accossor :name)
+			     :accessor (:context-spec :name))
 	     :attibutes (:display t :editable t))     
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :key nil
 	     :db-type (:type :list
-			     :list-type :item 
+			     :complex-type :collection
 			     :data-type"entity"
 			     :collection "entities"
-			     :key-accessor :name)
+			     :accessor :name)
 	     :attibutes (:display t :editable t))
       (:name :preferences
 	     :label "Preferences"
 	     :db-type (:type :list
-			     :list-type :item
+			     :complex-type :list-items
 			     :data-type "user-preference"
-			     :key-accessor :name)			  
+			     :accessor :name)			  
 	     :attributes (:display t :editable t))      
       (:name :super-user-p
 	     :label "Is Super User"
@@ -134,9 +133,9 @@
 	     :documentation "If t none of the permission security applies to the user.")
       (:name :status
 	     :label "Status"
-	     :db-type (:type :list
-			     :list-type :keyword
-			     :list-values (:active :suspended :locked :disabled))
+	     :db-type (:type :keyword
+			     :complex-type :value-list
+			     :values (:active :suspended :locked :disabled))
 	     :attributes (:display t :editable t)
 	     :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -169,25 +168,24 @@
 	     :label "Permissions"
 	     :key nil
 	     :db-type (:type :list
-			     :list-type :item
+			     :complex-type :list-items
 			     :data-type "user-permission"
-			     :key-accessor :context-spec
-			     :accessor-accossor :name)
+			     :accessor (:context-spec :name))
 	     :attibutes (:display t :editable t))     
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :key nil
 	     :db-type (:type :list
-			     :list-type :item 
+			     :complex-type :collection
 			     :data-type"entity"
 			     :collection "entities"
-			     :key-accessor :name)
+			     :accessor :name)
 	     :attibutes (:display t :editable t))
       (:name :status
 	     :label "Status"
-	     :db-type (:type :list
-			     :list-type :keyword
-			     :list-values (:active :suspended :locked :disabled))
+	     :db-type (:type :keyword
+			     :complex-type :value-list
+			     :values (:active :suspended :locked :disabled))
 	     :attributes (:display t :editable t)
 	     :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -223,18 +221,18 @@ must be valid email to enable confirmation.")
       (:name :selected-licenses 
 	     :label "Selected Licenses"
 	     :key nil
-	     :db-type (:type :list
-			     :list-type "license"
-			     :collection "licenses"
-			     :key-accessor :code)
+	     :db-type (:type :string
+			     :complex-type :value-string-list
+			     :delimiter ";"
+			     :accessor :code)
 	     :attibutes (:display t :editable t))      
       (:name :selected-entities 
 	     :label "Selected Entities"
 	     :key nil
 	     :db-type (:type :list
-			     :list-type "entity"
-			     :collection "entities"
-			     :key-accessor :name)
+			     :complex-type :list-items
+			     :data-type "entity"
+			     :accessor :name)
 	     :attibutes (:display t :editable t))))
     :destinations (:core))
    

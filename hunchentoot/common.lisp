@@ -17,6 +17,14 @@
   `(cl-who:with-html-output-to-string (*standard-output* nil :indent t)
      ,@body))
 
+(defmacro with-inner-htm (&body body)
+  `(cl-who:str
+    (cl-who:htm
+     ,@body
+     )
+    )
+  )
+
 (defun render-to-string* (renderer &rest args)
   (let* ((splits (split-sequence:split-sequence #\: renderer))
 	   
@@ -30,9 +38,8 @@
 	   (render-function (intern (string-upcase (id-string renderer*)) 
 				 (find-package renderer-package)))
 	   )
-     ;; (break "to string* poes")
-    (with-html)
-      (apply render-function (list args))))
+      
+      (apply render-function args)))
 
 (defmacro with-debugging (&body body)
   ;; Using this as debugging tool because hunchentoot

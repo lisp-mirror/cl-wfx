@@ -8,7 +8,8 @@
 
 
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
-	    
+	
+
   (persist-item (core-collection "context-specs")
 		'(:name "Login"
 		  :permissions nil
@@ -85,29 +86,29 @@
 			    ;; (get-context-spec "script")
 			    ;; (get-context-spec "repl")
 			    ;;(get-context-spec "Data Specs")
-			    (get-context-spec (core-store ) "Context Specs")
+			    (item-values (get-context-spec (core-store ) "Context Specs"))
 			    ;;  (get-context-spec "report")
 			    ;; (get-context-spec "report-view")
-			    (get-context-spec (core-store ) "Modules")
-			    (get-context-spec (core-store ) "Licenses")
-			    (get-context-spec (core-store ) "Entities")
-			    (get-context-spec (core-store ) "Users")
-			    (get-context-spec (core-store ) "License Users")
+			    (item-values (get-context-spec (core-store ) "Modules"))
+			    (item-values (get-context-spec (core-store ) "Licenses"))
+			    (item-values (get-context-spec (core-store ) "Entities"))
+			    (item-values (get-context-spec (core-store ) "Users"))
+			    (item-values (get-context-spec (core-store ) "License Users"))
 			    ;; (get-context-spec "import-data")
 			    
 			    )))
    
-    
+       
     (let ((menu-items (loop for spec in (getf sys-mod :contexts)
 			 when spec
-			 collect (make-menu-item (getx spec :name)
+			 collect (make-menu-item (digx spec :name)
 						 spec))))
  
       (setf menu-items (append menu-items
 			       (list (list
 				      :item-name "Logout"
 				      :context-spec 
-				      (get-context-spec (core-store ) "Login")
+				      (item-values (get-context-spec (core-store ) "Login"))
 				      :context-parameters 
 				      (list  (list
 					      :name "action"
@@ -118,11 +119,17 @@
       (setf (getf sys-mod :menu) 
 	    (list :menu-name "System"
 		  :menu-items  menu-items)))
- 
-    (let ((mod (persist-item (core-collection "modules") sys-mod)))      
-      (dolist (spec (getx mod :contexts))
-	(setup-context mod spec *system*))
 
+    (let ((mod (persist-item (core-collection "modules") sys-mod)))      
+      (dolist (spec (digx mod :contexts))
+	(break "~A~%_________________~%~A~%_________________~%~A"
+	     mod
+	     spec
+	     *system*
+	     )
+	(setup-context mod spec *system*))
+       
+      
       (setup-context-login mod (get-context-spec (core-store ) "Login") *system*))))
 
 
