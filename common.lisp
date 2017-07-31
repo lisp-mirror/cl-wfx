@@ -26,72 +26,7 @@ Dont set manually use with-system macro.")
 	    (read value)))))
 
 
-(defun dig-down (place indicators)
-  (let* ((indicator (pop indicators))
-	 (next-place (if indicator
-			 (getf place indicator))))
-	     
-    (if indicators
-	(dig-down next-place indicators)
-	next-place)))
 
-(defun set-dig-down (place indicators value)
-  (let* ((indicator (pop indicators))
-	 (next-place (if indicator
-			 (getf place indicator))))
-    (if indicators	
-	(setf (getf place indicator) 
-	      (set-dig-down next-place indicators value))
-	(setf (getf place indicator) value))
-    place))
-
-(defun dig (place &rest indicators)
-  (dig-down place indicators))
-
-(defun (setf dig) (value place &rest indicators)
-  (set-dig-down place indicators value))
-
-
-(defun naive-dig (place indicators)
-  (let* ((indicator (pop indicators))
-	 (val (if indicator
-		  (if (equalp (type-of place) 'item)
-		      (getx place indicator)
-		      (getf place indicator))))
-	 (next-place (if (equalp (type-of val) 'item)
-			 (item-values val)
-			 val)))
-    	    
-    (if indicators
-	(naive-dig next-place indicators)
-	next-place)))
-
-(defun set-naive-dig (place indicators value)
-  (let* ((indicator (pop indicators))
-	 (val (if indicator
-		  (if (equalp (type-of place) 'item)
-		      (getx place indicator)
-		      (getf place indicator))))
-	 (next-place (if (equalp (type-of val) 'item)
-			 (if (cl-naive-store::item-changes val)
-				 (cl-naive-store::item-changes val)
-				 (setf (cl-naive-store::item-changes val)
-				       (copy-list (item-values val))))
-			 val)))
-    	    
-    (if indicators
-	(if (equalp (type-of val) 'item)
-		(set-naive-dig next-place indicators value)
-		(setf (getf place indicator) 
-		      (set-naive-dig next-place indicators value)))
-	(setf (getf place indicator) value))
-    place))
-
-(defun digx (place &rest indicators)
-  (naive-dig place indicators))
-
-(defun (setf digx) (value place &rest indicators)
-  (set-naive-dig place indicators value))
 
 
 ;;#############################STRINGS

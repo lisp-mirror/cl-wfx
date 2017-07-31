@@ -3,6 +3,13 @@
 (defvar *example-type-defs*
   '(:example-type-defs
     (:type :item
+     :complex-type :item
+     :data-type "data-type"
+     :accessor (:some-field-that-contains-an-item 
+		:the-contained-item-field-name 
+		:etc :etc ))
+    
+    (:type :item
      :complex-type :collection
      :data-type "data-type"
      :collection "some-collection"  
