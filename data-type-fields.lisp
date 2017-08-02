@@ -292,12 +292,15 @@
 	 (type (dig field :db-type :type))
 	 (split (split-sequence:split-sequence delimiter value))
 	 (list))
+;;    (break "split ~A" split)
     (dolist (x split)
-      (if (equalp type 'keyword)
+      (if (equalp type :keyword)
 	  (setf list (append list 
-			     (list (intern (string-upcase (trim-whitespace x)) 
+			     (list (intern (string-upcase
+					    (remove #\: (trim-whitespace x))) 
 					   :KEYWORD))))
 	  (setf list (append list (list (trim-whitespace x))))))
+   ;; (break "fuck ~S" list)
     (setf (getx item name) list)))
 
 

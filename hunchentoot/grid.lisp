@@ -104,13 +104,17 @@
 			   field item &key &allow-other-keys)
   (let* ((delimiter (dig field :db-type :delimiter))
 	 (val))
+    
     (dolist (x (getsfx (dig field :db-type :type) field item))
+      ;;(break "~s" (getsfx (dig field :db-type :type) field item))
       (setf val 
 	    (if val
 		(concatenate 'string val delimiter 
 			     (if (equalp (dig field :db-type :type)
 					 :keyword)
-				 (string-downcase (frmt "~S" x))
+				 (progn
+				 ;;  (break "~S ~A" x x)
+				   (string-downcase (frmt "~S" x)))
 				 x))
 		(if (equalp (dig field :db-type :type)
 			    :keyword)
@@ -265,7 +269,7 @@
   (let* ((name (getf field :name))
 
 	 (delimiter (dig field :db-type :delimiter)))
-    
+
     (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
@@ -274,7 +278,7 @@
 	   :name name :cols 20 :rows 3
 	   :disabled "disabled"
 	   (cl-who:str (print-item-val 
-			(dig field :db-type :type)
+			:value-string-list
 			field 
 			item)))
 	  (:span 
@@ -287,7 +291,7 @@
 	   :id name
 	   :name name :cols 20 :rows 3
 	   (cl-who:str (print-item-val 
-			(dig field :db-type :type)
+			:value-string-list
 			field 
 			item)))
 	  (:span (cl-who:str
@@ -771,9 +775,9 @@
 		       (:div :class "btn-group float-right"
 			     (cl-who:str
 			      (render-grid-buttons data-type item ))))))
+	 
 	  
-	  
-	  (if (and (or (and (equalp (parameter "action") "edit")
+	  (when (and (or (and (equalp (parameter "action") "edit")
 			    (parameter "item-id")) 
 		       (gethash :validation-error-item-id
 				(cache *context*)))
@@ -783,6 +787,11 @@
 				     (gethash :validation-error-item-id
 					      (cache *context*)))
 				 (frmt "~A" (item-hash item))))
+
+	      
+	      (unless sub-level-p
+		(setf (getcx data-type :root-item) item)
+		)
 	      
 	      (cl-who:str
 	       (render-grid-edit data-type fields item
@@ -790,12 +799,13 @@
 	  
 
 	 
-	 	  (when (equalp (ensure-parse-integer
+	  (when (equalp (ensure-parse-integer
 			 (getcx data-type :expand-id)) 
 			(item-hash item))
 	    
 	    (unless sub-level-p
-	      (setf (gethash :root-item (cache *context*)) item))
+	      (setf (getcx data-type :root-item) item)
+	      )
 	    
 	    (dolist (sub subs)
 	      (let* ((sub-data-spec (dig sub :db-type :data-type)))
@@ -1366,15 +1376,10 @@
 		 (gethash :validation-errors (cache *context*))))
 	      
 	      (when (first valid)
-		
-		(if (equalp (complex-type field) :hierarchical)
-		    (setf (getfx item field				 
-				 :source (getcx 
-					  (dig field :db-type :data-type) 
-					  :active-item))
-			  (parameter field-name))
-		    (setf (getfx item field ) 
-			  (parameter field-name)))
+	
+		(setf (getfx item field ) 
+		      (parameter field-name))
+	
 	
 		))))
 	
@@ -1395,7 +1400,7 @@
 		  (append (getx parent-item parent-slot)
 			  (list item))))
 
-;;	  (break "??? ~A ~A" item		 (getcx data-type :root-item))
+	 
 	  
 	  (persist-item
 	   (get-collection
@@ -1403,6 +1408,8 @@
 		    (gethash :collection-name (cache *context*))))
 	    (gethash :collection-name (cache *context*)))
 	   (getcx data-type :root-item))
+
+	 
 	  
 	  (setf (getcx data-type :parent-item) nil)
 	  (setf (getcx data-type :edit-item) nil)

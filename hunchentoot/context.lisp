@@ -314,6 +314,7 @@
 	       :class "collapse navbar-collapse" :id "menushit"
 	       (:span :class "navbar-text mr-auto"
 		      (cl-who:str (frmt "Entities: ~A"
+					
 					(digx (active-user)
 					      :selected-entities))))
 		    
