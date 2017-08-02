@@ -241,7 +241,7 @@
   (if (not (empty-p value))
     (let* ((id (parse-integer value))
 	   (full-type (cdr (getf field :db-type)))
-	   (data-spec (get-data-spec (field-type-val field :data-spec)))
+	   (data-spec (get-data-spec (dig field :db-type :data-spec)))
 	   (object (fetch-item (collection-name data-spec)
 			       :test (lambda (item)
 				      ;; (break "~A ~A ~A" item id (xdb2:id item))
@@ -250,7 +250,7 @@
      ;;(break "~A ~A ~A" item object value)
       (if (type-of-p field object)
 	  (set-getsfx* field item object)
-	  (error (frmt "~S is not of type ~A!" object (field-type-val field :data-spec)))))
+	  (error (frmt "~S is not of type ~A!" object (dig field :db-type :data-spec)))))
     )
  |#
   (set-getsfx* field item value)
@@ -266,7 +266,7 @@
       
     (let* ((id (parse-integer value))
 	   (list (getx source
-		       (field-type-val field :child-accessor)))
+		       (dig field :db-type :child-accessor)))
 	   (object)) 
       
       (dolist (contact list)
@@ -274,7 +274,7 @@
 	  (setf object contact)))
       (if (type-of-p field object)
 	  (set-getsfx* field item object)
-	  (error (frmt "~S is not of type ~A!" object (field-type-val field :data-type)))))
+	  (error (frmt "~S is not of type ~A!" object (dig field :db-type :data-type)))))
   |#
     (set-getsfx* field item nil))
 
@@ -286,8 +286,8 @@
 (defmethod (setf getsfx) (value (type (eql :value-string-list)) field item   
 			 &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (delimiter (coerce (field-type-val field :delimiter) 'character))
-	 (type (field-type-val field :type))
+	 (delimiter (coerce (dig field :db-type :delimiter) 'character))
+	 (type (dig field :db-type :type))
 	 (split (split-sequence:split-sequence delimiter value))
 	 (list))
     (dolist (x split)
@@ -301,9 +301,9 @@
 
 (defmethod validate-sfx ((type (eql :value-list)) field item value
 			 &key &allow-other-keys)
-  (let* ((list (field-type-val field :values))
+  (let* ((list (dig field :db-type :values))
 	 (*read-eval* nil)
-	 (valid (find (if (not (equalp (field-type-val field :type) :string))
+	 (valid (find (if (not (equalp (dig field :db-type :type) :string))
 			  (read-from-string value)
 			  value)
 		      list :test #'equalp)))
@@ -314,7 +314,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :key-value-list)) field item 
 			 &key &allow-other-keys)
-  (setf (getsfx (field-type-val field :type) field item) value))
+  (setf (getsfx (dig field :db-type :type) field item) value))
 
 
 
@@ -334,7 +334,7 @@
 
 
 (defun type-of-p (field value)
-  (equalp (class-name (class-of value)) (field-type-val field :data-type)))
+  (equalp (class-name (class-of value)) (dig field :db-type :data-type)))
 
 
 

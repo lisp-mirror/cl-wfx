@@ -27,19 +27,19 @@
 			   :label "Children"
 			   :key-p nil
 			   :db-type (:type :list
-					   :list-type :item
+					   :complex-type :hierarchical
 					   :data-type "entity"
-					   :key-accessor :name
 					   :collection "entities"
-					   )
+					   :accessor (:name)
+					   :child-accessor (:children))
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		  		    (:name :license-status
 			   :label "License Status"
 			   :key-p nil
-			   :db-type (:type :list
-					   :list-type :keyword
-					   :list-values (:demo :suspended :active))
+			   :db-type (:type :keyword
+					   :complex-type :value-list
+					   :values (:demo :suspended :active))
 			   :attributes (:display t :editable t)
 			   :documentation "")))
     :destinations (:license))

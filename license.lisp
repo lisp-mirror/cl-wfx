@@ -21,9 +21,10 @@
 			   :label "License Modules"
 			   :key-p nil
 			   :db-type (:type :list
-					   :list-type :item
+					   :complex-type :collection-items
 					   :data-type "module"
-					   :key-accessor :name)
+					   :collection "Modules"
+					   :accessor :name)
 			   :attributes (:display t :editable t)
 			   :documentation "")
 		    (:name :license-date
@@ -35,9 +36,9 @@
 		    (:name :license-status
 			   :label "License Status"
 			   :key-p nil
-			   :db-type (:type :list
-					   :list-type :keyword
-					   :list-values (:demo :suspended :active))
+			   :db-type (:type :keyword
+					   :complex-type :value-list
+					   :values (:demo :suspended :active))
 			   :attributes (:display t :editable t)
 			   :documentation "")))
     :destinations (:core))
@@ -85,14 +86,16 @@
   
   (bordeaux-threads:with-lock-held (*license-code-lock*)
    
-    (let ((license (make-item :values
-			      (list :license-code (if  code
-						       code
-						       (generate-new-license-code)
-						       )
-				    :license-holder license-holder
-				    :license-date (get-universal-time)
-				    :license-status :active))))
+    (let ((license (make-item
+		    :data-type "license"
+		    :values
+		    (list :license-code (if  code
+					     code
+					     (generate-new-license-code)
+					     )
+			  :license-holder license-holder
+			  :license-date (get-universal-time)
+			  :license-status :active))))
       
       (persist-item (core-collection "licenses") license)
       

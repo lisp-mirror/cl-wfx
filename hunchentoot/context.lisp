@@ -69,13 +69,15 @@
   
   (let ((active-user (fetch-item (core-collection "active-users")
 				 :test (lambda (item)
-					 (equal (parameter "user") (digx item :email))))))
+					 (equal (parameter "user")
+						(digx item :email))))))
     (unless active-user
+     
       (setf active-user (persist-item (core-collection "active-users")
-				      '(:email (digx item :email) 
-					:selected-licenses nil
-					:selected-entities nil))))
-
+				      (list :email (digx user :email) 
+					    :selected-licenses nil
+					    :selected-entities nil))))
+    
     (setf (user *session*) user)
     (setf (active-session-user *session*) active-user))
   
@@ -338,7 +340,8 @@
 					    (digx item :name))))))
 				  
 			     ;;	(break "sys-mod ~A" sys-mod)
-			     (dolist (item (digx sys-mod :menu :menu-items))
+			     (dolist (item (digx (first (digx sys-mod :menu))
+						 :menu-items))
 
 			       (let ((parameters))
 				      
@@ -366,6 +369,7 @@
 					  (context-url 
 					   (digx item :context-spec)
 					   sys-mod))
+				      
 				      (cl-who:str (digx item :name)))))))))))
 	     (:nav :class "navbar"
 		   (if (current-user)
@@ -468,7 +472,7 @@
 
     if (widget_args && widget_args.length > 0) {
         for (i = 0; i < widget_args.length; ++i) {
-            var arg = widget_args[i]
+            var arg = widget_args[i];
             post_parameters += '&' + encodeURIComponent(arg[0]) + '='
                 + encodeURIComponent(arg[1]);
         }
@@ -506,11 +510,7 @@
       (with-html-string
 	  "<!itemtype html>"
 	(cl-who:str (render-page t (render-grid 
-				    ,(digx context-spec :collection)
-				    ,(digx (find-collection-def
-					    *system* 
-					    (digx context-spec :collection))
-					   :collection :data-type))))))))
+				    ,(digx context-spec :collection))))))))
 
 (defmethod setup-context-login ((module item) (context-spec item)
 				(system hunch-system)

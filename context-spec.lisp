@@ -24,8 +24,8 @@
       (:name :permissions 
 	     :label "Permissions"
 	     :key-p nil
-	     :db-type (:type :list
-			     :list-type :keyword
+	     :db-type (:type :keyword
+			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t))
       (:name :url 
@@ -41,8 +41,8 @@
       (:name :args 
 	     :label "Args"
 	     :key-p nil
-	     :db-type (:type :list
-			     :list-type :keyword
+	     :db-type (:type :keyword
+			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t)))
      :destinations (:core :license)))

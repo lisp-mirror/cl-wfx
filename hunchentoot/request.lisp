@@ -107,6 +107,9 @@
 	   (bad-request *request*))
 ;;	 (break "~A" *context*)
 	 (when *context*
+
+;;	   (break "~A"		  (hunchentoot:post-parameters*))
+	   
 	   (system-request acceptor *request*))	 
 	 
 	 (call-next-method))

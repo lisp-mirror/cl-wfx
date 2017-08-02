@@ -65,6 +65,7 @@
 
 (defun make-menu-item (name context-spec)
   (make-item
+   :data-type "menu-item"
    :values
    (list :name name
 	 :context-spec context-spec)))
@@ -79,8 +80,7 @@
       (setf sys-mod	   
 	    (list :name "Core"
 		  :module-short "cor"
-		  :menu (list 
-			 ))))
+		  :menu nil)))
     (setf (getf sys-mod :contexts)
 	  (remove-if #'not (list
 			    ;;  (get-context-spec "theme")
@@ -104,13 +104,16 @@
     (let ((menu-items (loop for spec in (getf sys-mod :contexts)
 			 when spec
 			 collect (make-item
+				  :data-type "context-spec"
 				  :values
 				  (list
-				   (digx spec :name)
+				   :name (digx spec :name)
+				   :context-spec
 				   spec)))))
  
       (setf menu-items (append menu-items
 			       (list (make-item
+				      :data-type "menu-item"
 				      :values
 				      (list
 				       :item-name "Logout"
@@ -126,10 +129,11 @@
       
       
       (setf (getf sys-mod :menu)
-	    (make-item
-	     :values
-	     (list :menu-name "System"
-		   :menu-items  menu-items))))
+	    (list (make-item
+		   :data-type "menu-item"
+		   :values
+		   (list :name "System"
+			 :menu-items  menu-items)))))
 
     (let ((mod (persist-item (core-collection "modules") sys-mod)))      
       (dolist (spec (digx mod :contexts))

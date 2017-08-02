@@ -33,27 +33,28 @@
 		     :label "Children"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :list-items
 				     :data-type "menu-item"
-				     :key-accessor :name)
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :context-spec
 		     :label "Context Spec"
 		     :key-p nil
 		     :db-type (:type :item
-				     :item-type "context-spec"
-				     :key-accessor :name
-				     :collection "context-specs")
+				     :complex-type :collection
+				     :data-type "context-spec"
+				     :collection "context-specs"
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :context-parameters
 		     :label "Context Parameters"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :list-items
 				     :data-type "context-parameter"
-				     :key-accessor :name)
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
     :destinations (:core :system :license))
@@ -72,9 +73,9 @@
 		     :label "Menu Items"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :list-items
 				     :data-type "menu-item"
-				     :key-accessor :name)
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
     :destinations (:core :system :license))
@@ -99,19 +100,19 @@
 		     :label "Contexts"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :collection-items
 				     :data-type "context-spec"
-				     :key-accessor :name
-				     :collection "context-specs")
+				     :collection "context-specs"
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :menu
 		     :label "Menu"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
+				     :complex-type :list-items
 				     :data-type "menu"
-				     :key-accessor :name)
+				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
     :destinations (:core :system :license))
@@ -152,4 +153,11 @@
 	     :test (lambda (item)
 		    
 		     (string-equal module-short (getx item :module-short)))))
+
+
+
+
+
+
+
 

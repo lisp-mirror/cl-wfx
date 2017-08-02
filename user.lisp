@@ -331,7 +331,8 @@ must be valid email to enable confirmation.")
 	  (*user* (get-user "admin@cl-wfx.com"))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-item 
+			  :user (make-item
+				 :data-type "user"
 				 :values (list :email "admin@cl-wfx.com" 
 					       :selected-licenses nil
 					       :selected-entities nil)))))
@@ -344,7 +345,8 @@ must be valid email to enable confirmation.")
 	  (*user* (get-user ,user))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-item 
+			  :user (make-item
+				 :data-type "user"
 				 :values (list :email ,user 
 					       :selected-licenses nil
 					       :selected-entities nil)))))
