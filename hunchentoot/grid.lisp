@@ -302,8 +302,8 @@
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (list (dig :db-type :values))
-	 (selected (find (getfx field item) list :test #'equalp)))
+	 (list (dig field :db-type :values))
+	 (selected (find (getfx item field) list :test #'equalp)))
 
     (with-html-string
       (:div :class "dropdown"
@@ -802,6 +802,8 @@
 	  (when (equalp (ensure-parse-integer
 			 (getcx data-type :expand-id)) 
 			(item-hash item))
+
+	    
 	    
 	    (unless sub-level-p
 	      (setf (getcx data-type :root-item) item)
@@ -810,13 +812,14 @@
 	    (dolist (sub subs)
 	      (let* ((sub-data-spec (dig sub :db-type :data-type)))
 
-		(when (equalp (ensure-parse-integer
-			       (getcx sub-data-spec :expand-id)) 
-			      (item-hash item)))
-		
 		;; (set-grid-expand sub-data-spec)
-		
+		(setf (getcx sub-data-spec :parent-item) item)
 
+		(setf (getcx sub-data-spec :collection-name)
+		      (dig sub :db-type :collection))
+		
+		(setf (getcx sub-data-spec :expand-field-name) (dig sub :name) )
+		
 		(unless (getcx sub-data-spec :data-type)
 		  (setf (getcx sub-data-spec :data-type)
 			(find-type-def *system* 
@@ -869,7 +872,9 @@
 	
 	(when (and (equalp (parameter "action") "new")
 		   (string-equal (parameter "data-type") (frmt "~A" data-type)))
-	  (let ((item (make-item :data-type data-type)))
+	  (let ((item (make-item
+		      
+		       :data-type data-type)))
 
 	    (unless sub-level-p
 	      (setf (getcx data-type :root-item) item))
@@ -1229,6 +1234,7 @@
   (unless (getcx data-type :data-type)
     (setf (getcx data-type :data-type)
 	  (find-type-def *system* data-type))
+    
 
     (setf (getcx data-type :fields) 
 	  (dig (getcx data-type :data-type) :data-type :fields))))
@@ -1340,13 +1346,14 @@
   
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))
-	 (parent-slot nil ;;(getcx data-type :list-field-name)
+	 (parent-slot (getcx data-type :expand-field-name)
 	   ))
     
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
 
-  
+    
+    
     
     (when fields
       (let ((item (getcx data-type :edit-item))
@@ -1395,19 +1402,32 @@
 	  
 	  ;;Append parent-slot only if new
 	  (when (and parent-slot (not (item-hash item)))
-	    
+	   ;; (break "~S~%~S" parent-slot parent-item)
 	    (setf (getx parent-item parent-slot)
 		  (append (getx parent-item parent-slot)
 			  (list item))))
 
-	 
-	  
+
+	  (when (getcx data-type :collection-name)
+	    (setf (item-collection  item)
+		  (get-collection
+		   (first (collection-stores
+			   *system*
+			   (getcx data-type :collection-name)))
+		   (getcx data-type :collection-name))))
+	  #|
+	  (break "~A ~A~%~S~%~%~S"
+		 data-type
+		 parent-slot
+		 item
+		 (getcx (gethash :data-type (cache *context*)) :root-item))
+	  |#
 	  (persist-item
 	   (get-collection
 	    (first (collection-stores *system*
 		    (gethash :collection-name (cache *context*))))
 	    (gethash :collection-name (cache *context*)))
-	   (getcx data-type :root-item))
+	   (getcx (gethash :data-type (cache *context*)) :root-item))
 
 	 
 	  

@@ -406,7 +406,7 @@
 		     :id "exNavbarLeft"
 		     (:nav :class "nav nav-pills flex-column"
 			   (dolist (mod (user-mods))
-			     (break "user-mods ~A" mod)
+;;			     (break "user-mods ~A" mod)
 			     (dolist (menu (digx mod :menu))
 
 			       (dolist (item (digx menu :menu-items))
