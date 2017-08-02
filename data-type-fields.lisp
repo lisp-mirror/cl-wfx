@@ -195,8 +195,9 @@
   (values t nil))
 
 (defmethod (setf getsfx) :around (value type field item   
-			 &key &allow-other-keys)
-  (validate-sfx type field item value))
+				  &key &allow-other-keys)
+  (when (validate-sfx type field item value)
+    (call-next-method)))
 
 (defmethod (setf getsfx) (value (type (eql :symbol)) field item   
 			 &key &allow-other-keys)
@@ -205,8 +206,9 @@
 (defmethod (setf getsfx) ((type (eql :keyword)) field item value  &key &allow-other-keys)
   (setsfx-read* field item value #'keywordp  "~S is not a keyword!"))
 
-(defmethod (setf getsfx) (value (type (eql :string)) field item &key &allow-other-keys)
-   (setf (getx item (getf field :name)) (frmt "~A" value)))
+(defmethod (setf getsfx) (value (type (eql :string)) field item
+			  &key &allow-other-keys)
+  (setf (getx item (getf field :name)) (frmt "~A" value)))
 
 (defmethod (setf getsfx) (value (type (eql :email)) field item &key &allow-other-keys)
    (setf (getx item (getf field :name)) (frmt "~A" value)))

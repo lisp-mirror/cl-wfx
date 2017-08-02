@@ -13,15 +13,22 @@
 
 
 
-(defun grid-fetch-items (name collection &key test (result-type 'list))
-  (let ((items))
-    (dolist (store (getcx name :stores))
+(defun grid-fetch-items (data-type collection &key test (result-type 'list))
+  (let ((items)
+	(collection-name (if (stringp collection)
+			     collection
+			     (digx collection :collection :name))))
+    
+
+    (unless (getcx data-type :stores)
+      (setf (getcx data-type :stores)
+	    (collection-stores *system* collection-name)))
+    
+    (dolist (store (getcx data-type :stores))
       (setf items (append items (fetch-items 
 				 (get-collection
 				  store 
-				  (if (stringp collection)
-				      collection
-				      (digx collection :collection :name)))
+				  collection-name)
 				 :test test
 				 :result-type result-type))))
     items))
@@ -323,65 +330,12 @@
 
 
 
-(defmethod render-input-val ((type (eql :collection)) field item 
-			     &key &allow-other-keys)
 
-  (let* ((name (getf field :name))
-	 (list (grid-fetch-items (dig field :db-type :data-type)
-				 (dig field :db-type :collection)))
-	 (selected (find (getx item name)  
-			 list :test #'equalp)))
-    (with-html-string
-      (:div :class "dropdown"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value "")
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (if selected
-			 (cl-who:str (slot-value
-				      selected
-				      (dig field :db-type :accessor)))))
-	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item" 
-			    (:input :type "hidden"
-				    :value (frmt "~S" option))
-			    (cl-who:str (cl-who:str (frmt "~S" option)))))))))))
 
 (defmethod render-input-val ((type (eql :hierarchical)) field item 
 			     &key &allow-other-keys)
 
-  (let* ((name (getf field :name))
-	 (list (slot-value (getcx
-			    (dig field :db-type :data-type) 
-			    :active-item)
-			   (dig field :db-type :child-accessor)))
-	 (selected (find (getx item name)  
-			 list :test #'equalp)))
-    (with-html-string
-      (:div :class "dropdown"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value "")
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (if selected
-			 (cl-who:str (slot-value
-				      selected
-				      (dig field :accessor)))))
-	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item" 			      
-			    (:input :type "hidden"
-				    :value (frmt "~A" (item-hash option)))
-			    (cl-who:str (getx option (dig field :accessor)))))))))))
+  (render-input-val* type field item))
 
 (defmethod render-input-val ((type (eql :collection-items))
 			     field item &key &allow-other-keys)
@@ -391,17 +345,18 @@
 			     &key &allow-other-keys)
   (render-input-val* type field item))
 
+
+
+
 (defmethod render-input-val ((type (eql :collection)) field item 
 			     &key &allow-other-keys)
 
   (let* ((name (getf field :name))
-
-
 	 (list (grid-fetch-items (dig field :db-type :data-type)
 				 (dig field :db-type :collection)))
 	 (selected (find (getx item name)  
-			 list :test #'equalp)))
-
+			 list :test #'equalp))
+	 (accessors (dig field :db-type :accessor)))
     
     (with-html-string
       (:div :class "dropdown"
@@ -412,9 +367,11 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (cl-who:str (getx
-				      selected
-				      (dig :db-type :accessor)))))
+			 (cl-who:str (apply #'digx
+					    selected
+					    (if (listp accessors)
+						accessors
+						(list accessors))))))
 	    
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -423,7 +380,10 @@
 			    (:input :type "hidden"
 				    :value (frmt "~A" (item-hash option)))
 			    (cl-who:str
-			     (getx option (dig :db-type :accessor)))))))))))
+			     (apply #'digx option
+				    (if (listp accessors)
+					accessors
+					(list accessors))))))))))))
 
 (defun grid-js-render-form-values (data-type form-id 
 				   &key action item-id )
@@ -584,6 +544,7 @@
 						   (character "-")  
 						   (format nil "~A" name) 
 						   :test #'equalp)))))
+				   ;; (break "~A ~S" label (complex-type field))
 				    (:div :class "col"
 					  (cl-who:str
 					   (render-input-val 
@@ -761,10 +722,8 @@
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
 
-  (let ((sub-level-p (or
-		      (not (equalp data-type 
-				   (gethash :root-data-spec 
-					    (cache *context*)))))))
+  (let ((sub-level-p (not (equalp data-type 
+				   (gethash :data-type (cache *context*))))))
     
     (when sub-level-p
       ;; (parse-data-spec-for-grid data-type)
@@ -900,11 +859,16 @@
 	
 	(when (and (equalp (parameter "action") "new")
 		   (string-equal (parameter "data-type") (frmt "~A" data-type)))
-	  (cl-who:str
-	   (render-grid-edit data-type fields 
-			     (make-item :data-type data-type) 
-			     parent-item
-			     parent-spec)))))))
+	  (let ((item (make-item :data-type data-type)))
+
+	    (unless sub-level-p
+	      (setf (getcx data-type :root-item) item))
+	    
+	    (cl-who:str
+	     (render-grid-edit data-type fields 
+			       item 
+			       parent-item
+			       parent-spec))))))))
 
 (defun render-grid-sizing (data-type)
   (with-html-string
@@ -1261,13 +1225,15 @@
 
 (defun set-grid-context (collection-name data-type)
   (unless (gethash :collection-name (cache *context*))
+
     (setf  (gethash :collection-name (cache *context*)) collection-name)
     (setf  (gethash :data-type (cache *context*)) data-type)
     
     (setf (getcx data-type :stores)
 	  (collection-stores *system* collection-name))
-
-    (setf (getcx data-type :root-item) nil)
+    
+    (unless (equalp (parameter "action") "save")
+      (setf (getcx data-type :root-item) nil))
     
     (setf (getcx data-type :search)
 	  (or (parameter "search")
@@ -1288,9 +1254,7 @@
 					      collection-name)))
 	 (data-type (or (gethash :data-type (cache *context*))
 			(and collection
-			     (dig collection :collection :data-type)))))
-    
-    
+			     (dig collection :collection :data-type)))))   
     
     (set-grid-context collection-name data-type)
 
@@ -1364,23 +1328,19 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
   
-  (let* ((data-type (read-no-eval (parameter "data-type")))
-	 (fields (getcx 
-		  data-type
-		  :fields))
-	 (parent-slot 'test ;;(getcx data-type :list-field-name)
+  (let* ((data-type (parameter "data-type"))
+	 (fields (getcx data-type :fields))
+	 (parent-slot nil ;;(getcx data-type :list-field-name)
 	   ))
     
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
+
+  
     
     (when fields
-      (let ((item (getcx 
-		   data-type
-		   :edit-item))
-	    (parent-item (getcx 
-			  data-type
-			  :parent-item)))
+      (let ((item (getcx data-type :edit-item))
+	    (parent-item (getcx data-type :parent-item)))
 	
 	(unless item
 	  (setf item (make-item :data-type data-type)))
@@ -1391,28 +1351,32 @@
 		     (getf field :db-type)
 		     (not (find (complex-type field)
 				(list :collection-items :list-items))))
-	    (let ((valid (if (equalp (complex-type field) :item)
+	   
+	    (let* ((field-name (frmt "~A" (getf field :name)))
+		  (valid (if (equalp (complex-type field) :item)
 			     (validate-sfx (complex-type field)
 					   field 
 					   item 
-					   (parameter (getf field :name)))
+					   (parameter field-name))
 			     (list t nil))))
 	      
 	      (unless (first valid)
 		(pushnew 
-		 (list (getf field :name) (second valid))
+		 (list field-name (second valid))
 		 (gethash :validation-errors (cache *context*))))
 	      
 	      (when (first valid)
+		
 		(if (equalp (complex-type field) :hierarchical)
-		    (setf (getfx field item 
-				 
+		    (setf (getfx item field				 
 				 :source (getcx 
 					  (dig field :db-type :data-type) 
 					  :active-item))
-			  (parameter (getf field :name)))
-		    (setf (getfx field item) 
-			  (parameter (getf field :name))))))))
+			  (parameter field-name))
+		    (setf (getfx item field ) 
+			  (parameter field-name)))
+	
+		))))
 	
 	
 	;;TODO: is this still needed????
@@ -1427,15 +1391,18 @@
 	  ;;Append parent-slot only if new
 	  (when (and parent-slot (not (item-hash item)))
 	    
-	    (setf (slot-value parent-item parent-slot)
-		  (append (slot-value parent-item parent-slot)
+	    (setf (getx parent-item parent-slot)
+		  (append (getx parent-item parent-slot)
 			  (list item))))
+
+;;	  (break "??? ~A ~A" item		 (getcx data-type :root-item))
 	  
-	  
-	  (persist-item (get-collection (store-from-stash :cor)
-					(getcx (gethash :root-data-spec (cache *context*))
-					       :collection-name))
-			(gethash :root-item (cache *context*)))
+	  (persist-item
+	   (get-collection
+	    (first (collection-stores *system*
+		    (gethash :collection-name (cache *context*))))
+	    (gethash :collection-name (cache *context*)))
+	   (getcx data-type :root-item))
 	  
 	  (setf (getcx data-type :parent-item) nil)
 	  (setf (getcx data-type :edit-item) nil)
@@ -1443,16 +1410,12 @@
 
 
 (defun store-from-stash (store-name)
-  (dolist (store (getcx (gethash :root-data-spec (cache *context*)) :stores))
-    (when (equalp store-name (getf store :name))
-      (return-from store-from-stash store)
-      )
-    )
-  )
-
-
-
-
+ 
+  (dolist (store (getcx (gethash :data-type (cache *context*)) :stores))
+    (break "~S ~S" store-name (name store))
+    (when (equalp store-name (name store))
+      
+      (return-from store-from-stash store))))
 
 
 (defun campaign-shit (page-items)

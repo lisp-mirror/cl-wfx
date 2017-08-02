@@ -127,8 +127,6 @@
 
 (defun collection-stores (system collection)
   (let ((stores))
-
- 
       (dolist (dest (digx (if (stringp collection)
 			      (find-collection-def system collection)
 			      collection) 
@@ -140,7 +138,7 @@
 	      ((equalp dest :system)
 	       (push (system-store) stores))
 	      (t
-	       (dolist (lic (digx (active-user) :selected-license))
+	       (dolist (lic (getx (active-user) :selected-licenses))
 		 (push (license-store lic) stores)))))
 
       (remove-if #'not stores)))
