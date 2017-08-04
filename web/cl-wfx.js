@@ -147,7 +147,7 @@ function get_values(widget, tag_name, disabled) {
             {
                 if (element.type == 'checkbox')
                 {
-                    result.push([element.name, element.checked]);
+                    result.push([element.name, [element.checked,element.value]]);
                 }
                 else if (element.type == 'radio')
                 {

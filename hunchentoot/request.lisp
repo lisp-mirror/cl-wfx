@@ -49,7 +49,8 @@
   
     ;;TODO:: How to register actions? Contexs spec permissions?
     (if (find (parameter "action") 
-	      (list "save" "login" "logout" "assign-campaign") 
+	      (list "save" "login" "logout" "assign-campaign" "select"
+		    "add-selection") 
 	      :test #'string-equal)
 	(action-handler (intern (string-upcase (parameter "action")) :keyword)
 			context

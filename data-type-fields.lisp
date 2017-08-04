@@ -237,30 +237,45 @@
 
 
 (defmethod (setf getsfx) (value (type (eql :collection)) field item   
-			 &key &allow-other-keys)  
-  ;;TODO: Remember to use full hash reference in dropdowns???????
- #|
-  (if (not (empty-p value))
-    (let* ((id (parse-integer value))
-	   (full-type (cdr (getf field :db-type)))
-	   (data-spec (get-data-spec (dig field :db-type :data-spec)))
-	   (object (fetch-item (collection-name data-spec)
-			       :test (lambda (item)
-				      ;; (break "~A ~A ~A" item id (xdb2:id item))
-				       (if (equalp id (item-hash item))
-					   item))))) 
-     ;;(break "~A ~A ~A" item object value)
-      (if (type-of-p field object)
-	  (set-getsfx* field item object)
-	  (error (frmt "~S is not of type ~A!" object (dig field :db-type :data-spec)))))
-    )
- |#
-  (set-getsfx* field item value)
-  )
+			  &key &allow-other-keys)
+
+  
+  (let ((name (getf field :name))
+	(final-val))
+    (if (not (empty-p value))
+
+	(if (stringp value)
+	    (setf final-val (first (grid-fetch-items
+				    (dig field :db-type :data-type)
+				    (dig field :db-type :collection)
+				    :test (lambda (item)
+					    (equalp (item-hash item)
+						    (ensure-parse-integer value))))))
+	    (if (equalp (type-of value) 'item)
+		(setf final-val value)
+		(error (frmt "~S is not of type ~A!" value
+			   (dig field :db-type :data-spec))))))
+
+    (setf (getx item name) final-val)))
+
+(defmethod validate-sfx ((type (eql :collection)) field item value
+			 &key &allow-other-keys)
+  
+  
+    (let* ((valid (grid-fetch-items
+		   (dig field :db-type :data-type)
+		   (dig field :db-type :collection)
+		   :test (lambda (item)
+			   (equalp (item-hash item)
+				   (ensure-parse-integer value))))))
+    
+    (values valid (if (not valid)
+		      (frmt "Value ~A not found in ~A" value
+			    (dig field :db-type :collection))))))
 
 
 (defmethod (setf getsfx) ((type (eql :hierarchical)) field item value  
-			 &key source &allow-other-keys) 
+			 &key &allow-other-keys) 
  
   ;;TODO: will id not be full ref hash now?
   #|
@@ -281,8 +296,7 @@
     (set-getsfx* field item nil))
 
 (defmethod (setf getsfx) ((type (eql :key-value)) field item value  
-			 &key source &allow-other-keys) 
- 
+			 &key &allow-other-keys) 
     (set-getsfx* field item nil))
 
 (defmethod (setf getsfx) (value (type (eql :value-string-list)) field item   
@@ -292,16 +306,19 @@
 	 (type (dig field :db-type :type))
 	 (split (split-sequence:split-sequence delimiter value))
 	 (list))
-;;    (break "split ~A" split)
     (dolist (x split)
-      (if (equalp type :keyword)
-	  (setf list (append list 
-			     (list (intern (string-upcase
-					    (remove #\: (trim-whitespace x))) 
-					   :KEYWORD))))
-	  (setf list (append list (list (trim-whitespace x))))))
-   ;; (break "fuck ~S" list)
+   
+      (unless (empty-p x)
+	(if (equalp type :keyword)
+	    (setf list (append list 
+			       (list (intern (string-upcase
+					      (remove #\: (trim-whitespace x))) 
+					     :KEYWORD))))
+	    (setf list (append list (list (trim-whitespace x)))))))
+   
     (setf (getx item name) list)))
+
+
 
 
 (defmethod validate-sfx ((type (eql :value-list)) field item value
@@ -314,7 +331,10 @@
 		      list :test #'equalp)))
  
     (values valid (if (not valid)
-		    (frmt "Value not one of ~S" list)))))
+		      (frmt "Value not one of ~S" list)))))
+
+
+
 
 
 (defmethod (setf getsfx) (value (type (eql :key-value-list)) field item 

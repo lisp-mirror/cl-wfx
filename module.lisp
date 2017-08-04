@@ -141,7 +141,7 @@
 (defun get-module (store module-name)   
   (fetch-item (get-collection store "modules" )
 	      :test (lambda (item)
-		      (string-equal module-name (getx item :module-name)))))
+		      (string-equal module-name (getx item :name)))))
 
 (defun get-module-context (module context-name)  
   (dolist (context (getx module :contexts))

@@ -8,11 +8,11 @@
      :fields ((:name :context-spec
 		     :label "Context Spec"
 		     :db-type (:type :item
-				     :commplex-type :collection
+				     :complex-type :collection
 				     :data-type "context-spec"
 				     :collection "context-specs"
 				     :accessor :name)
-		     :key t
+		     :key-p t
 		     :attributes (:display t :editable t)) 
 	      (:name :permissions 
 		     :label "Permissions"
@@ -29,7 +29,7 @@
      :fields ((:name :name
 		     :label "Name"
 		     :db-type :string
-		     :key t
+		     :key-p t
 		     :attributes 
 		     (:display t :editable t)) 
 	      (:name :context-permissions 
@@ -56,7 +56,7 @@
      :fields ((:name :name 
 		     :label "name"
 		     :db-type :string
-		     :key t
+		     :key-p t
 		     :attributes (:display t :editable t)) 
 	      (:name :preference
 		     :label "Preference"
@@ -74,7 +74,7 @@
      :fields
      ((:name :email
 	     :label "Email"
-	     :key t
+	     :key-p t
 	     :db-type :email
 	     :attributes (:display t :editable t)
 	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
@@ -160,7 +160,7 @@
      :fields
      ((:name :email
 	     :label "Email"
-	     :key t
+	     :key-p t
 	     :db-type :email
 	     :attributes (:display t :editable t)
 	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
@@ -212,7 +212,7 @@
      :fields
      ((:name :email
 	     :label "Mail"
-	     :key t
+	     :key-p t
 	     :db-type :email
 	     :attributes (:display t :editable t)
 	     :documentation	     
