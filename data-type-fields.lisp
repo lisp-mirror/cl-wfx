@@ -200,7 +200,7 @@
     (call-next-method)))
 
 (defmethod (setf getsfx) (value (type (eql :symbol)) field item   
-			 &key &allow-other-keys)
+			  &key &allow-other-keys)
   (setsfx-read* field item value #'symbolp  "~S is not a symbol!"))
 
 (defmethod (setf getsfx) ((type (eql :keyword)) field item value  &key &allow-other-keys)

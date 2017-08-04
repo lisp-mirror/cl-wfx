@@ -11,8 +11,6 @@
       (dig field :db-type :type)
       (getf field :db-type)))
 
-
-
 (defun grid-fetch-items (data-type collection &key test (result-type 'list))
   (let ((items)
 	(collection-name (if (stringp collection)
@@ -36,15 +34,19 @@
 
 
 (defun print-item-val-s* (field item)
-  (let ((*print-case* :downcase))
+  (let ((*print-case* :downcase)
+	(val (getfx item field)))
     
-    (frmt "~S"
-	  (getfx item field))))
+    (if val
+	(frmt "~S" val)
+	"")))
 
 (defun print-item-val-a* (field item)
-  (let ((*print-case* :downcase))
-    (frmt "~A"
-	  (getfx item field))))
+  (let ((*print-case* :downcase)
+	(val (getfx item field)))
+    (if val
+	(frmt "~A" val)
+	"")))
 
 (defmethod print-item-val ((type (eql :symbol)) field item
 			   &key &allow-other-keys)
@@ -1494,8 +1496,7 @@
 		 (list field-name (second valid))
 		 (gethash :validation-errors (cache *context*))))
 	      
-	      (when (first valid)
-	
+	      (when (first valid)	
 		(setf (getfx item field)
 		      (parameter field-name))))))
 	

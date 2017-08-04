@@ -8,59 +8,65 @@
 
 
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
-	
-  (persist-item (core-collection "context-specs")
-		'(:name "Login"
-		  :permissions nil
-		  :for-everyone t))
+
+  (unless (get-context-spec (core-store ) "Login")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Login"
+		    :permissions nil
+		    :for-everyone t)))
+  (unless (get-context-spec (core-store ) "Data Types")
+    (persist-item (core-collection "context-specs")    
+		  '(:name "Data Types"
+		    :permissions (:filter :search)
+		    :collection "data-types")))
   
-  (persist-item (core-collection "context-specs")    
-		'(:name "Data Types"
-		  :permissions (:filter :search)
-		  :collection "data-types"))
+  (unless (get-context-spec (core-store ) "Context Specs")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Context Specs"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "context-specs")))
   
+  (unless (get-context-spec (core-store ) "Modules")
+	  (persist-item (core-collection "context-specs")
+			'(:name "Modules"
+			  :permissions (:update :delete)
+			  :for-everyone t 
+			  :collection "modules")))
   
-  (persist-item (core-collection "context-specs")
-		'(:name "Context Specs"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "context-specs"))
+  (unless (get-context-spec (core-store) "Licenses")
+	  (persist-item (core-collection "context-specs")
+			'(:name "Licenses"
+			  :permissions (:update :delete)
+			  :for-everyone t 
+			  :collection "licenses")))
   
-  (persist-item (core-collection "context-specs")
-		'(:name "Modules"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "modules"))
+  (unless (get-context-spec (core-store) "Entities")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Entities"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "entities")))
+  (unless (get-context-spec (core-store) "Users")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Users"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "users")))
   
-  (persist-item (core-collection "context-specs")
-		'(:name "Licenses"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "licenses"))
+  (unless (get-context-spec (core-store) "License Users")
+    (persist-item (core-collection "context-specs")
+		  '(:name "License Users"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "license-users")))
   
-  (persist-item (core-collection "context-specs")
-		'(:name "Entities"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "entities"))
-  
-  (persist-item (core-collection "context-specs")
-		'(:name "Users"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "users"))
-  
-  (persist-item (core-collection "context-specs")
-		'(:name "License Users"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "license-users"))
-  
-  (persist-item (core-collection "context-specs")
-		'(:name "Allsorts"
-		  :permissions (:update :delete)
-		  :for-everyone t 
-		  :collection "allsorts")))
+  (unless (get-context-spec (core-store) "Allsorts")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Allsorts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "allsorts"))))
 
 (defun make-menu-item (name context-spec)
   (make-item

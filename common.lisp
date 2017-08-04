@@ -74,6 +74,7 @@ Dont set manually use with-system macro.")
 
 (defvar *time-zone* 0)
 
+
 (defun decode-iso-date (date)
   (ppcre:register-groups-bind ((#'parse-integer year)
                                (#'parse-integer month)
@@ -172,3 +173,35 @@ Dont set manually use with-system macro.")
          (encode-universal-time 0 0 0 date month year
                                 (or time-zone *time-zone*)))))
     (null nil)))
+
+(defun short-month-name (n)
+  (when (array-in-bounds-p *short-months* (1- n))
+    (aref *short-months* (1- n))))
+
+(defun long-month-name (n)
+  (when (array-in-bounds-p *long-months* (1- n))
+    (aref *long-months* (1- n))))
+
+(defun build-date (year month day)
+  (format nil "~d ~a ~d" day (short-month-name month) year))
+
+(defun build-date-time (year month day hour min sec
+                        &optional timezone)
+  (declare (ignore timezone))
+  (format nil "~d ~a ~d ~@{~2,'0d~^:~}"
+          day (short-month-name month) year hour min sec))
+
+(defun format-universal-date (universal-date)
+  (when universal-date
+    (if (stringp universal-date)
+        universal-date
+        (multiple-value-bind (a b c day month year)
+            (decode-universal-time universal-date
+                                   *time-zone*)
+          (declare (ignore a b c))
+          (build-date year month day)))))
+
+(defun format-date (date)
+  (if (typep date 'unsigned-byte)
+      (format-universal-date date)
+      date))
