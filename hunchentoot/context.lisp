@@ -150,54 +150,67 @@
       (dolist (entity (digx entity :children))
 	(if (find entity accessible-entities)
 	    (return-from accessible-entity entity)
-	    (accessible-entity entity accessible-entities))))
-  )
+	    (accessible-entity entity accessible-entities)))))
 
 (defun accessible-entity-roots (accessible-entities license-code)
   (let ((roots))
+    
     (dolist (entity (fetch-items (license-collection license-code "entities")
 				 :result-type 'list))
-      (when (digx entity :root-p)
+      
+      (when (digx entity :root-p)	
 	(when (accessible-entity entity accessible-entities)
 	  (pushnew entity roots))))
     roots))
 
 (defun render-entity-check (entity level accessible-entities)
-  (with-html
+  (with-html-string
       (:div :class "row"
 	    (:div :class "form-check"
 		  
 		  (:div :class "form-check-label"
 			(dotimes (i level)
 			  (cl-who:htm "&nbsp;"))
+			
 			(if (find entity accessible-entities)
-			    (if (find entity (digx (active-user) :selected-entities))
+			    
+			    (if (find (item-hash entity)
+				      (digx (active-user)
+					    :selected-entities)
+				      :test #'equalp)
 				(cl-who:htm
-				 (:input :class "form-check-input" :type "checkbox" 
+				 (:input :class "form-check-input"
+					 :type "checkbox" 
 					 :name "tree-entity-id" 
 					 :value (item-hash entity)
 					 :checked ""))
 				(cl-who:htm
-				 (:input :class "form-check-input" :type "checkbox" 
-					 :name "tree-entity-id" :value (item-hash entity))))
+				 (:input :class "form-check-input"
+					 :type "checkbox" 
+					 :name "tree-entity-id"
+					 :value (item-hash entity))))
 			    (cl-who:htm
 			     (:input :class "form-check-input" :type "checkbox" 
 				     :disabled "")))
-			(name entity))))
+			(cl-who:str (getx entity :name)))))
+      
     (if (digx entity :children)
 	(dolist (entity (digx entity :children))
-	  (render-entity-check entity 
-			       (+ level 1) 
-			       accessible-entities)))))
+	  (cl-who:str (render-entity-check entity 
+					   (+ level 1) 
+					   accessible-entities))))))
 
-(defun render-entity-tree (license-code accessible-entities ) 
-  
+(defun render-entity-tree (license-code accessible-entities )
   (with-html-string
-      (:form
-       (dolist (entity (accessible-entity-roots license-code accessible-entities))
-	 ;; (break "~A ~A" entity (item-hash entity))
-	 (when (digx entity :root-p)      
-	   (render-entity-check entity 0 accessible-entities)))
+    (:form
+  
+     (dolist (entity (accessible-entity-roots
+		      accessible-entities license-code))
+
+       (when (digx entity :root-p)
+	 
+	   (cl-who:str (render-entity-check entity 0 accessible-entities))))
+  
        (:button
 	:name "set-entities" 
 	:type "submit" 
@@ -212,46 +225,56 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (digx (active-user) :selected-entities) nil)
+  (setf (getf (item-values (active-user)) :selected-entities) nil)
+ 
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
-      
-      (dolist (entity (accessible-entities* (current-user)))
-	(if (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
-	    (pushnew entity (digx (active-user) :selected-entities)))))))
+     
+      (dolist (license-code (digx (active-user) :selected-licenses))
+	
+	(dolist (entity (digx (license-user license-code) :accessible-entities))	  
+	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
+	    (pushnew (item-hash entity)
+		     (getf (item-values (active-user)) :selected-entities))
+	    ;;(persist-item (core-collection "active-users") (active-user))
+))))))
 
 (defun render-licence-codes ()
-  (dolist (code (digx (current-user) :license-codes))
-    
-    (with-html-string
-	
-	(:div :class "row"
-	      (:div :class "form-check"
-		    
-		    (:div :class "form-check-label"
-			  (if (find code (digx (active-user) :license-codes) 
-				    :test #'string-equal)
-			      (cl-who:htm
-			       (:input :class "form-check-input" :type "checkbox" 
-				       :name "license-id" 
-				       :value code
-				       :checked ""))
-			      (cl-who:htm
-			       (:input :class "form-check-input" :type "checkbox" 
-				       :name "license-id" :value (cl-who:str code))))
-			  
-			  (cl-who:str code))))))		      
-  )
+  (with-html-string
+    (dolist (code (digx (current-user) :license-codes))
+      
+      (cl-who:htm
+       
+       (:div :class "row"
+	     (:div :class "form-check"
+		   (:div :class "form-check-label"
+			 (if (find code (digx (active-user) :selected-licenses) 
+				   :test #'string-equal)
+			     (cl-who:htm
+			      (:input :class "form-check-input" :type "checkbox" 
+				      :name "license-id" 
+				      :value code
+				      :checked ""))
+			     (cl-who:htm
+			      (:input :class "form-check-input" :type "checkbox" 
+				      :name "license-id" :value
+				      (cl-who:str code))))
+			 
+			 (cl-who:str code))))))))
 
 (defmethod action-handler ((action (eql :set-licenses)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (digx (active-user) :selected-entities) nil)
+  (setf (getf (item-values (active-user)) :selected-licenses) nil)
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
-      (pushnew (cdr parameter) (digx (active-user) :license-codes)))))
+      (pushnew (cdr parameter)
+	       (getf (item-values (active-user)) :selected-licenses)
+	       :test #'string-equal)
+      ;;(persist-item (core-collection "active-users") (active-user))
+      )))
 
 (defun render-page (menu-p body)
   
@@ -413,8 +436,9 @@
 				 (cl-who:htm
 				  (:a :class 
 				      "nav-link ~A"
-				      :href (url 
-					     (digx item :context-spec))
+				      :href (context-url
+					     (digx item :context-spec)
+					     mod)
 				      (cl-who:str (digx item :name)))))))))
 			 
 		    (:div  :class "col" :id "grid-table"
@@ -426,7 +450,7 @@
 		     (:form
 		      (:div :class "row bg-faded"
 			    "Accessible License Codes")
-		      (render-licence-codes)				 
+		      (cl-who:str (render-licence-codes))				 
 				
 		      (:button
 		       :name "set-licenses" 
@@ -442,10 +466,11 @@
 		     (:div :class "row"
 			   (dolist (license-code (digx (active-user) 
 						       :selected-licenses))
-			     (cl-who:htm
-			      (render-entity-tree 
-			       license-code
-			       (accessible-entities* (current-user)))))))))))
+			     (cl-who:str
+			       (render-entity-tree 
+				license-code
+				(getx (license-user license-code)
+				      :accessible-entities))))))))))
 
 
 	"<script>$(document).on('click', '.dropdown-item', function(){
@@ -491,7 +516,6 @@
 (defmethod setup-context ((module item) (context-spec item)
 			  (system hunch-system)  
 			  &key &allow-other-keys) 
-
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 

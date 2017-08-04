@@ -9,25 +9,28 @@
 
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
 
-  (unless (get-context-spec (core-store ) "Login")
+  (unless (get-context-spec (core-store) "Login")
     (persist-item (core-collection "context-specs")
 		  '(:name "Login"
 		    :permissions nil
 		    :for-everyone t)))
+
+
+  
   (unless (get-context-spec (core-store ) "Data Types")
     (persist-item (core-collection "context-specs")    
 		  '(:name "Data Types"
 		    :permissions (:filter :search)
 		    :collection "data-types")))
   
-  (unless (get-context-spec (core-store ) "Context Specs")
+  (unless (get-context-spec (core-store) "Context Specs")
     (persist-item (core-collection "context-specs")
 		  '(:name "Context Specs"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "context-specs")))
   
-  (unless (get-context-spec (core-store ) "Modules")
+  (unless (get-context-spec (core-store) "Modules")
 	  (persist-item (core-collection "context-specs")
 			'(:name "Modules"
 			  :permissions (:update :delete)
@@ -122,7 +125,7 @@
 					:data-type "menu-item"
 					:values
 					(list
-					 :item-name "Logout"
+					 :name "Logout"
 					 :context-spec 
 					 (get-context-spec (core-store ) "Login")
 					 :context-parameters 
@@ -147,7 +150,8 @@
       (setup-context sys-mod spec *system*))
  
     (setup-context-login sys-mod
-			 (get-context-spec (core-store ) "Login") *system*)))
+			 (get-context-spec (core-store ) "Login") *system*))
+  (call-next-method))
 
 
 

@@ -110,15 +110,6 @@
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
 	     :attibutes (:display t :editable t))     
-      (:name :accessible-entities 
-	     :label "Accessible Entities"
-	     :key nil
-	     :db-type (:type :list
-			     :complex-type :collection
-			     :data-type"entity"
-			     :collection "entities"
-			     :accessor :name)
-	     :attibutes (:display t :editable t))
       (:name :preferences
 	     :label "Preferences"
 	     :db-type (:type :list
@@ -300,16 +291,23 @@ must be valid email to enable confirmation.")
    :test (lambda (item)
 	   (string-equal email (getx item :email)))))
 
+(defun get-license-user (license-code email) 
+  (fetch-item
+   (license-collection license-code "license-users")
+   :test (lambda (item)
+	   (string-equal email (getx item :email)))))
+
 
 (defparameter *user* nil)
 
 (defgeneric ensure-user (system email password &key &allow-other-keys))
 
 (defmethod ensure-user ((system system) email password 
-			&key name super-user-p &allow-other-keys)
+			&key name licenses super-user-p &allow-other-keys)
   (or (get-user email)
       (make-user email password
 		 :name name
+		 :license-codes licenses
 		 :super-user-p super-user-p)))
 
 (defmethod ensure-core-user ((system system) &key &allow-other-keys)
@@ -324,6 +322,7 @@ must be valid email to enable confirmation.")
 	       (frmt "admin@~A.com" (name system)) 
 	       "admin"
 	       :name "System Admin"
+	       :licenses (list "000000")
 	       :super-user t))
 
 (defmacro with-core-user (system &body body)
@@ -356,15 +355,6 @@ must be valid email to enable confirmation.")
 ;;TODO: implement permissions from wfx permissions.lisp
 
 (defgeneric match-entities (user entities))
-
-
-(defun accessible-entities* (user)
-  (let ((license-user (fetch-item "license-users"
-				  :test
-				  (lambda (item)
-				    (string-equal (getx item :email)
-						  (getx user :email))))))
-    (getx license-user :accessible-entities)))
 
 (defmethod match-entities ((user item) entities)
   (intersection (accessible-entities* user) entities))

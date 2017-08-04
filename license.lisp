@@ -75,6 +75,7 @@
 
 (defgeneric assign-license-code (license)
   (:documentation "Assigns a code to the license. Uses a thread lock in :around to ensure unique code."))
+
 (defmethod assign-license-code :around ((license item))
   )
 

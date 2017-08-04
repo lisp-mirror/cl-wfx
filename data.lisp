@@ -4,7 +4,6 @@
 
 
 (defun add-core-definitions (definitions)  
-;;  (break "???? ~A" definitions)
   (setf *core-store-definitions* 
 	(append *core-store-definitions* definitions)))
 
@@ -16,7 +15,8 @@
   (when definitions
     (dolist (definition definitions)
 
-      (let ((destinations (or (getf definition :destinations) (list destination))))
+      (let ((destinations (or (getf definition :destinations)
+			      (list destination))))
 	(when (find destination destinations :test 'equalp)
 	  
 	  (let ((data-type-def (getf definition :data-type))
@@ -33,21 +33,23 @@
 		  (data-type-def
 		   (let ((fields))
 		     (dolist (field (getf data-type-def :fields))
-		       (setf fields 
-			     (append fields 
-				     (list (make-instance 
-					    'field
-					    :name (getf field :name)
-					    :key-p (getf field :key-p)
-					    :type-def (getf field :type-def)
-					    :attributes (getf field :attributes))))))
+		       (setf
+			fields 
+			(append fields 
+				(list (make-instance 
+				       'field
+				       :name (getf field :name)
+				       :key-p (getf field :key-p)
+				       :type-def (getf field :type-def)
+				       :attributes (getf field :attributes))))))
 		     
 		     (add-data-type (get-store universe store-name)
 				    (make-instance 
 				     'data-type
 				     :name (getf data-type-def :name)
 				     :label (getf data-type-def :label)
-				     :top-level-p (getf data-type-def :top-level-p)
+				     :top-level-p
+				     (getf data-type-def :top-level-p)
 				     :fields fields)))))))))))
 
 
@@ -67,14 +69,19 @@
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name (name system)))
-  (init-definitions (universe system) :system (name system) (data-definitions system)))
+  (init-definitions (universe system)
+		    :system (name system) (data-definitions system)))
 
-(defmethod init-license-universe ((system system) license-code &key &allow-other-keys)
-   (add-store (universe system) 
-	      (make-instance 'store
-			      :name license-code))
-   (init-definitions (universe system) :license license-code *core-store-definitions*)
-   (init-definitions (universe system) :license license-code (data-definitions system)))
+(defmethod init-license-universe ((system system) license-code
+				  &key &allow-other-keys)
+  
+  (add-store (universe system) 
+	     (make-instance 'store
+			    :name license-code))
+  (init-definitions (universe system) :license license-code
+		     *core-store-definitions*)
+  (init-definitions (universe system) :license license-code
+		    (data-definitions system)))
 
 (defun find-in-item-list (list test)
   (map nil

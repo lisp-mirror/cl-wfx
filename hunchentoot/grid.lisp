@@ -23,12 +23,14 @@
 	    (collection-stores *system* collection-name)))
     
     (dolist (store (getcx data-type :stores))
-      (setf items (append items (fetch-items 
-				 (get-collection
+      (let ((collection (get-collection
 				  store 
-				  collection-name)
-				 :test test
-				 :result-type result-type))))
+				  collection-name)))
+	(when collection
+	  (setf items (append items (fetch-items 
+				     collection
+				     :test test
+				     :result-type result-type))))))
     
     items))
 
@@ -156,11 +158,19 @@
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key &allow-other-keys)
   ;;TODO: Sort this shit out need to loop tree
-  (let ((item-val (getfx field item)))    
+  (let ((item-val (getfx item field))
+	(final))    
     (when item-val
-      (frmt "~A" (getx 
-		  item-val
-		  (dig :db-type :accessor))))))
+      (dolist (x item-val)
+	(if final
+	    (setf final (frmt "~A ~A"
+			      final
+			      (getx 
+			       x
+			       (dig field :db-type :accessor))))
+	    (frmt "~A" (getx 
+			x
+			(dig field :db-type :accessor))))))))
 
 (defgeneric render-input-val (type field item &key &allow-other-keys))
 
@@ -537,7 +547,8 @@
 			   (when (and (digx field :attributes :display) 
 				      (not (find (complex-type field)
 						 (list :collection-items
-						       :list-items))))
+						       :list-items
+						       :hierarchical))))
 			     
 			     (cl-who:htm
 			      (:div :class (if (digx field :attributes :editable)
@@ -639,7 +650,7 @@
     (dolist (field fields)
       (when (and (digx field :attributes :display)
 		 (not (find (complex-type field)
-			    (list :collection-items :list-items))))
+			    (list :collection-items :list-items :hierarchical))))
 	(pushnew field header-fields)))
     (reverse header-fields)))
 
@@ -712,7 +723,7 @@
 	(subs))
     (dolist (field fields)
       (when (find (complex-type field)
-		  (list :collection-items :list-items))
+		  (list :collection-items :list-items :hierarchical))
 	(pushnew field subs)))
     (with-html-string
       (unless sub-p	  
@@ -725,7 +736,7 @@
     (dolist (field fields)
       (when (and (digx field :attributes :display)
 		 (not (find (complex-type field)
-			    (list :collection-items :list-items))))
+			    (list :collection-items :list-items :hierarchical))))
 	(pushnew field data-fields)))
     (reverse data-fields)))
 
@@ -742,7 +753,8 @@
 	    (subs))
 	
 	(dolist (field fields)
-	  (when (find (complex-type field) (list :collection-items :list-items))
+	  (when (find (complex-type field) (list :collection-items :list-items
+						 :hierarchical))
 	    (pushnew field subs)))
 
 
@@ -913,7 +925,8 @@
 					  :action "new" )
 					 (cl-who:str "+"))
 					(when (find (complex-type sub)
-						    (list :collection-items))
+						    (list :collection-items
+							  :hierarchical))
 
 					  (cl-who:htm
 					   (:button
@@ -1083,8 +1096,9 @@
 	  (when filter-term			       
 	    (when (getf field :db-type)
 	      (when (find (complex-type field)
-			  (list :collection-items :list-items))
-		(dolist (sub-val (getfx field item))
+			  (list :collection-items :list-items
+				:hierarchical))
+		(dolist (sub-val (getfx item field))
 		  (when sub-val
 		    (let* ((val (apply #'digx (dig field :db-type :accessor))))
 		      
@@ -1109,8 +1123,9 @@
 		      data-type 
 		      :fields))
 	(when (getf field :db-type)
-	  (when (find (complex-type field) (list :collection-items :list-items))
-	    (dolist (sub-val (getfx field item))
+	  (when (find (complex-type field) (list :collection-items :list-items
+						 :hierarchical))
+	    (dolist (sub-val (getfx item field))
 	      (when sub-val
 		(let* ((val (apply #'digx (dig field :db-type :accessor))))
 		  (when val
@@ -1463,8 +1478,7 @@
   
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))
-	 (parent-slot (getcx data-type :expand-field-name)
-	   ))
+	 (parent-slot (getcx data-type :expand-field-name)))
     
     (setf (gethash :validation-errors (cache *context*)) nil)
     (setf (gethash :validation-error-item-id (cache *context*)) nil)
@@ -1481,7 +1495,8 @@
 	  (when (and (digx field :attributes :editable)
 		     (getf field :db-type)
 		     (not (find (complex-type field)
-				(list :collection-items :list-items))))
+				(list :collection-items :list-items
+				      :hierarchical))))
 	   
 	    (let* ((field-name (frmt "~A" (getf field :name)))
 		  (valid (if (equalp (complex-type field) :item)

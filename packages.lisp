@@ -16,10 +16,17 @@
    :ensure-parse-integer
    :parse-date
 
-   ;;#### script.lisp
    
-   ;;
+   ;;#### data.lisp
+   :core-store
+   :core-collection
+   :system-store
+   :system-collection
+   :license-store
+   :license-collection
+   :wfx-fetch-items
    
+   ;;????
    :system 
    
    ;;#### context.lisp
@@ -45,6 +52,26 @@
    :license-collecton
    
    :hunch-system
+
+   ;;#### license.lisp
+   :get-license
+   :get-license-entity
+   
+   ;;#### module.lisp
+   :get-module
+   :get-module-context
+   :get-module-short
+
+   ;;user.lisp
+   :get-user
+   :get-license-user
+   
+
+   ;;#### context-spec.lisp
+   :get-context-spec
+
+   ;;#### hunchentoot/context.lisp
+   :setup-context
    ))
 
 

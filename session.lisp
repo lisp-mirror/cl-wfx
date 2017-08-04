@@ -94,8 +94,14 @@
   (if (and (boundp '*session*) *session*) 
       (user *session*)))
 
+(defun license-user (license-code)
+  (if (and (boundp '*session*) *session*)   
+      (if *session*
+	  (get-license-user license-code 
+			    (getx (user *session*) :email)))))
+
 (defun active-user ()
-  (if (boundp '*session*)   
+  (if (and (boundp '*session*) *session*)   
       (if *session*
 	  (active-session-user *session*))))
 

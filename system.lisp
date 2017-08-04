@@ -106,7 +106,7 @@ Calls in :after in order:
   (when (or (not (system-status system)) 
 	    (equalp (system-status system) :initialized) 
 	    (equalp (system-status system) :stopped) )
-   ;; (break "~A" (system-status system))
+
     (call-next-method)))
 
 (defmethod start-sys ((system system) &key &allow-other-keys)
@@ -122,9 +122,10 @@ Calls in :after in order:
   
     (load-context-specs system)
     (load-modules system)
-    
+
     (setf (system-status system) :started)
-   
+
+    system
     ))
 
 
