@@ -14,8 +14,6 @@
 		  '(:name "Login"
 		    :permissions nil
 		    :for-everyone t)))
-
-
   
   (unless (get-context-spec (core-store ) "Data Types")
     (persist-item (core-collection "context-specs")    

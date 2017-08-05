@@ -53,23 +53,24 @@
 
 
 (defun find-context-in-module (module name)
+
   (find-in-item-list (getx module :contexts)
 		     (lambda (item)
+		       
 		       (or (string-equal name (getx item :name))
 			   (string-equal name 
 					 (string-downcase 
-						      (id-string (getx item :name)))))))
+					  (id-string (getx item :name)))))))
   )
 
 (defun generate-new-context (module session name)
   (let* ((contexts (contexts session))
 	 (context-spec 
-	  (find-context-in-module module name))
-	 
+	  (find-context-in-module module name))	 
 	 (context (make-instance 'context 
 				 :module module
 				 :context-spec context-spec)))
-       
+
     (bordeaux-threads:with-lock-held (*context-id-lock*)
       (loop for id = (generate-context-id)
 	 unless (gethash id contexts)

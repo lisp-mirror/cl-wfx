@@ -567,20 +567,20 @@
 						   :test #'equalp)))))
 				   ;; (break "~A ~S" label (complex-type field))
 				    (:div :class "col"
-					  (cl-who:str
-					   (render-input-val 
-					    (complex-type field) 
-					    field item
-					    :parent-item
-					    parent-item)))))))))))
+					  (or
+					   (cl-who:str (parameter name))
+					   (cl-who:str
+					    (render-input-val 
+					     (complex-type field) 
+					     field item
+					     :parent-item
+					     parent-item))))))))))))
 	  (:div :class "card-footer"
-		(when (gethash :validation-errors (cache *context*))
-		  (let ((errors (gethash :validation-errors (cache *context*))))
+		(when (getcx data-type :validation-errors)
+		  (let ((errors (getcx data-type :validation-errors)))
 		    
-		    (setf (gethash :validation-errors (cache *context*)) nil)
-		    (setf (gethash :validation-error-item-id
-				   (cache *context*))
-			  nil)
+		    (setf (getcx data-type :validation-errors) nil)
+		    (setf (getcx data-type :validation-errors-id) nil)
 		    
 		    (cl-who:htm
 		     (:div :class "row"
@@ -798,20 +798,19 @@
 	    
 	    (when (and (or (and (equalp (parameter "action") "edit")
 				(parameter "item-id")) 
-			   (gethash :validation-error-item-id
-				    (cache *context*)))
+			   (and (getcx data-type :validation-errors)
+				(equalp (item-hash item)
+					(getcx data-type
+					       :validation-errors-id))))
 		       (string-equal (parameter "data-type")
-				     (frmt "~A" data-type))
-		       (string-equal (or (parameter "item-id") 
-					 (gethash :validation-error-item-id
-						  (cache *context*)))
-				     (frmt "~A" (item-hash item))))
+				     (frmt "~A" data-type)))
 
 	      (unless sub-level-p
 		(setf (getcx data-type :root-item) item))
 	      
 	      (cl-who:str
-	       (render-grid-edit data-type fields item
+	       (render-grid-edit data-type fields
+				 (or (getcx data-type :edit-item) item )
 				 parent-item parent-spec)))
 	    
 	    (when (equalp (ensure-parse-integer
@@ -948,13 +947,15 @@
 					  sub-data-spec
 					  sub-data-spec
 					  :action "select")
-					 (cl-who:str "Select"))))))))))))
+					 (cl-who:str "Select"))))))))))))))
 
-	    ))
+	
 
-	(when (and (equalp (parameter "action") "new")
-		       (string-equal (parameter "data-type")
-				     (frmt "~A" data-type)))
+	(when (and (or (equalp (parameter "action") "new")
+		       (and (getcx data-type :validation-errors)
+			    (not (getcx data-type :validation-errors-id))))
+		   (string-equal (parameter "data-type")
+				 (frmt "~A" data-type)))
 	      (let ((item (make-item
 		      
 			   :data-type data-type)))
@@ -1359,6 +1360,7 @@
   (unless (getcx data-type :data-type)
     (setf (getcx data-type :data-type)
 	  (find-type-def *system* data-type))
+    
     (setf (getcx data-type :fields) 
 	  (dig (getcx data-type :data-type) :data-type :fields))))
 
@@ -1468,7 +1470,7 @@
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  
+  ;;(break "~A" (hunchentoot:post-parameters*))
   (render-grid (getx (context-spec *context*) :name)))
 
 (defmethod action-handler ((action (eql :save)) 
@@ -1480,8 +1482,8 @@
 	 (fields (getcx data-type :fields))
 	 (parent-slot (getcx data-type :expand-field-name)))
     
-    (setf (gethash :validation-errors (cache *context*)) nil)
-    (setf (gethash :validation-error-item-id (cache *context*)) nil)
+    (setf (getcx data-type :validation-errors) nil)
+    (setf (getcx data-type :validation-errors-id) nil)
 
     (when fields
       (let ((item (getcx data-type :edit-item))
@@ -1509,7 +1511,7 @@
 	      (unless (first valid)
 		(pushnew 
 		 (list field-name (second valid))
-		 (gethash :validation-errors (cache *context*))))
+		 (getcx data-type :validation-errors)))
 	      
 	      (when (first valid)	
 		(setf (getfx item field)
@@ -1518,12 +1520,11 @@
 	
 	;;TODO: is this still needed????
 	;;Doing this to keep edit window open.
-	(when (gethash :validation-errors (cache *context*))
-	  (setf (gethash :validation-error-item-id
-			 (cache *context*))
-		(parameter "data-id")))
+	(when (getcx data-type :validation-errors)
+	  (setf (getcx data-type :validation-errors-id)
+		(item-hash item)))
 
-	(unless (gethash :validation-errors (cache *context*))
+	(unless (getcx data-type :validation-errors)
 	  
 	  ;;Append parent-slot only if new
 	  (when parent-slot
@@ -1539,17 +1540,25 @@
 			   *system*
 			   (getcx data-type :collection-name)))
 		   (getcx data-type :collection-name))))
+	  (let ((collection (get-perist-collection
+			     (gethash :collection-name (cache *context*)))))
+	    
+	    (unless collection
+	      (pushnew 
+	       "No default store found check if license is selected."
+	       (getcx data-type :validation-errors))
+	    
+	      (setf (getcx data-type :validation-errors-id)
+		    (item-hash item)))
+	    
+	    (when collection
+	      (persist-item
+	       collection
+	       (getcx (gethash :data-type (cache *context*)) :root-item))
 
-	  (persist-item
-	   (get-collection
-	    (first (collection-stores *system*
-		    (gethash :collection-name (cache *context*))))
-	    (gethash :collection-name (cache *context*)))
-	   (getcx (gethash :data-type (cache *context*)) :root-item))
-
-	  (setf (getcx data-type :parent-item) nil)
-	  (setf (getcx data-type :edit-item) nil)
-	  (setf (getcx data-type :item-id) nil))))))
+	      (setf (getcx data-type :parent-item) nil)
+	      (setf (getcx data-type :edit-item) nil)
+	      (setf (getcx data-type :item-id) nil))))))))
 
 
 (defun store-from-stash (store-name)

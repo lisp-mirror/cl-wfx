@@ -78,8 +78,7 @@ This is called on initialize-instance :after for system."))
   :documentation "Dont mess with this just use init-system and init-sys-universe effectively."
   (let ((*system* system))
     (init-system system)  
-    (init-core-universe system)
-    (init-system-universe system))
+    (init-core-universe system))
   (setf (system-status system) :initialized))
 
 (defgeneric start-sys (system &key &allow-other-keys)
@@ -116,6 +115,8 @@ Calls in :after in order:
   (let ((*system* system))
     (declare (special *system*))
 
+    (init-system-universe system)
+    
     (ensure-core-user system)
     (ensure-system-user system)
     (ensure-demo-license system)

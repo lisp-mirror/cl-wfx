@@ -18,7 +18,9 @@
       (let ((destinations (or (getf definition :destinations)
 			      (list destination))))
 	(when (find destination destinations :test 'equalp)
-	  
+	  (when (equalp destination :system)
+	 ;;   (break "~A" definition)
+	    )
 	  (let ((data-type-def (getf definition :data-type))
 		(collection-def (getf definition :collection)))
 	    (cond (collection-def			   
@@ -69,6 +71,7 @@
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name (name system)))
+ ;; (break "wtf ~A" (data-definitions system))
   (init-definitions (universe system)
 		    :system (name system) (data-definitions system)))
 
@@ -126,11 +129,21 @@
 
 (defun find-type-def (system name)
   (let ((definitions (data-definitions system)))
+    
     (dolist (def definitions)
       (let ((col (dig def :data-type)))  
 
 	(when (and col (string-equal (dig col :name) name))
 	  (return-from find-type-def def))))))
+
+(defun get-perist-collection (name)
+  (let* ((store (last (collection-stores
+				      *system*
+				      name)))
+	(collection (if store (get-collection
+			       (first store)
+			       name))))
+    collection))
 
 (defun collection-stores (system collection)
   (let ((stores))
@@ -154,7 +167,8 @@
 (defun wfx-fetch-items (collection-name &key test (result-type 'list))
   (let ((items))
     (dolist (store (collection-stores *system* collection-name))
-      (setf items (append items (fetch-items (get-collection store collection-name)
-					     :test test
-					     :result-type result-type))))
+      (setf items (append items
+			  (fetch-items (get-collection store collection-name)
+				       :test test
+				       :result-type result-type))))
     items))

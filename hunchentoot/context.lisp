@@ -433,6 +433,7 @@
 			     (dolist (menu (digx mod :menu))
 
 			       (dolist (item (digx menu :menu-items))
+				 ;;(break "~S" item)
 				 (cl-who:htm
 				  (:a :class 
 				      "nav-link ~A"
@@ -515,7 +516,7 @@
 
 (defmethod setup-context ((module item) (context-spec item)
 			  (system hunch-system)  
-			  &key &allow-other-keys) 
+			  &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler 
 	(,(alexandria:symbolicate 

@@ -25,11 +25,10 @@
 	   (mod (third split))
 	   (context (fourth split)))
       (declare (ignore sys))
-      
-      (when (get-store-from-short-mod 
-	     mod)
-	(setf sys-mod (get-module-short (get-store-from-short-mod 
-					 mod) "cor")))
+    ;;  (break "~A" mod)
+      (when (get-store-from-short-mod mod)
+	
+	(setf sys-mod (get-module-short (get-store-from-short-mod mod) mod)))
  
       
       (unless sys-mod

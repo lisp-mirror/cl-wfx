@@ -44,6 +44,7 @@
 			     
     (:type :list 
      :complex-type :key-value-list ;;((:key "1" :val "Ones") (:key "2" :val "Twos"))
+     :key-list (:arst :arst :ARst)
      :value-type :string	   ;;or any other basic type
      )
     
@@ -334,6 +335,17 @@
 		      (frmt "Value not one of ~S" list)))))
 
 
+(defmethod (setf getsfx) (value (type (eql :value-list)) field item 
+			 &key &allow-other-keys)
+  (let* ((name (getf field :name))
+	 (list (dig field :db-type :values))
+	 (*read-eval* nil)
+	 (val (find (if (not (equalp (dig field :db-type :type) :string))
+			  (read-from-string value)
+			  value)
+		      list :test #'equalp)))
+ 
+    (setf (getx item name) val)))
 
 
 
