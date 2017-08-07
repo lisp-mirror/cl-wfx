@@ -45,7 +45,7 @@ Dont set manually use with-system macro.")
 
 (defun id-string (id)
   (ppcre:regex-replace-all "[^A-Za-z0-9-_:.]"
-                           (substitute #\- #\Space id) ""))
+                           (substitute #\- #\Space (string-downcase id)) ""))
 
 #|
 (defun plural-name (name)

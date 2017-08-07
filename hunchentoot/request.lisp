@@ -45,10 +45,11 @@
 (defmethod process-sys-request ((context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
-  
+
+ ;; (break "~A" (hunchentoot:post-parameters*))
     ;;TODO:: How to register actions? Contexs spec permissions?
     (if (find (parameter "action") 
-	      (list "save" "login" "logout" "assign-campaign" "select"
+	      (list "save" "login" "logout" "assign-campaign" "select-action"
 		    "add-selection") 
 	      :test #'string-equal)
 	(action-handler (intern (string-upcase (parameter "action")) :keyword)

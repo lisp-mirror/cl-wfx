@@ -484,11 +484,12 @@
 		     (:div :class "row"
 			   (dolist (license-code (digx (active-user) 
 						       :selected-licenses))
-			     (cl-who:str
-			       (render-entity-tree 
-				license-code
-				(getx (license-user license-code)
-				      :accessible-entities))))))))))
+			     (when (license-user license-code)
+			       (cl-who:str
+				(render-entity-tree 
+				 license-code
+				 (getx (license-user license-code)
+				       :accessible-entities)))))))))))
 
 
 	"<script>$(document).on('click', '.dropdown-item', function(){

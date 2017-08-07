@@ -69,7 +69,9 @@
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name))))
-      
+
+    
+    
     (unless (getcx data-type :stores)
       (setf (getcx data-type :stores)
 	    (collection-stores *system* collection-name)))
@@ -78,30 +80,34 @@
       (let ((collection (get-collection
 				  store 
 				  collection-name)))
+
 	(when collection
 	  (setf items
-		(append items (fetch-item 
-			       collection
-			       :test (lambda (item)
-				 (when (or
-					(and (not entity-type-p)
-					     (not entity-p))
-					(and entity-type-p
-					     (find (item-hash
-						    (digx item
-							  :entity))
-						   (getx (active-user)
-							 :selected-entities)
-						   :test #'equalp))
-					(and entity-p
-					     (find (item-hash
-						    item)
-						   (getx (active-user)
-							 :selected-entities)
-						   :test #'equalp)))
-				   (if test
-				       (funcall test item)
-				       item)))))))))
+		(append
+		 items
+		 (list (fetch-item 
+			collection
+			:test (lambda (item)
+;;				(break "poes ~A" item)
+				(when (or
+				       (and (not entity-type-p)
+					    (not entity-p))
+				       (and entity-type-p
+					    (find (item-hash
+						   (digx item
+							 :entity))
+						  (getx (active-user)
+							:selected-entities)
+						  :test #'equalp))
+				       (and entity-p
+					    (find (item-hash
+						   item)
+						  (getx (active-user)
+							:selected-entities)
+						  :test #'equalp)))
+				  (if test
+				      (funcall test item)
+				      item))))))))))
     
     (first items)))
 
@@ -468,7 +474,7 @@
 					(list accessors))))))))))))
 
 (defun grid-js-render-form-values (data-type form-id 
-				   &key action item-id )
+				   &key action action-script action-data item-id )
   (let ((active-page (getcx 
 		      data-type :active-page)))
     (js-render-form-values 
@@ -479,6 +485,9 @@
 	      (frmt "~A" data-type))
      
      (js-pair "action" (or action ""))
+
+     (js-pair "action-script" (or action-script ""))
+     (js-pair "action-data" (or action-data ""))
      
      (js-pair "item-id" (frmt "~A" (or item-id (getcx data-type :item-id)
 				       "")))
@@ -810,33 +819,88 @@
 
 
 (defun render-select-actions (data-type)
-
+  
   (with-html-string
-    (:div :class "dropdown float-right"
-	  (:input :type "hidden" :class "selected-value" 
-		  :name "select-action" :value "")
-	  (:button :class "btn btn-secondary dropdown-toggle"
-		   :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (cl-who:str "Select To Clipboard"))
-	  
-	  (:div :class "dropdown-menu" 
-		(dolist (option (list "Select To Clipboard"
-				      "Export Selected"
-				      "Export Selected - Raw"))
-		    (cl-who:htm
-		     (:span :id (id-string option)
-		      :class "dropdown-item"
-		      :onclick
-		      (grid-js-render-form-values
-		       data-type
-		       (id-string option)
-		       :action "select-action")
-		      (:input :id "select-action"
-			      :type "hidden"
-			      :value (id-string option))
-		      (cl-who:str option))))))))
+    (:div :id "select-stuff" :name "select-stuff"
+	  (:div :class "dropdown float-right"
+		(:input :type "hidden" :class "selected-value" 
+			:name "select-action" :value "")
+		(:button :class "btn btn-secondary dropdown-toggle"
+			 :type "button"
+			 :data-toggle "dropdown"
+			 :aria-haspopup "true" :aria-expanded "false"
+			 (cl-who:str "Select To Clipboard"))
+		
+		(:div :class "dropdown-menu" 
+		      (dolist (option (list "Select To Clipboard"
+					    "Export Selected"
+					    "Export Selected - Raw"))
+			(cl-who:htm
+			 (:span :id (id-string option)
+				:class "dropdown-item"
+				:onclick
+				(grid-js-render-form-values
+				 data-type
+				  (id-string option)
+				 :action "select-action")
+				(:input :id "select-action"
+					:type "hidden"
+					:value (id-string option))
+				(cl-who:str option))))
+		      
+		      (dolist (script (getx (context-spec *context*) :scripts))
+			
+			(when (find :select (getx script :events) :test #'equalp)
+			  
+			  (cl-who:htm
+			  
+			   (:span :id (id-string (digx script :script :name))
+				  :class "dropdown-item"
+				  :onclick
+				  (grid-js-render-form-values
+				   data-type
+				   data-type;;"select-stuff" ;;(id-string (digx script :script :name))
+				   :action "select-action"
+				   :action-data (id-string
+						  (digx script :script :name)))
+				  (:input :id "select-action" 
+					  :type "hidden"
+					  :value (id-string
+						  (digx script :script :name)))
+				  (cl-who:str (digx script :script :name))))))))
+
+	  (dolist (script (getx (context-spec *context*) :scripts))
+	    (when (find :select-action (getx script :events) :test #'equalp)
+	      (cl-who:htm
+	       (:div :class "dropdown float-right"
+		     (:input :type "hidden" :class "selected-value"
+			     :id "select-action-value"
+			     :name "select-action-value" :value "")
+		     (:button :class "btn btn-secondary dropdown-toggle"
+			      :type "button"
+			      :data-toggle "dropdown"
+			      :aria-haspopup "true" :aria-expanded "false")
+		     
+		     (:div :class "dropdown-menu"
+			   (dolist (option (eval (digx script :script :code)))
+			     (cl-who:htm
+			      (:span :id (id-string (getx option :name))
+				     :class "dropdown-item"
+				     :onclick
+				     (grid-js-render-form-values
+				      data-type
+				      data-type
+				      :action "select-action"
+				      :action-data (frmt "~A"
+							   (item-hash option))
+				      :action-script (id-string
+						      (digx script :script :name)))
+				     (:input :id "select-action-valuex"
+					     :id "select-action-valuex"
+					     :type "hidden"
+					     :value (frmt "~A"
+							  (item-hash option)))
+				     (cl-who:str (getx option :name)))))))))))))
 
 
 (defvar *rendering-shit* nil)
@@ -1045,9 +1109,7 @@
 					     sub-data-spec
 					     :action "select-from" )
 					    (cl-who:str "Select From"))))
-					(cl-who:str
-					   (render-select-actions
-					    sub-data-spec))))))))))))))
+				))))))))))))
 
 	
 
@@ -1246,8 +1308,7 @@
 				       item
 				       (if (listp accessor)
 					   accessor
-					   (list accessor)
-					   ))))
+					   (list accessor)))))
 		     
 		      (when val
 			(when (search search-term 
@@ -1399,14 +1460,14 @@
 	  (when (equalp (first spliff) "true")
 	    (setf persist-p t)
 	    (pushnew
-	     (first (grid-fetch-items (parameter "data-type")
-				      (getcx (parameter "data-type")
-					     :collection-name)
-				      :test (lambda (item)
-					      (equalp
+	     (grid-fetch-item (parameter "data-type")
+			      (getcx (parameter "data-type")
+				     :collection-name)
+			      :test (lambda (item)
+				      (equalp
 					       (item-hash item)
 					       (ensure-parse-integer
-						(second spliff))))))
+						(second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
 		   (getcx (parameter "data-type") :expand-field-name)))))))
     (when persist-p
@@ -1417,20 +1478,32 @@
 	(gethash :collection-name (cache *context*)))
        (getcx (gethash :data-type (cache *context*)) :root-item)))))
 
-(defmethod action-handler ((action (eql :select)) 
+(defgeneric select-handler (action selected))
+
+(defmethod action-handler ((action (eql :select-action)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
-  
-  (dolist (param (hunchentoot:post-parameters*))
-    (when (equalp (car param) "grid-selection")
-      (let ((spliff (split-sequence:split-sequence "," (cdr param))))
-	(when (equalp (first spliff) "true")
-	  (break "~A" param)
-	  )
-	)
-      )
-    ))
+  (let ((selected))
+    (dolist (param (hunchentoot:post-parameters*))
+      (when (equalp (car param) "grid-selection")
+	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
+	  (when (equalp (first spliff) "true")
+	    (pushnew
+	     (grid-fetch-item (parameter "data-type")
+			      (gethash :collection-name (cache *context*))
+			      :test (lambda (item)
+				      
+				      (equalp
+				       (item-hash item)
+				       (ensure-parse-integer
+					(second spliff)))))
+	     selected)))))
+
+    (when (parameter "action-script")
+      (select-handler
+       (intern (string-upcase (parameter "action-script")) :KEYWORD)
+       selected))))
 
 
 (defmethod action-handler ((action (eql :assign-campaign)) 

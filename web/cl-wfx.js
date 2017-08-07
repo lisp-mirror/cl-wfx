@@ -139,8 +139,10 @@ function ajax_render (script_name, renderer, id, args) {
 function get_values(widget, tag_name, disabled) {
     var elements = widget.getElementsByTagName(tag_name);
     var result = [];
+   
     for (var i = 0; i < elements.length; i++) {
         element = elements[i];
+
         if (element.name && (disabled || !element.disabled))
         {
             if (tag_name == 'input')

@@ -20,9 +20,10 @@
 	     :label "Events"
 	     :key-p nil
 	     :db-type (:type :keyword
-			     :complex-type :value-list
+			     :complex-type :value-string-list
 			     :values (:select :save :delete :new
-					      :export :search :filter))
+					      :export :search :filter)
+			     :delimiter " ")
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 

@@ -157,7 +157,6 @@
 	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
       (:name :permissions 
 	     :label "Permissions"
-	     :key nil
 	     :db-type (:type :list
 			     :complex-type :list-items
 			     :data-type "user-permission"
@@ -165,7 +164,6 @@
 	     :attibutes (:display t :editable t))     
       (:name :accessible-entities 
 	     :label "Accessible Entities"
-	     :key nil
 	     :db-type (:type :list
 			     :complex-type :collection
 			     :data-type"entity"
@@ -185,7 +183,7 @@
    (:collection
     (:name "license-users"
      :label "License Users"
-     :data-type "user")
+     :data-type "license-user")
     :destinations (:license)
     :access
     (:stores		  
@@ -271,14 +269,14 @@ must be valid email to enable confirmation.")
 (defun make-user (email password &key name phone-no license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
-     (persist-item (core-collection "users") 
-			       (list :license-codes license-codes
-				     :email email
-				     :name name
-				     :phone-no phone-no
-				     :password password
-				     :salt salt
-				     :super-user-p super-user-p))))
+    (persist-item (core-collection "users") 
+		  (list :license-codes license-codes
+			:email email
+			:name name
+			:phone-no phone-no
+			:password password
+			:salt salt
+			:super-user-p super-user-p))))
 
 (defun change-user (user new-password &key )
   (when new-password
