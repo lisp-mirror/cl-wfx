@@ -2,6 +2,31 @@
 
 (add-core-definitions
  '((:data-type
+    (:name "context-script"
+     :label "Context Script"
+     :top-level-p t
+     :fields
+     ((:name :Script
+	     :label "Script"
+	     :key-p t
+	     :db-type (:type :list
+			     :complex-type :collection
+			     :data-type "script"
+			     :collection "scripts"
+			     :accessor :name)
+	     :attributes (:display t :editable t))
+
+      (:name :events 
+	     :label "Events"
+	     :key-p nil
+	     :db-type (:type :keyword
+			     :complex-type :value-list
+			     :values (:select :save :delete :new
+					      :export :search :filter))
+	     :attributes (:display t :editable t)))
+     :destinations (:core :system :license)))
+
+   (:data-type
     (:name "context-spec"
      :label "Context Spec"
      :top-level-p t
@@ -28,6 +53,13 @@
 			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t))
+      (:name :scripts
+	     :label "Scripts"
+	     :db-type (:type :list
+			     :complex-type :list-items
+			     :data-type "context-scripts"
+			     :accessor :name)			  
+	     :attributes (:display t :editable t))
       (:name :url 
 	     :label "Url"
 	     :key-p nil
@@ -45,7 +77,7 @@
 			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t)))
-     :destinations (:core :license)))
+     :destinations (:core :system :license)))
    
    (:collection
       (:name "context-specs"
@@ -66,8 +98,7 @@
 	(:user-levels
 	 (:core (:update :delete :lookup))
 	 (:system (:update :delete :lookup))
-	 (:license (:update :delete :lookup))))))
-   ))
+	 (:license (:update :delete :lookup))))))))
 
 (defun get-context-spec (store name)
   (fetch-item (get-collection store "context-specs")

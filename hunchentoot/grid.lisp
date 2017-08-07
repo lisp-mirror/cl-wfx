@@ -147,13 +147,17 @@
 (defmethod print-item-val ((type (eql :collection)) field item
 			   &key &allow-other-keys)
   
-  (let ((item-val (getfx item field)))
+  (let ((item-val (getfx item field))
+	(accessor (dig field :db-type :accessor)))
     
     (when (or (listp item-val) (equalp (type-of item-val) 'item))
-      (when item-val
-	(frmt "~A" (getx
-		     item-val
-		    (dig field :db-type :accessor)))))))
+       (when item-val
+	(frmt "~A"
+	      (if (listp accessor)
+		  (apply #'digx item-val accessor)
+		  (getx
+		    item-val		    
+		    (dig field :db-type :accessor))))))))
 
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key &allow-other-keys)
@@ -759,6 +763,7 @@
 
 
 	(dolist (item page-items)
+
 	  (cl-who:htm
 	   (:div 
 	    :class "row "		 
@@ -797,21 +802,27 @@
 	  (unless *rendering-shit*
 	    
 	    (when (and (or (and (equalp (parameter "action") "edit")
-				(parameter "item-id")) 
+				(equalp (item-hash item)
+					(ensure-parse-integer
+					 (parameter "item-id")))) 
 			   (and (getcx data-type :validation-errors)
 				(equalp (item-hash item)
 					(getcx data-type
 					       :validation-errors-id))))
 		       (string-equal (parameter "data-type")
-				     (frmt "~A" data-type)))
-
+				     (frmt "~A" data-type)))	      
 	      (unless sub-level-p
 		(setf (getcx data-type :root-item) item))
-	      
-	      (cl-who:str
-	       (render-grid-edit data-type fields
-				 (or (getcx data-type :edit-item) item )
-				 parent-item parent-spec)))
+
+	      ;;Stop openning the same edit window more than once
+	      ;;hierarchical grid children
+	      (when (or (and (getcx data-type :validation-errors)
+			     (getcx data-type :edit-item))
+			(not (getcx data-type :edit-item)))
+		(cl-who:str
+			 (render-grid-edit data-type fields
+					   (or (getcx data-type :edit-item) item )
+					   parent-item parent-spec))))
 	    
 	    (when (equalp (ensure-parse-integer
 			   (getcx data-type :expand-id)) 

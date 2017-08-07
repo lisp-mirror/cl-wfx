@@ -204,25 +204,27 @@
 			  &key &allow-other-keys)
   (setsfx-read* field item value #'symbolp  "~S is not a symbol!"))
 
-(defmethod (setf getsfx) ((type (eql :keyword)) field item value  &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :keyword)) field item
+			  &key &allow-other-keys)
   (setsfx-read* field item value #'keywordp  "~S is not a keyword!"))
 
 (defmethod (setf getsfx) (value (type (eql :string)) field item
 			  &key &allow-other-keys)
   (setf (getx item (getf field :name)) (frmt "~A" value)))
 
-(defmethod (setf getsfx) (value (type (eql :email)) field item &key &allow-other-keys)
+(defmethod (setf getsfx) (value (type (eql :email)) field item
+			  &key &allow-other-keys)
    (setf (getx item (getf field :name)) (frmt "~A" value)))
 
-(defmethod (setf getsfx) ((type (eql :number)) field item value  
+(defmethod (setf getsfx) (value (type (eql :number)) field item
 			 &key &allow-other-keys)
   (setsfx-read* field item value #'numberp "~R is not a number!"))
 
-(defmethod (setf getsfx) ((type (eql :integer)) field item value  
+(defmethod (setf getsfx) (value (type (eql :integer)) field item
 			 &key &allow-other-keys)
   (setsfx-read* field item value #'numberp "~R is not an integer!"))
 
-(defmethod (setf getsfx) ((type (eql :date)) field item value  
+(defmethod (setf getsfx) (value (type (eql :date)) field item
 			 &key &allow-other-keys)
   (set-getsfx* field item value))
 
@@ -275,7 +277,7 @@
 			    (dig field :db-type :collection))))))
 
 
-(defmethod (setf getsfx) ((type (eql :hierarchical)) field item value  
+(defmethod (setf getsfx) (value (type (eql :hierarchical)) field item
 			 &key &allow-other-keys) 
  
   ;;TODO: will id not be full ref hash now?
@@ -296,7 +298,7 @@
   |#
     (set-getsfx* field item nil))
 
-(defmethod (setf getsfx) ((type (eql :key-value)) field item value  
+(defmethod (setf getsfx) (value (type (eql :key-value)) field item
 			 &key &allow-other-keys) 
     (set-getsfx* field item nil))
 
@@ -322,7 +324,7 @@
 
 
 
-(defmethod validate-sfx ((type (eql :value-list)) field item value
+(defmethod validate-sfx (value (type (eql :value-list)) field item
 			 &key &allow-other-keys)
   (let* ((list (dig field :db-type :values))
 	 (*read-eval* nil)
