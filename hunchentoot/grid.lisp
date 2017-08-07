@@ -1199,20 +1199,28 @@
 	      (when (find (complex-type field)
 			  (list :collection-items :list-items
 				:hierarchical))
-		(dolist (sub-val (getfx item field))
-		  (when sub-val
-		    (let* ((val (apply #'digx (dig field :db-type :accessor))))
-		      
-		      (if (filter-found-p filter-term val)
-			  (push t found)
-			  (push nil found))))))
+		(let ((accessor (dig field :db-type :accessor)))
+		  (dolist (sub-val (getfx item field))
+		    (when sub-val
+		      (let* ((val (apply #'digx
+					 item
+					 (if (listp accessor)
+					     accessor
+					     (list accessor)))))
+		
+			(if (filter-found-p filter-term val)
+			    (push t found)
+			    (push nil found)))))))
 	      
 	      (let ((val (print-item-val 
 			  (complex-type field) field item)))
+
+	
+		
 		(if (filter-found-p filter-term val)
 		    (push t found)
 		    (push nil found)))))))
-
+   ;;   (break "found ~A" found)
       (unless (found-nil-p found)
 	item))))
 
@@ -1223,27 +1231,41 @@
       (dolist (field (getcx 
 		      data-type 
 		      :fields))
+
 	(when (getf field :db-type)
-	  (when (find (complex-type field) (list :collection-items :list-items
-						 :hierarchical))
-	    (dolist (sub-val (getfx item field))
-	      (when sub-val
-		(let* ((val (apply #'digx (dig field :db-type :accessor))))
-		  (when val
-		    (when (search search-term 
-				  val
-				  :test #'string-equal)
-		      (unless found		       
-			
-			(setf found t))))))))
-	  (let ((val (print-item-val 
-		      (complex-type field) field item)))
-	    (when val
-	      (when (search search-term 
-			    val
-			    :test #'string-equal)
-		(unless found		       				     
-		  (setf found t)))))))
+	   
+	    (when (find (complex-type field)
+			(list :collection-items :list-items
+			      :hierarchical))
+	      
+	      (let ((accessor (dig field :db-type :accessor)))
+		(dolist (sub-val (getfx item field))
+
+		  (when sub-val
+		    (let* ((val (apply #'digx
+				       item
+				       (if (listp accessor)
+					   accessor
+					   (list accessor)
+					   ))))
+		     
+		      (when val
+			(when (search search-term 
+				      val
+				      :test #'string-equal)
+			  (unless found		       
+			    
+			    (setf found t)))))))))
+
+	    (let ((val (print-item-val 
+			(complex-type field) field item)))
+	      (when val
+
+		(when (search search-term 
+			      val
+			      :test #'string-equal)
+		  (unless found		       				     
+		    (setf found t)))))))
       (when found
 	item))))
 
@@ -1254,13 +1276,14 @@
 			  (getcx 
 			   data-type :search)))
 	 (search-p (not (empty-p search-term)))
-	 (filter-p (getcx 
-		    data-type :filter)))
+	 (filter-p (getcx data-type :filter)))
     
      (unless (or search-p filter-p)
       (setf items (grid-fetch-items data-type collection-name)))
-    
-     (when (or search-p filter-p)
+
+     
+     (when (or search-p filter-p (getcx data-type :filter-fields))
+       
        (if (getcx 
 	   data-type 
 	   :filter-fields)
@@ -1278,7 +1301,9 @@
 	       items
 	       (search-function data-type search-term)))))
     
-    (fetch-grid-page-data data-type items)))
+     (fetch-grid-page-data data-type (if (listp items)
+					 items
+					 (list items)))))
 
 (defun render-grid-paging (data-type)  
   (let ((active-page (getcx 
@@ -1443,8 +1468,9 @@
 
   (when (equalp (parameter "action") "grid-col-filter")
     (let ((fields (getcx data-type :filter-fields)))
-      (dolist (field (getcx data-type :fields))
-	(when (parameter (frmt "~A-filter" (getf data-type :name)))
+
+      (dolist (field (getcx data-type :fields))	
+	(when (parameter (frmt "~A-filter" (getf field :name)))
 	  
 	  (pushnew field fields)
 	  
@@ -1452,8 +1478,8 @@
 		       (intern (string-upcase
 				(frmt "~A-filter" (getf field :name)))))  
 		(parameter (frmt "~A-filter" (getf field :name))))))
-      
-      (setf (getcx data-type :filter-fields)fields))))
+    
+      (setf (getcx data-type :filter-fields) fields))))
 
 
 (defun set-type-context (data-type)

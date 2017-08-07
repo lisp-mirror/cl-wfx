@@ -94,6 +94,7 @@
        list))
 
 (defun core-store ()
+  
   (get-store (universe *system*) "core"))
 
 (defun core-collection (name)

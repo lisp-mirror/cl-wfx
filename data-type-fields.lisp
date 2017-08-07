@@ -230,6 +230,7 @@
 
 (defmethod (setf getsfx) (value (type (eql :boolean)) field item   
 			  &key &allow-other-keys)
+
   (let* ((split (split-sequence:split-sequence #\, value))
 	(val (if (equalp (car split) "true")
 		 t)))
