@@ -71,9 +71,10 @@
   
   (let ((active-user (fetch-item (core-collection "active-users")
 				 :test (lambda (item)
-					 (equal (parameter "user")
-						(digx item :email))))))
-    (unless active-user
+					 
+					 (equalp (parameter "email")
+						 (digx item :email))))))
+     (unless active-user
      
       (setf active-user (persist-item (core-collection "active-users")
 				      (list :email (digx user :email) 
@@ -91,8 +92,8 @@
 
 (defmethod on-failure ()
   ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
-  (setf (gethash :login-error (cache *context*)) "User name or password incorrect.")
-  )
+  (setf (gethash :login-error (cache *context*))
+	"User name or password incorrect."))
 
 (defun validate-user (email password)
   (let ((user (get-user email)))
@@ -121,6 +122,7 @@
   (setf (contexts *session*) nil)
   (setf *session* nil)
 
+  (persist-item (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
   (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))

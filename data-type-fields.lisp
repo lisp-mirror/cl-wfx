@@ -178,7 +178,7 @@
 	 (final-val))
     
     (if value
-	(if (stringp value)
+	(if (and (stringp value) (not (empty-p value)))
 	    (setf final-val (read-from-string value))
 	    (setf final-val value))
 	(setf final-val value))
@@ -229,8 +229,13 @@
   (set-getsfx* field item value))
 
 (defmethod (setf getsfx) (value (type (eql :boolean)) field item   
-			 &key &allow-other-keys)
-  (set-getsfx* field item value))
+			  &key &allow-other-keys)
+  (let* ((split (split-sequence:split-sequence #\, value))
+	(val (if (equalp (car split) "true")
+		 t)))
+    
+    
+    (set-getsfx* field item val)))
 
 
 (defmethod (setf getsfx) (value (type (eql :script)) field item   &key &allow-other-keys)
@@ -329,7 +334,8 @@
   (let* ((list (dig field :db-type :values))
 	 (*read-eval* nil)
 	 (valid (find (if (not (equalp (dig field :db-type :type) :string))
-			  (read-from-string value)
+			  (if (and value (not (empty-p value)))
+			      (read-from-string value))
 			  value)
 		      list :test #'equalp)))
  
@@ -343,7 +349,8 @@
 	 (list (dig field :db-type :values))
 	 (*read-eval* nil)
 	 (val (find (if (not (equalp (dig field :db-type :type) :string))
-			  (read-from-string value)
+			  (if (and value (not (empty-p value)))
+			      (read-from-string value))
 			  value)
 		      list :test #'equalp)))
  

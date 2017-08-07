@@ -11,8 +11,15 @@
       (dig field :db-type :type)
       (getf field :db-type)))
 
+(defun entity-type-p (fields)
+  (dolist (field fields)
+    (when (equalp (getf field :name) :entity)
+      (return-from entity-type-p t))))
+
 (defun grid-fetch-items (data-type collection &key test (result-type 'list))
   (let ((items)
+	(entity-type-p (entity-type-p (getcx data-type :fields)))
+	(entity-p (equalp data-type "entity"))
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name))))
@@ -27,12 +34,76 @@
 				  store 
 				  collection-name)))
 	(when collection
-	  (setf items (append items (fetch-items 
-				     collection
-				     :test test
+	  (setf items
+		(append items
+			(fetch-items 
+			 collection
+			 :test (lambda (item)
+				 (when (or
+					(and (not entity-type-p)
+					     (not entity-p))
+					(and entity-type-p
+					     (find (item-hash
+						    (digx item
+							  :entity))
+						   (getx (active-user)
+							 :selected-entities)
+						   :test #'equalp))
+					(and entity-p
+					     (find (item-hash
+						    item)
+						   (getx (active-user)
+							 :selected-entities)
+						   :test #'equalp)))
+				   (if test
+				       (funcall test item)
+				       item)))
 				     :result-type result-type))))))
     
     items))
+
+(defun grid-fetch-item (data-type collection &key test)
+  (let ((items)
+	(entity-type-p (entity-type-p (getcx data-type :fields)))
+	(entity-p (equalp data-type "entity"))
+	(collection-name (if (stringp collection)
+			     collection
+			     (digx collection :collection :name))))
+      
+    (unless (getcx data-type :stores)
+      (setf (getcx data-type :stores)
+	    (collection-stores *system* collection-name)))
+    
+    (dolist (store (getcx data-type :stores))
+      (let ((collection (get-collection
+				  store 
+				  collection-name)))
+	(when collection
+	  (setf items
+		(append items (fetch-item 
+			       collection
+			       :test (lambda (item)
+				 (when (or
+					(and (not entity-type-p)
+					     (not entity-p))
+					(and entity-type-p
+					     (find (item-hash
+						    (digx item
+							  :entity))
+						   (getx (active-user)
+							 :selected-entities)
+						   :test #'equalp))
+					(and entity-p
+					     (find (item-hash
+						    item)
+						   (getx (active-user)
+							 :selected-entities)
+						   :test #'equalp)))
+				   (if test
+				       (funcall test item)
+				       item)))))))))
+    
+    (first items)))
 
 
 (defun print-item-val-s* (field item)
@@ -341,13 +412,6 @@
 				    :value (frmt "~S" option))
 			    (cl-who:str (frmt "~S" option))))))))))
 
-(defmethod render-input-val ((type (eql :collection-items)) 
-			     field item &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :list-items)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
 
 
 (defmethod render-input-val ((type (eql :hierarchical)) field item 
@@ -375,7 +439,7 @@
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
-    
+   ;; (break "~A" list)
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
@@ -744,7 +808,41 @@
 	(pushnew field data-fields)))
     (reverse data-fields)))
 
+
+(defun render-select-actions (data-type)
+
+  (with-html-string
+    (:div :class "dropdown float-right"
+	  (:input :type "hidden" :class "selected-value" 
+		  :name "select-action" :value "")
+	  (:button :class "btn btn-secondary dropdown-toggle"
+		   :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (cl-who:str "Select To Clipboard"))
+	  
+	  (:div :class "dropdown-menu" 
+		(dolist (option (list "Select To Clipboard"
+				      "Export Selected"
+				      "Export Selected - Raw"))
+		    (cl-who:htm
+		     (:span :id (id-string option)
+		      :class "dropdown-item"
+		      :onclick
+		      (grid-js-render-form-values
+		       data-type
+		       (id-string option)
+		       :action "select-action")
+		      (:input :id "select-action"
+			      :type "hidden"
+			      :value (id-string option))
+		      (cl-who:str option))))))))
+
+
 (defvar *rendering-shit* nil)
+
+
+
 
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
@@ -905,22 +1003,21 @@
 					 (dig sub :db-type :collection)
 					 :test (filter-function data-type))
 					-1 parent-item data-type))
-				      (:div :class "card-footer"
-					    (:button
-					     :name "select" :type "submit" 
-					     :class
-					     "btn btn-outline-success float-right"
-					     :aria-pressed "false"
-					     :onclick
-					     (grid-js-render-form-values
-					      sub-data-spec
-					      (frmt "select-from-~A"
-						    sub-data-spec)
-					      :action "add-selection")
-					     (cl-who:str "Add Selection"))
-					    ))
-				)
-			       ))
+
+				      (:div
+				       :class "card-footer"
+				       (:button
+					:name "select" :type "submit" 
+					:class
+					"btn btn-outline-success float-right"
+					:aria-pressed "false"
+					:onclick
+					(grid-js-render-form-values
+					 sub-data-spec
+					 (frmt "select-from-~A"
+					       sub-data-spec)
+					 :action "add-selection")
+					(cl-who:str "Add Selection")))))))
 			   (:div
 			    :class "card-footer"
 			    (:div :class "row"	  
@@ -948,17 +1045,9 @@
 					     sub-data-spec
 					     :action "select-from" )
 					    (cl-who:str "Select From"))))
-					(:button
-					 :name "select" :type "submit" 
-					 :class
-					 "btn btn-outline-success float-right"
-					 :aria-pressed "false"
-					 :onclick
-					 (grid-js-render-form-values
-					  sub-data-spec
-					  sub-data-spec
-					  :action "select")
-					 (cl-who:str "Select"))))))))))))))
+					(cl-who:str
+					   (render-select-actions
+					    sub-data-spec))))))))))))))
 
 	
 
@@ -1465,17 +1554,9 @@
 				 :onclick 
 				 (grid-js-render data-type :action "new")
 				 (cl-who:str "+"))
-				(:button
-				 :name "select" :type "submit" 
-				 :class
-				 "btn btn-outline-success float-right"
-				 :aria-pressed "false"
-				 :onclick
-				 (grid-js-render-form-values
-				  data-type
-				  data-type
-				  :action "select")
-				 (cl-who:str "Select"))
+				(cl-who:str
+				 (render-select-actions
+				  data-type))
 				(cl-who:str
 				 (render-grid-paging data-type))))))))))
 
@@ -1581,82 +1662,3 @@
       (return-from store-from-stash store))))
 
 
-(defun campaign-shit (page-items)
-  (when (gethash :assign-campaign (cache *context*))
-    (setf (gethash :assign-campaign (cache *context*)) nil)
-    (when (not (empty-p (parameter "campaign")))
-      (let ((campaign 
-	     (fetch-item "campaigns" 
-			 :test (lambda (doc)
-				 (equalp (item-hash doc) 
-					 (parse-integer
-					  (parameter "campaign")))))))
-	(when campaign
-	  (dolist (company page-items)
-	    (let ((exists-p)
-		  (campaigns-slot (intern "CAMPAIGNS" 'cl-bizhub))
-		  (campaign-slot (intern "CAMPAIGN" 'cl-bizhub))
-		  (company-campaign (intern "COMPANY-CAMPAIGN" 'cl-bizhub)))
-	      
-	      (dolist (campaignx (slot-value company campaigns-slot))
-		(when (equalp (item-hash campaign)
-			      (item-hash
-			       (slot-value campaignx campaign-slot)))
-		  (setf exists-p t)))
-	      
-	      (unless exists-p
-		(setf (slot-value company campaigns-slot)
-		      (append (slot-value company campaigns-slot) 
-			      (list (make-instance
-				     company-campaign
-				     :campaign campaign))))))))))))
-
-(defun more-campaign-shit (name)
-  (when (string-equal (frmt "~A" name) "company")
-    (with-html-string
-      (let ((items))
-	(setf items 
-	      (append items (wfx-fetch-items 
-			     "campaigns"
-			     :result-type 'list)))
-	(let ((campaigns items))
-	  (cl-who:htm
-	   (:form :method "post" :id "assign-campaign-id"
-		  (:button
-		   :class "btn btn-small btn-outline-success float-right"
-		   :name "assign-campaign" 
-		   :type "submit" 
-		   
-		   :aria-pressed "false"
-		   :onclick 
-		   (grid-js-render-form-values
-		    name
-		    "assign-campaign-id"
-		    :action "assign-campaign")
-		   "<>")
-		  
-		  (:div
-		   :class "dropdown float-right"
-		   (:input :type "hidden" :class "selected-value" 
-			   :name "campaign" :value "")
-		   (:button :class "btn btn-secondary dropdown-toggle"
-			    :type "button"
-			    :data-toggle "dropdown"
-			    :aria-haspopup "true" :aria-expanded "false"
-			    (if (parameter "campaign")
-				(parameter "campaign")
-				"Assign Campaign"))
-		   
-		   (:div
-		    :class "dropdown-menu" 
-		    ;; :aria-labelledby "campaign"
-		    (dolist (option campaigns)
-		      (cl-who:htm
-		       (:span :class "dropdown-item" 			     
-			      (:input :type "hidden"
-				      :value (frmt "~A"
-						   (item-hash option)))
-			      (frmt "~A" 
-				    (slot-value 
-				     option 
-				     (intern "NAME" 'cl-bizhub)))))))))))))))

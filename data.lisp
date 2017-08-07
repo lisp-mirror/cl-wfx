@@ -137,9 +137,7 @@
 	  (return-from find-type-def def))))))
 
 (defun get-perist-collection (name)
-  (let* ((store (last (collection-stores
-				      *system*
-				      name)))
+  (let* ((store (last (collection-stores *system* name)))
 	(collection (if store (get-collection
 			       (first store)
 			       name))))

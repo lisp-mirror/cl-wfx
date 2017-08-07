@@ -357,4 +357,4 @@ must be valid email to enable confirmation.")
 (defgeneric match-entities (user entities))
 
 (defmethod match-entities ((user item) entities)
-  (intersection (accessible-entities* user) entities))
+  (intersection (getx user :accessible-entities) entities))

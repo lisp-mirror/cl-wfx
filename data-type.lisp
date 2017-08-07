@@ -85,8 +85,6 @@
       (:system (:update :delete :lookup))
       (:license (:update :delete :lookup))))))))
 
-
-
 (defun get-data-type (store type-name)
   (fetch-item (get-collection store "data-types")
 	      :test (lambda (item)
