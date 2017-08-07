@@ -89,31 +89,32 @@
   )
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
- (with-debugging
-   ;;(break "~A" (hunchentoot:post-parameters*))
-   (let ((dont (dont-process request)))
-     (hunchentoot:start-session)
-     (if (not dont)
-           
-       (let* ((*request* (make-instance 'hunch-request :request-object request))
-	      (*system* acceptor)
-	      (*session* (start-session acceptor))
-	      (*context* (request-context *request*))
-	      ;;TODO: is this the right way to get module
-	      (*module* (if *context* (module *context*))))
-	 (declare (special *system* *context* *session* *request*))
-	
-	 (unless *context*
-	   (bad-request *request*))
-;;	 (break "~A" *context*)
-	 (when *context*
-
-;;	   (break "~A"		  (hunchentoot:post-parameters*))
-	   
-	   (system-request acceptor *request*))	 
+  (with-debugging
+    ;;(break "~A" (hunchentoot:post-parameters*))
+    (let ((*request* (make-instance 'hunch-request :request-object request))
+	  (*system* acceptor)
 	 
-	 (call-next-method))
-       (call-next-method)))))
+	  (dont (dont-process request)))
+      (hunchentoot:start-session)
+      (if (not dont)
+           
+	  (let* ((*session* (start-session acceptor))
+		 (*context* (request-context *request*))
+		 ;;TODO: is this the right way to get module
+		 (*module* (if *context* (module *context*))))
+	    (declare (special *system* *context* *session* *request*))
+	
+	    (unless *context*
+	      (bad-request *request*))
+	    ;;	 (break "~A" *context*)
+	    (when *context*
+
+	      ;;	   (break "~A"		  (hunchentoot:post-parameters*))
+	   
+	      (system-request acceptor *request*))	 
+	 
+	    (call-next-method))
+	  (call-next-method)))))
 
 (defvar *widget-parameters*)
 

@@ -5,7 +5,7 @@
   (with-html-string
       (:div :class "row"
 	    (:div :class "card col-5"
-		  (:img :class "card-image-top" :src "../cor/web/images/logo.png")
+		  (:img :class "card-image-top" :src "web/images/logo.png")
 		  
 		  (:div :class "card-block"
 			(:h4 :class "card-title"
@@ -289,21 +289,24 @@
 	"<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>"
 	" <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
 	"<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
+
+	(frmt "~A" "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*))
+
+	(frmt "~A" "<link rel=\"stylesheet\" href=\"~Aweb/codemirror/lib/codemirror.css\">" (site-url *system*))
+
+	(frmt "~A" "<script src=\"~Aweb/codemirror/mode/commonlisp/commonlisp.js\"></script>
+" (site-url *system*))
+	(frmt "~A" "<script src=\"~Aweb/codemirror/addon/edit/closebrackets.js\"></script>
+" (site-url *system*))
+	(frmt "~A" "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
+" (site-url *system*))
+	(frmt "~A" "<script src=\"Aweb/cl-wfx.js\"></script>
+" (site-url *system*))
+
+	(frmt "~A" "<link rel=\"stylesheet\" href=\"~Aweb/cl-wfx.css\">
+" (site-url *system*))
 	
-	"<script src=\"../web/codemirror/lib/codemirror.js\"></script>
-<link rel=\"stylesheet\" href=\"../web/codemirror/lib/codemirror.css\">
-<script src=\"../web/codemirror/mode/commonlisp/commonlisp.js\"></script>
-<script src=\"../web/codemirror/addon/edit/closebrackets.js\"></script>
-<script src=\"../web/codemirror/addon/edit/matchbrackets.js\"></script>
-
-
-<script src=\"../web/cl-wfx.js\"></script>
-
-
-
-
-<link rel=\"stylesheet\" href=\"../web/cl-wfx.css\">
-<link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
+	"<link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 ")
        
@@ -331,7 +334,7 @@
 			    (:span :class "navbar-toggler-icon"))))
 	      
 	      (:a :class "navbar-brand" :href "#" 
-		  (:img :src "../cor/web/images/logo-small.png")
+		  (:img :src "web/images/logo-small.png")
 		  (name *system*))
 	      (:div
 	       :class "collapse navbar-collapse" :id "menushit"
