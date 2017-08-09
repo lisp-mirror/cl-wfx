@@ -28,6 +28,7 @@
     (unless (getcx data-type :stores)
       (setf (getcx data-type :stores)
 	    (collection-stores *system* collection-name)))
+
     
     (dolist (store (getcx data-type :stores))
       (let ((collection (get-collection
@@ -39,13 +40,14 @@
 			(fetch-items 
 			 collection
 			 :test (lambda (item)
+			;;	 (break "~A" item)
+				 
 				 (when (or
 					(and (not entity-type-p)
 					     (not entity-p))
 					(and entity-type-p
 					     (find (item-hash
-						    (digx item
-							  :entity))
+						    (digx item :entity))
 						   (getx (active-user)
 							 :selected-entities)
 						   :test #'equalp))
@@ -55,6 +57,7 @@
 						   (getx (active-user)
 							 :selected-entities)
 						   :test #'equalp)))
+				   
 				   (if test
 				       (funcall test item)
 				       item)))
@@ -1505,15 +1508,6 @@
        (intern (string-upcase (parameter "action-script")) :KEYWORD)
        selected))))
 
-
-(defmethod action-handler ((action (eql :assign-campaign)) 
-			   (context context) 
-			   (request hunch-request)
-			   &key &allow-other-keys)
-
-  (setf (gethash :assign-campaign (cache *context*)) t))
-
-
 (defun getcx (&rest indicators)
   (let* ((indicator (pop indicators))
 	 (place (gethash indicator (cache *context*))))
@@ -1731,6 +1725,7 @@
 			   *system*
 			   (getcx data-type :collection-name)))
 		   (getcx data-type :collection-name))))
+	  
 	  (let ((collection (get-perist-collection
 			     (gethash :collection-name (cache *context*)))))
 	    
@@ -1761,3 +1756,37 @@
       (return-from store-from-stash store))))
 
 
+(defmethod action-handler ((action (eql :delete)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  
+  (let* ((root-item (getcx (gethash :data-type (cache *context*)) :root-item))
+	 (data-type (parameter "data-type"))
+	 (parent-slot (getcx data-type :expand-field-name))
+
+	 (parent-item (getcx data-type :parent-item)))
+
+    (when (and root-item parent-slot)
+      (when parent-slot
+	(let ((clean-list (getx parent-item parent-slot)))
+	  (dolist (item clean-list)
+	    (when (equalp (item-hash item)
+			  (ensure-parse-integer (parameter "item-id")))
+	    
+	      (setf clean-list
+		    (remove item clean-list))))
+	  (setf (getx parent-item parent-slot) clean-list)
+	  (persist-item (item-collection root-item) root-item))))
+
+    (unless (and root-item parent-slot)
+      (setf root-item
+	    (grid-fetch-item
+	     data-type
+	     (gethash :collection-name (cache *context*))
+	     :test (lambda (item)
+		     (equalp (item-hash item)
+			     (ensure-parse-integer (parameter "item-id"))))))
+      (setf (cl-naive-store::item-deleted-p root-item) t)
+      (persist-item (item-collection root-item) root-item)
+      (cl-naive-store::remove-item root-item))))

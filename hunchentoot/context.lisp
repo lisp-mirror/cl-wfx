@@ -47,6 +47,7 @@
   (let ((spec (or spec (get-context-spec (get-store-from-short-mod 
 					  (digx module :module-short))
 					 (default-context *system*)))))
+    
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
 	   (id-string (if module
@@ -399,6 +400,7 @@
 						   (digx param :value)))))
 				      
 				 (cl-who:htm
+				  
 				  (:a :class "dropdown-item"
 				      :href 
 				      (if parameters
@@ -450,8 +452,9 @@
 			     (dolist (menu (digx mod :menu))
 
 			       (dolist (item (digx menu :menu-items))
-				 ;;(break "~S" item)
+			
 				 (cl-who:htm
+				  
 				  (:a :class 
 				      "nav-link ~A"
 				      :href (context-url
