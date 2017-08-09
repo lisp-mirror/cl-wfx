@@ -299,7 +299,29 @@
   (render-input-val* type field item))
 
 (defmethod render-input-val ((type (eql :date)) field item &key &allow-other-keys)
-  (render-input-val* type field item))
+  (let ((name (getf field :name)))
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "date"	     
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item))
+		  :disabled "disabled"))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "date"	     
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item)))))))
 
 (defmethod render-input-val ((type (eql :boolean)) field item &key &allow-other-keys)
   (let ((name (getf field :name))
