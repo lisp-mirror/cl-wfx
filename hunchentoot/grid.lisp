@@ -40,8 +40,6 @@
 			(fetch-items 
 			 collection
 			 :test (lambda (item)
-			;;	 (break "~A" item)
-				 
 				 (when (or
 					(and (not entity-type-p)
 					     (not entity-p))
@@ -91,7 +89,6 @@
 		 (list (fetch-item 
 			collection
 			:test (lambda (item)
-;;				(break "poes ~A" item)
 				(when (or
 				       (and (not entity-type-p)
 					    (not entity-p))
@@ -448,7 +445,7 @@
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
-   ;; (break "~A" list)
+
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
@@ -645,7 +642,6 @@
 						   (character "-")  
 						   (format nil "~A" name) 
 						   :test #'equalp)))))
-				   ;; (break "~A ~S" label (complex-type field))
 				    (:div :class "col"
 					  (or
 					   (cl-who:str (parameter name))
@@ -769,7 +765,6 @@
 	    (cl-who:htm
 	     (:div :class "col-sm-1"
 		   " ")))
-	  
 	  (dolist (half (rough-half-list (get-header-fields fields) 7))
 	    (cl-who:htm
 	     (:div
@@ -801,6 +796,7 @@
 (defun render-grid-header (data-type sub-p)
   (let ((fields (getcx	data-type :fields))
 	(subs))
+
     (dolist (field fields)
       (when (find (complex-type field)
 		  (list :collection-items :list-items :hierarchical))
@@ -1285,7 +1281,6 @@
 		(if (filter-found-p filter-term val)
 		    (push t found)
 		    (push nil found)))))))
-   ;;   (break "found ~A" found)
       (unless (found-nil-p found)
 	item))))
 
@@ -1589,7 +1584,7 @@
 	 (data-type (or (gethash :data-type (cache *context*))
 			(and collection
 			     (dig collection :collection :data-type)))))   
-    
+
     (set-grid-context collection-name data-type)
 
     (set-type-context data-type)
@@ -1655,7 +1650,6 @@
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  ;;(break "~A" (hunchentoot:post-parameters*))
   (render-grid (getx (context-spec *context*) :name)))
 
 (defmethod action-handler ((action (eql :save)) 
@@ -1748,9 +1742,7 @@
 
 
 (defun store-from-stash (store-name)
- 
   (dolist (store (getcx (gethash :data-type (cache *context*)) :stores))
-    (break "~S ~S" store-name (name store))
     (when (equalp store-name (name store))
       
       (return-from store-from-stash store))))
