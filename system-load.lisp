@@ -67,7 +67,21 @@
 		  '(:name "Allsorts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "allsorts"))))
+		    :collection "allsorts")))
+  
+  (unless (get-context-spec (core-store) "Scripts")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Scripts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "scripts")))
+  
+  (unless (get-context-spec (core-store) "Reports")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Reports"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "reports"))))
 
 (defun make-menu-item (name context-spec)
   (make-item
@@ -103,6 +117,8 @@
 			      (get-context-spec (core-store ) "Entities")
 			      (get-context-spec (core-store ) "Users")
 			      (get-context-spec (core-store ) "License Users")
+			      (get-context-spec (core-store ) "Scripts")
+			      (get-context-spec (core-store ) "Reports")
 			      ;; (get-context-spec "import-data")
 			      
 			      )))

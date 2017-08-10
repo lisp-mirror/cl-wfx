@@ -1729,6 +1729,7 @@
 	  
 	  ;;Append parent-slot only if new
 	  (when parent-slot
+	    
 	    (setf (getx parent-item parent-slot)
 		  (append (getx parent-item parent-slot)
 			  (list item))))

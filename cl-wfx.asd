@@ -20,6 +20,7 @@
 	       (:file "session" :depends-on ("system"))
 	       (:file "data" :depends-on ("system"))
 	       (:file "script" :depends-on ("system" "data"))
+	    ;;   (:file "report" :depends-on ("script"))
 	       
 	       (:file "user" :depends-on ("system" "data"))
 	       (:file "license" :depends-on ("data"))
@@ -39,7 +40,7 @@
 		      :depends-on ("hunchentoot/request"))
 	       (:file "hunchentoot/context" 
 		      :depends-on ("hunchentoot/grid"))
-	       
+	       (:file "report" :depends-on ("script" "hunchentoot/context"))
 	       ))
 
 #|

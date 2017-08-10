@@ -25,6 +25,7 @@
    :license-store
    :license-collection
    :wfx-fetch-items
+   :wfx-fetch-item
    
    ;;????
    :system 
@@ -66,10 +67,13 @@
    :get-user
    :get-license-user
    
-
    ;;#### context-spec.lisp
    :get-context-spec
 
+   ;;#### hunchentoot/common.lisp
+   :with-html
+   :with-html-string
+   
    ;;#### hunchentoot/context.lisp
    :setup-context
    ))

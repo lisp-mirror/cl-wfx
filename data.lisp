@@ -95,22 +95,22 @@
 
 (defun core-store ()
   
-  (get-store (universe *system*) "core"))
+  (cl-naive-store::get-store* (universe *system*) "core"))
 
 (defun core-collection (name)
-  (get-collection (core-store) name))
+  (cl-naive-store::get-collection* (core-store) name))
 
 (defun system-store ()
-  (get-store (universe *system*) (name *system*)))
+  (cl-naive-store::get-store* (universe *system*) (name *system*)))
 
 (defun system-collection (name)
-  (get-collection (system-store) name))
+  (cl-naive-store::get-collection* (system-store) name))
 
 (defun license-store (license-code)
-  (get-store (universe *system*) license-code))
+  (cl-naive-store::get-store* (universe *system*) license-code))
 
 (defun license-collection (license-code name)
-  (get-collection (license-store license-code) name))
+  (cl-naive-store::get-collection* (license-store license-code) name))
 
 (defun get-store-from-short-mod (mod)
   (cond ((equalp mod "cor")
@@ -171,3 +171,6 @@
 				       :test test
 				       :result-type result-type))))
     items))
+
+(defun wfx-fetch-item (collection-name &key test (result-type 'list))
+  (first (last (wfx-fetch-items collection-name :test test :result-type result-type))))

@@ -178,11 +178,12 @@
 	 (final-val))
     
     (if value
-	(if (and (stringp value) (not (empty-p value)))
-	    (setf final-val (read-from-string value))
+	(if (stringp value)
+	    (if (not (empty-p value))
+		(setf final-val (read-from-string value)))
 	    (setf final-val value))
 	(setf final-val value))
-    
+   
     (if final-val
 	(if  (apply type-test (list final-val))
 	     (setf (getx item name) final-val)

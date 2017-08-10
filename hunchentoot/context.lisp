@@ -559,6 +559,31 @@
 	(cl-who:str (render-page t (render-grid 
 				    ,(digx context-spec :collection))))))))
 
+(defmethod setup-context-report ((module item) (context-spec item)
+				 (system hunch-system)  
+				 &key &allow-other-keys)
+  (eval
+   `(hunchentoot:define-easy-handler 
+	(,(alexandria:symbolicate 
+	   (string-upcase (id-string (digx context-spec :name))) 
+	   '-page)  
+	  :uri ,(if (digx context-spec :url)
+		    (digx context-spec :url)
+		    (frmt "~A~A/~A" (site-url system) 
+			  (string-downcase 
+			   (id-string (digx module :module-short)))
+			  (string-downcase 
+			   (id-string (digx context-spec :name)))))  
+	  :allow-other-keys t) ,(digx context-spec :args)
+      
+      
+      (check-user-access)
+      (with-html-string
+	  "<!itemtype html>"
+	  (cl-who:str (render-page t (render-report
+				      :html 
+				      ,(digx context-spec :report))))))))
+
 (defmethod setup-context-login ((module item) (context-spec item)
 				(system hunch-system)
 				&key &allow-other-keys)  

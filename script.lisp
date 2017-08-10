@@ -30,7 +30,7 @@
 			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t)))
-     :destinations (:core :license)))
+     :destinations (:core :system :license)))
    
    (:collection
       (:name "scripts"
