@@ -283,21 +283,22 @@
 
 (defun context-access-p (context)
   (let ((access-p))
-   
-    (dolist (permission
-	      (getx (license-user
-		     (first
-		      (digx
-		       (active-user)
-		       :selected-licenses)))
-		    :permissions))
-      
-      (when (or (getx (current-user) :super-user-p)
-		(equalp context
-			(digx permission
-			      :context)))
-	(setf access-p t)
-	))
+
+    (when (active-user)
+      (dolist (permission
+		(getx (license-user
+		       (first
+			(digx
+			 (active-user)
+			 :selected-licenses)))
+		      :permissions))
+	
+	(when (or (getx (current-user) :super-user-p)
+		  (equalp context
+			  (digx permission
+				:context)))
+	  (setf access-p t)
+	  )))
     access-p))
 
 (defun render-page (menu-p body)
@@ -374,26 +375,28 @@
 	      (:div
 	       :class "collapse navbar-collapse" :id "menushit"
 	       (:span :class "navbar-text mr-auto"
+		      
 		      (cl-who:str
 		       (frmt
 			"Entities: ~A"
-			(let ((entities))
-			  (dolist (license-code (digx (active-user)
-						      :selected-licenses))
-			    
-			    (dolist (entity (digx (license-user license-code)
-						  :accessible-entities))
-			      (dolist (selected (getx (active-user)
-						      :selected-entities))
-				(when (equalp (item-hash entity)
-					      selected)
-				  (if (not entities)
-				      (setf entities (getx entity :name))
-				      (setf entities
-					    (frmt "~A|~A"
-						  entities
-						  (getx entity :name) )))))))
-			  entities))))
+			(when (active-user)
+			  (let ((entities))
+			    (dolist (license-code (digx (active-user)
+							:selected-licenses))
+			      
+			      (dolist (entity (digx (license-user license-code)
+						    :accessible-entities))
+				(dolist (selected (getx (active-user)
+							:selected-entities))
+				  (when (equalp (item-hash entity)
+						selected)
+				    (if (not entities)
+					(setf entities (getx entity :name))
+					(setf entities
+					      (frmt "~A|~A"
+						    entities
+						    (getx entity :name) )))))))
+			    entities)))))
 		    
 	       (:div :class "nav-item dropdown"
 			  
