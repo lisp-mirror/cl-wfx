@@ -776,32 +776,46 @@
     (reverse header-fields)))
 
 (defun render-filter-row (data-type fields sub-p subs)
-  (with-html-string
-    (:div :class "collapse" :id "collapseFilter"
-	  (:div :class "row"	
-		(when subs
-		  (cl-who:htm
-		   (:div :class "col-sm-1"
-			 " ")))
-		
-		(dolist (half (rough-half-list (get-header-fields fields) 7))
-		  (cl-who:htm
-		   (:div :class "col"
-			 (:div :class "row no-gutters"
-			       (dolist (field half)
-				 (let* ((name (getf field :name)))
-				   
-				   (cl-who:htm
-				    (:div :class "col"
-					  (cl-who:str
-					   (render-grid-col-filter 
-					    data-type name))))))))))
-		(if sub-p
-		    (cl-who:htm	      
-		     (:div :class "col-sm-2"))
-		    (cl-who:htm	      
-		     (:div :class "col-sm-2"
-			   (cl-who:str (render-grid-search data-type)))))))))
+  (let* ((search-term (or (parameter "search") 
+			  (getcx 
+			   data-type :search)))
+	 (search-p (not (empty-p search-term)))
+	 (filter-p (or (getcx data-type :filter)
+		       (getcx data-type :filter-fields))))
+ ;   (break "~A" (or search-p filter-p))
+    (with-html-string
+      (:div :class (if (or search-p filter-p)
+		       "collapse show"
+		       "collapse")
+	    :aria-expanded (if (or search-p filter-p)
+			       "true"
+			       "false")
+	    :id "collapseFilter"
+	    
+	    (:div :class "row"	
+			     (when subs
+			       (cl-who:htm
+				(:div :class "col-sm-1"
+				      " ")))
+			     
+			     (dolist (half (rough-half-list (get-header-fields fields) 7))
+			       (cl-who:htm
+				(:div :class "col"
+				      (:div :class "row no-gutters"
+					    (dolist (field half)
+					      (let* ((name (getf field :name)))
+						
+						(cl-who:htm
+						 (:div :class "col"
+						       (cl-who:str
+							(render-grid-col-filter 
+							 data-type name))))))))))
+			     (if sub-p
+				 (cl-who:htm	      
+				  (:div :class "col-sm-2"))
+				 (cl-who:htm	      
+				  (:div :class "col-sm-2"
+					(cl-who:str (render-grid-search data-type))))))))))
 
 (defun render-header-row (data-type fields sub-p subs)
   (with-html-string
@@ -1380,6 +1394,7 @@
 		(when (search search-term 
 			      val
 			      :test #'string-equal)
+		  
 		  (unless found		       				     
 		    (setf found t)))))))
       (when found
@@ -1400,22 +1415,26 @@
      
      (when (or search-p filter-p (getcx data-type :filter-fields))
        
-       (if (getcx 
-	   data-type 
-	   :filter-fields)
+       (when (getcx 
+	      data-type 
+	      :filter-fields)
 	  
 	  (setf items
 		(grid-fetch-items data-type collection-name
 				  :test (filter-function data-type)))
-	  (setf items
-		(grid-fetch-items data-type collection-name
-				  :test (search-function
-					 data-type search-term))))
-      (when items
-	(setf items
-	      (find-in-item-list
-	       items
-	       (search-function data-type search-term)))))
+	  (when items
+	    (setf items
+		  (find-items-in-item-list
+		   items
+		   (search-function data-type search-term)))))
+       (unless (getcx 
+		data-type 
+		:filter-fields)
+	 
+	   (setf items
+		 (grid-fetch-items data-type collection-name
+				   :test (search-function
+					  data-type search-term)))))
     
      (fetch-grid-page-data data-type (if (listp items)
 					 items

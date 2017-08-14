@@ -93,6 +93,12 @@
 	       (return-from find-in-item-list item)))
        list))
 
+(defun find-items-in-item-list (list test)
+  (remove-if #'not  (map 'list
+			 (lambda (item)
+			   (apply test (list item)))
+			 list)))
+
 (defun core-store ()
   
   (cl-naive-store::get-store* (universe *system*) "core"))

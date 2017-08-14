@@ -281,6 +281,25 @@
       ;;(persist-item (core-collection "active-users") (active-user))
       )))
 
+(defun context-access-p (context)
+  (let ((access-p))
+   
+    (dolist (permission
+	      (getx (license-user
+		     (first
+		      (digx
+		       (active-user)
+		       :selected-licenses)))
+		    :permissions))
+      
+      (when (or (getx (current-user) :super-user-p)
+		(equalp context
+			(digx permission
+			      :context)))
+	(setf access-p t)
+	))
+    access-p))
+
 (defun render-page (menu-p body)
   
   (with-html-string
@@ -355,10 +374,26 @@
 	      (:div
 	       :class "collapse navbar-collapse" :id "menushit"
 	       (:span :class "navbar-text mr-auto"
-		      (cl-who:str (frmt "Entities: ~A"
-					
-					(digx (active-user)
-					      :selected-entities))))
+		      (cl-who:str
+		       (frmt
+			"Entities: ~A"
+			(let ((entities))
+			  (dolist (license-code (digx (active-user)
+						      :selected-licenses))
+			    
+			    (dolist (entity (digx (license-user license-code)
+						  :accessible-entities))
+			      (dolist (selected (getx (active-user)
+						      :selected-entities))
+				(when (equalp (item-hash entity)
+					      selected)
+				  (if (not entities)
+				      (setf entities (getx entity :name))
+				      (setf entities
+					    (frmt "~A|~A"
+						  entities
+						  (getx entity :name) )))))))
+			  entities))))
 		    
 	       (:div :class "nav-item dropdown"
 			  
@@ -399,22 +434,25 @@
 					     (frmt "~A=~A" 
 						   (digx param :name)
 						   (digx param :value)))))
-				      
-				 (cl-who:htm
-				  
-				  (:a :class "dropdown-item"
-				      :href 
-				      (if parameters
-					  (frmt "~A?~A" 
-						(context-url 
-						 (digx item :context-spec)
-						 sys-mod)
-						parameters)
-					  (context-url 
-					   (digx item :context-spec)
-					   sys-mod))
-				      
-				      (cl-who:str (digx item :name)))))))))))
+				 (when (or (equalp (digx item :name) "Logout")
+					(context-access-p
+					 (digx item :context-spec)))
+				   
+				   (cl-who:htm
+				    
+				    (:a :class "dropdown-item"
+					:href 
+					(if parameters
+					    (frmt "~A?~A" 
+						  (context-url 
+						   (digx item :context-spec)
+						   sys-mod)
+						  parameters)
+					    (context-url 
+					     (digx item :context-spec)
+					     sys-mod))
+					
+					(cl-who:str (digx item :name))))))))))))
 	     (:nav :class "navbar"
 		   (if (current-user)
 		       (cl-who:htm 
@@ -449,19 +487,17 @@
 		     :id "exNavbarLeft"
 		     (:nav :class "nav nav-pills flex-column"
 			   (dolist (mod (user-mods))
-;;			     (break "user-mods ~A" mod)
 			     (dolist (menu (digx mod :menu))
-
 			       (dolist (item (digx menu :menu-items))
-			
-				 (cl-who:htm
-				  
-				  (:a :class 
-				      "nav-link ~A"
-				      :href (context-url
-					     (digx item :context-spec)
-					     mod)
-				      (cl-who:str (digx item :name)))))))))
+				 (when (context-access-p
+					(digx item :context-spec))
+				   (cl-who:htm
+				      (:a :class 
+					  "nav-link ~A"
+					  :href (context-url
+						 (digx item :context-spec)
+						 mod)
+					  (cl-who:str (digx item :name))))))))))
 			 
 		    (:div  :class "col" :id "grid-table"
 			   (cl-who:str body))
