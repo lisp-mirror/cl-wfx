@@ -5,7 +5,8 @@
       (hunchentoot:get-parameter parameter (request-object request))))
 
 (defmethod bad-request ((request hunch-request))
-  (setf (hunchentoot:return-code hunchentoot:*reply*) hunchentoot:+http-bad-request+)
+  (setf (hunchentoot:return-code hunchentoot:*reply*)
+	hunchentoot:+http-bad-request+)
   (hunchentoot:abort-request-handler))
 
 
@@ -26,6 +27,7 @@
 	   (context (fourth split)))
       (declare (ignore sys))
       ;;  (break "~A" mod)
+
       (unless (equalp mod "web")
 	(when (get-store-from-short-mod mod)
 	  
@@ -89,6 +91,10 @@
 	(search ".png" script-name)
 	(search ".gif" script-name)
 	(search ".ico" script-name)
+	(search ".woff" script-name)
+	(search ".woff2" script-name)
+	(search ".ttf" script-name)
+	(search ".svg" script-name)
 	(search "get-meters" script-name)
 	))
   )
