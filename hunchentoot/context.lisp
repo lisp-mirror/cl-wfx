@@ -89,6 +89,7 @@
 
   ;;  (log-login "Login" (email login) "Passed" "Login passed.")
 
+  ;;TODO: Handle default page other than cor pages....
   (hunchentoot:redirect (context-url nil *module*)))
 
 (defmethod on-failure ()
@@ -284,7 +285,8 @@
 (defun context-access-p (context)
   (let ((access-p))
 
-    (when (active-user)
+    (when (and (active-user) (digx (active-user) :selected-licenses))
+ 
       (dolist (permission
 		(getx (license-user
 		       (first

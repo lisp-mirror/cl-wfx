@@ -1654,75 +1654,76 @@
 
 
 (defun render-grid (collection-name)
-  (let* ((collection (if (not (gethash :collection-name (cache *context*)))
-			 (find-collection-def *system*   
-					      collection-name)))
-	 (data-type (or (gethash :data-type (cache *context*))
-			(and collection
-			     (dig collection :collection :data-type)))))   
+  (when (context-access-p (context-spec *context*))
+      (let* ((collection (if (not (gethash :collection-name (cache *context*)))
+			     (find-collection-def *system*   
+						  collection-name)))
+	     (data-type (or (gethash :data-type (cache *context*))
+			    (and collection
+				 (dig collection :collection :data-type)))))   
 
-    (set-grid-context collection-name data-type)
+	(set-grid-context collection-name data-type)
 
-    (set-type-context data-type)
+	(set-type-context data-type)
 
-    (set-type-context (parameter "data-type"))
-    
-    (set-grid-filter data-type)
-    
-    (set-grid-expand)
-    
-    (let ((page-items (fetch-grid-data data-type)))
-      
-      ;;(campaign-shit page-items)
-      
-      (with-html-string  
-	(:div :id (gethash :collection-name (cache *context*))
-	      :class "card"
-	      (:h4 :class "card-title"
-		   (cl-who:str collection-name)
-		   (:button
-		    :class "btn btn-small btn-outline-secondary float-right"
-		    :name "filter-grid" 
-		    
-		    :data-toggle "collapse" :href "#collapseFilter" 
-		    :aria-expanded "false" :aria-controls="collapseFilter"
-		    :aria-pressed "false"
-		    (:i :class "fa fa-filter "))
-		   
+	(set-type-context (parameter "data-type"))
+	
+	(set-grid-filter data-type)
+	
+	(set-grid-expand)
+	
+	(let ((page-items (fetch-grid-data data-type)))
+	  
+	  ;;(campaign-shit page-items)
+	  
+	  (with-html-string  
+	    (:div :id (gethash :collection-name (cache *context*))
+		  :class "card"
+		  (:h4 :class "card-title"
+		       (cl-who:str collection-name)
+		       (:button
+			:class "btn btn-small btn-outline-secondary float-right"
+			:name "filter-grid" 
+			
+			:data-toggle "collapse" :href "#collapseFilter" 
+			:aria-expanded "false" :aria-controls="collapseFilter"
+			:aria-pressed "false"
+			(:i :class "fa fa-filter "))
+		       
 
-		   (:button
-		    :class "btn btn-small btn-outline-secondary float-right"
-		    :name "export" 
-		    :type "submit" 
-		    
-		    :aria-pressed "false"
-		    :onclick 
-		    (grid-js-render data-type
-				    :action "export")
-		    (:i :class "fa fa-download")))
-	      (:div :class "card-header"
-		    (cl-who:str
-		     (render-grid-header data-type nil)))
-	      (:div :class "card-block"
-		    :id data-type
-		    (cl-who:str
-		     (render-grid-data data-type page-items 0 nil nil)))
-	      
-	      (:div :class "card-footer"
-		    (:div :class "row"	  
-			  (:div :class "col"
-				(:button 
-				 :name "expand" :type "submit" 
-				 :class "btn btn-outline-success"
-				 :aria-pressed "false"
-				 :onclick 
-				 (grid-js-render data-type :action "new")
-				 (cl-who:str "+"))
-				(cl-who:str
-				 (render-select-actions
-				  data-type))
-				(cl-who:str
-				 (render-grid-paging data-type))))))))))
+		       (:button
+			:class "btn btn-small btn-outline-secondary float-right"
+			:name "export" 
+			:type "submit" 
+			
+			:aria-pressed "false"
+			:onclick 
+			(grid-js-render data-type
+					:action "export")
+			(:i :class "fa fa-download")))
+		  (:div :class "card-header"
+			(cl-who:str
+			 (render-grid-header data-type nil)))
+		  (:div :class "card-block"
+			:id data-type
+			(cl-who:str
+			 (render-grid-data data-type page-items 0 nil nil)))
+		  
+		  (:div :class "card-footer"
+			(:div :class "row"	  
+			      (:div :class "col"
+				    (:button 
+				     :name "expand" :type "submit" 
+				     :class "btn btn-outline-success"
+				     :aria-pressed "false"
+				     :onclick 
+				     (grid-js-render data-type :action "new")
+				     (cl-who:str "+"))
+				    (cl-who:str
+				     (render-select-actions
+				      data-type))
+				    (cl-who:str
+				     (render-grid-paging data-type)))))))))))
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
