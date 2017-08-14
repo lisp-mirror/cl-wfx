@@ -286,8 +286,14 @@
   (with-html-string
       (:html
        (:head
-	"<link rel=\"stylesheet\"
-	href=\"../web/font-awesome-4.7.0/css/font-awesome.min.css\">"
+
+	(cl-who:str
+	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/font-awesome-4.7.0/css/font-awesome.min.css\">
+" (site-url *system*)))
+
+	
+
+	
 	
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
 	
@@ -318,8 +324,7 @@
 
 	(cl-who:str
 	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/cl-wfx.css\">
-" (site-url *system*)))
-	
+" (site-url *system*)))	
 	"<link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
  <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
 ")
