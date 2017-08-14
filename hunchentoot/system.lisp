@@ -84,7 +84,6 @@ because hunchentoot does not have vhosts by default.")
                             (lambda () (ajax-call-lisp-function system processor))))
 
 
-
 (defmethod start-sys ((system system) &key &allow-other-keys)
   (assert-ends-with-/ (site-url system))
     
@@ -97,12 +96,10 @@ because hunchentoot does not have vhosts by default.")
 	 (ajax-prefix-dispatcher
 	  (create-ajax-dispatcher system ajax-processor))
 	 
-	#|
+
 	 (image-processor (hunchentoot:create-prefix-dispatcher 
 			   (frmt "~Aimages" (site-url system))
 			   #'%image-processor))
-	 
-	 |#
 	
 	 
 	 (file-dispatcher-sys-web
@@ -124,7 +121,7 @@ because hunchentoot does not have vhosts by default.")
    
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
-   ;; (pushnew image-processor hunchentoot:*dispatch-table*)
+    (pushnew image-processor hunchentoot:*dispatch-table*)
     (pushnew file-dispatcher-web hunchentoot:*dispatch-table*)
     (pushnew file-dispatcher-sys-web hunchentoot:*dispatch-table*)
       

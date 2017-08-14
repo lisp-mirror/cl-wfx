@@ -143,6 +143,10 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql :image)) field item
+			   &key &allow-other-keys)
+  (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql :email)) field item
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
@@ -280,25 +284,42 @@
 			       field 
 			       item)))))))
 
-(defmethod render-input-val ((type (eql :symbol)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :symbol)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :keyword)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :keyword)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :string)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :string)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :email)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :image)) field item
+			     &key &allow-other-keys)
+
+  (with-html-string
+    (:div :class "row"
+	  (:div :class "col"
+		(:img :src "/umage/cor/web/images/logo-small.png"))
+	  (:div :class "col"
+		(cl-who:str (render-input-val* type field item))))))
+
+(defmethod render-input-val ((type (eql :email)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :number)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :number)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :integer)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :integer)) field item
+			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :date)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :date)) field item
+			     &key &allow-other-keys)
   (let ((name (getf field :name)))
     (if (not (digx field :attributes :editable))
 	(with-html-string
@@ -323,7 +344,8 @@
 			       field 
 			       item)))))))
 
-(defmethod render-input-val ((type (eql :boolean)) field item &key &allow-other-keys)
+(defmethod render-input-val ((type (eql :boolean)) field item
+			     &key &allow-other-keys)
   (let ((name (getf field :name))
 	(print-val (getsfx type field item)))
     
@@ -496,7 +518,8 @@
 					(list accessors))))))))))))
 
 (defun grid-js-render-form-values (data-type form-id 
-				   &key action action-script action-data item-id )
+				   &key action action-script
+				     action-data item-id )
   (let ((active-page (getcx 
 		      data-type :active-page)))
     (js-render-form-values 
@@ -514,7 +537,7 @@
      (js-pair "item-id" (frmt "~A" (or item-id (getcx data-type :item-id)
 				       "")))
      (js-pair "pages"
-	      (or (parameter "pages") 10))
+	      (or (parameter "pages") 50))
      (js-pair "page"
 	      (or active-page 1)))))
 
@@ -530,7 +553,7 @@
 	       (js-pair "item-id" (frmt "~A" (or item-id "")))
 
 	       (js-pair "pages"
-			(or (parameter "pages") 10))
+			(or (parameter "pages") 50))
 	       (js-pair "page"
 			(or active-page 1)))))
 
@@ -914,8 +937,9 @@
 				      :action "select-action"
 				      :action-data (frmt "~A"
 							   (item-hash option))
-				      :action-script (id-string
-						      (digx script :script :name)))
+				      :action-script
+				      (id-string
+				       (digx script :script :name)))
 				     (:input :id "select-action-valuex"
 					     :id "select-action-valuex"
 					     :type "hidden"
@@ -997,14 +1021,18 @@
 	      (unless sub-level-p
 		(setf (getcx data-type :root-item) item))
 
+	 
 	      ;;Stop openning the same edit window more than once
 	      ;;hierarchical grid children
 	      (when (or (and (getcx data-type :validation-errors)
 			     (getcx data-type :edit-item))
-			(not (getcx data-type :edit-item)))
+			(and (parameter "item-id")
+			    ;; (not (getcx data-type :edit-item))
+			     ))
 		(cl-who:str
 			 (render-grid-edit data-type fields
-					   (or (getcx data-type :edit-item) item )
+					   (or (getcx data-type :edit-item)
+					       item )
 					   parent-item parent-spec))))
 	    
 	    (when (equalp (ensure-parse-integer
@@ -1143,7 +1171,14 @@
 		      
 			   :data-type data-type)))
 
-		(unless sub-level-p
+
+	;;	(break "~A" (getcx data-type :root-item))
+		
+		;;sub-level-p is checked on type but if the object has children
+		;;of its own type then we need to check if a root item is not
+		;;set already
+		(when (and (not sub-level-p)
+			   (not (getcx data-type :root-item)))
 		  (setf (getcx data-type :root-item) item))
 	    
 		(cl-who:str
@@ -1163,7 +1198,7 @@
 	    :value (or  (parameter "pages")
 			(getcx 
 			 data-type :show-pages-count)
-			10)
+			50)
 	    :onkeydown
 	    ;;fires ajax call on enter (13)
 	    (js-render-event-key 
@@ -1205,7 +1240,7 @@
 	    (parse-integer (parameter "pages"))
 	    (or (getcx 
 		 data-type :show-pages-count)
-		10)))
+		50)))
   
   (setf (getcx data-type :active-page)
 	(if (not (empty-p (parameter "page")))
@@ -1411,7 +1446,7 @@
 			     (js-pair "data-type"
 				      (frmt "~A" data-type))
 			     (js-pair "pages"
-				      (or (parameter "pages") 10))
+				      (or (parameter "pages") 50))
 			     (js-pair "page"
 				      (if (> active-page 1)
 					  (- active-page 1)))
@@ -1437,7 +1472,7 @@
 				  (js-pair "data-type"
 					   (frmt "~A" data-type))
 				  (js-pair "pages"
-					   (or (parameter "pages") 10))
+					   (or (parameter "pages") 50))
 				  (js-pair "page"
 					   (+ i 1))				 
 				  (js-pair "action" "page"))
@@ -1457,7 +1492,7 @@
 				(js-pair "data-type"
 					 (frmt "~A" data-type))
 				(js-pair "pages"
-					 (or (parameter "pages") 10))
+					 (or (parameter "pages") 50))
 				(js-pair "page"
 					 (if (< active-page real-page-count)
 					     (+ active-page 1)))
@@ -1725,6 +1760,7 @@
 	  (setf (getcx data-type :validation-errors-id)
 		(item-hash item)))
 
+	
 	(unless (getcx data-type :validation-errors)
 	  
 	  ;;Append parent-slot only if new
@@ -1735,6 +1771,7 @@
 			  (list item))))
 
 
+;;	  (break "~A ~A" item parent-item)
 	  (when (getcx data-type :collection-name)
 	    (setf (item-collection  item)
 		  (get-collection
@@ -1747,14 +1784,16 @@
 			     (gethash :collection-name (cache *context*)))))
 	    
 	    (unless collection
+	   ;;   (break "???")
 	      (pushnew 
 	       "No default store found check if license is selected."
 	       (getcx data-type :validation-errors))
 	    
 	      (setf (getcx data-type :validation-errors-id)
 		    (item-hash item)))
-	    
+	 ;;   (break "~A" collection)
 	    (when collection
+	     ;; (break "poes ~A" (getcx (gethash :data-type (cache *context*)) :root-item))
 	      (persist-item
 	       collection
 	       (getcx (gethash :data-type (cache *context*)) :root-item))

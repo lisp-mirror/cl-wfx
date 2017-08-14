@@ -25,19 +25,20 @@
 	   (mod (third split))
 	   (context (fourth split)))
       (declare (ignore sys))
-    ;;  (break "~A" mod)
-      (when (get-store-from-short-mod mod)
+      ;;  (break "~A" mod)
+      (unless (equalp mod "web")
+	(when (get-store-from-short-mod mod)
+	  
+	  (setf sys-mod (get-module-short (get-store-from-short-mod mod) mod)))
 	
-	(setf sys-mod (get-module-short (get-store-from-short-mod mod) mod)))
- 
-      
-      (unless sys-mod
-	(warn (frmt "No mod for request ? ~A ~A" mod (core-store)))
-	(setf sys-mod (get-module-short (core-store) "cor")))
-      
-      (start-context sys-mod *session* context
-		     :id (or (parameter "i") (parameter "contextid"))
-		     :request request))))
+	
+	(unless sys-mod
+	  (warn (frmt "No mod for request ? ~A ~A" mod (core-store)))
+	  (setf sys-mod (get-module-short (core-store) "cor")))
+	
+	(start-context sys-mod *session* context
+		       :id (or (parameter "i") (parameter "contextid"))
+		       :request request)))))
 
 (defgeneric action-handler (action context request
 				&key &allow-other-keys))
@@ -46,6 +47,7 @@
 				(request hunch-request)
 				&key &allow-other-keys)
 
+ ;; (break "wtf")
  ;; (break "~A" (hunchentoot:post-parameters*))
     ;;TODO:: How to register actions? Contexs spec permissions?
     (if (find (parameter "action") 
@@ -87,19 +89,21 @@
 	(search ".png" script-name)
 	(search ".gif" script-name)
 	(search ".ico" script-name)
+	(search "get-meters" script-name)
 	))
   )
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
   (with-debugging
-    ;;(break "~A" (hunchentoot:post-parameters*))
+
     (let ((*request* (make-instance 'hunch-request :request-object request))
 	  (*system* acceptor)
-	 
 	  (dont (dont-process request)))
+      
       (hunchentoot:start-session)
-      (if (not dont)
-           
+
+      
+      (if (not dont)           
 	  (let* ((*session* (start-session acceptor))
 		 (*context* (request-context *request*))
 		 ;;TODO: is this the right way to get module
