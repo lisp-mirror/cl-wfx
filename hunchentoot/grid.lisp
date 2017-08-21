@@ -219,7 +219,17 @@
 
 (defmethod print-item-val ((type (eql :contained-item)) field item
 			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+  (let ((item-val (getfx item field))
+	(accessor (dig field :db-type :accessor)))
+    
+    (when (or (listp item-val) (equalp (type-of item-val) 'item))
+       (when item-val
+	(frmt "~A"
+	      (if (listp accessor)
+		  (apply #'digx item-val accessor)
+		  (getx
+		    item-val		    
+		    (dig field :db-type :accessor))))))))
 
 (defmethod print-item-val ((type (eql :collection-contained-item)) 
 			   field item &key &allow-other-keys)
@@ -486,6 +496,43 @@
   (let* ((name (getf field :name))
 	 (list (grid-fetch-items (dig field :db-type :data-type)
 				 (dig field :db-type :collection)))
+	 (selected (find (getx item name)  
+			 list :test #'equalp))
+	 (accessors (dig field :db-type :accessor)))
+
+    (with-html-string
+      (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value "")
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (if selected
+			 (cl-who:str (apply #'digx
+					    selected
+					    (if (listp accessors)
+						accessors
+						(list accessors))))))
+	    
+	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+		  (dolist (option list)
+		    (cl-who:htm
+		     (:span :class "dropdown-item" 			      
+			    (:input :type "hidden"
+				    :value (frmt "~A" (item-hash option)))
+			    (cl-who:str
+			     (apply #'digx option
+				    (if (listp accessors)
+					accessors
+					(list accessors))))))))))))
+
+(defmethod render-input-val ((type (eql :contained-item)) field item 
+			     &key parent-item &allow-other-keys)
+
+  (let* ((name (getf field :name))
+	 (list (apply #'digx parent-item
+		      (digx field :db-type :container-accessor)))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
@@ -1753,7 +1800,8 @@
 	  (when (and (digx field :attributes :editable)
 		     (getf field :db-type)
 		     (not (find (complex-type field)
-				(list :collection-items :list-items
+				(list :collection-items
+				      :list-items
 				      :hierarchical))))
 	   
 	    (let* ((field-name (frmt "~A" (getf field :name)))
@@ -1769,11 +1817,12 @@
 		 (list field-name (second valid))
 		 (getcx data-type :validation-errors)))
 	      
-	      (when (first valid)	
-		(setf (getfx item field)
+	      (when (first valid)
+	;;	(break "shit ~A~%~A" field parent-item)
+		(setf (getfx item field :parent-item parent-item)
 		      (parameter field-name))))))
 	
-	
+;;	(break "hunh???")
 	;;TODO: is this still needed????
 	;;Doing this to keep edit window open.
 	(when (getcx data-type :validation-errors)

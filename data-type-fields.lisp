@@ -83,27 +83,28 @@
     ))
 
 
-(defgeneric getfx (item field &key &allow-other-keys))
+(defgeneric getfx (item field &key parent-item &allow-other-keys))
 
-(defmethod getfx ((item item) field &key &allow-other-keys)
+(defmethod getfx ((item item) field &key parent-item &allow-other-keys)
   (let ((db-type (if (listp (getf field :db-type))
 		     (or (getf (getf field :db-type) :complex-type)
 			 (getf (getf field :db-type) :type))
 		     (getf field :db-type))))
-    (getsfx db-type field item)))
+    (getsfx db-type field item :parent-item parent-item)))
 
-(defmethod (setf getfx) (value (item item) field &key &allow-other-keys)
+(defmethod (setf getfx) (value (item item) field
+			 &key parent-item &allow-other-keys)
   (let ((db-type (if (listp (getf field :db-type))
 		     (or (getf (getf field :db-type) :complex-type)
 			 (getf (getf field :db-type) :type))
 		     (getf field :db-type))))
-    (setf (getsfx db-type field item) value)))
+    (setf (getsfx db-type field item :parent-item parent-item) value)))
 
 (defun getsfx* (field item)
   (let* ((name (getf field :name)))
     (getx item name)))
 
-(defgeneric getsfx (type field item &key &allow-other-keys))
+(defgeneric getsfx (type field item &key parent-item &allow-other-keys))
 
 (defmethod getsfx ((type (eql :symbol)) field item &key &allow-other-keys)
    (getsfx* field item))
@@ -159,7 +160,8 @@
 (defmethod getsfx ((type (eql :hierarchical)) field item &key &allow-other-keys)
    (getsfx* field item))
 
-(defmethod getsfx ((type (eql :contained-item)) field item &key &allow-other-keys)
+(defmethod getsfx ((type (eql :contained-item)) field item &key parent-item &allow-other-keys)
+  (declare (ignore parent-item))
    (getsfx* field item))
 
 (defmethod getsfx ((type (eql :collection-contained-item)) field item &key &allow-other-keys)
@@ -186,7 +188,7 @@
 		(setf final-val (read-from-string value)))
 	    (setf final-val value))
 	(setf final-val value))
-   
+   (break "?? ~A" (apply type-test (list final-val)))
     (if final-val
 	(if  (apply type-test (list final-val))
 	     (setf (getx item name) final-val)
@@ -194,13 +196,15 @@
 	(setf (getx item name) final-val))))
 
 
-(defgeneric validate-sfx (type field item value &key &allow-other-keys))
+(defgeneric validate-sfx (type field item value &key parent-item &allow-other-keys))
 
-(defmethod validate-sfx (type field item value &key &allow-other-keys)
+(defmethod validate-sfx (type field item value &key parent-item &allow-other-keys)
+  (declare (ignore parent-item))
   (values t nil))
 
 (defmethod (setf getsfx) :around (value type field item   
-				  &key &allow-other-keys)
+				  &key parent-item &allow-other-keys)
+  (declare (ignore parent-item))
   (when (validate-sfx type field item value)
     (call-next-method)))
 
@@ -378,9 +382,36 @@
   (setsfx-read* field item value #'listp "~R is not a list!"))
 
 
+(defun item-p (item)
+  (equalp (type-of item) 'item))
+
+
+(defun find-contained-item (hash list)
+  (dolist (item list)
+    
+    (when (equalp (item-hash item) (ensure-parse-integer hash))
+     
+      (return-from find-contained-item item)
+      )))
+
 (defmethod (setf getsfx) (value (type (eql :contained-item)) field item   
-			 &key &allow-other-keys)
-  (setsfx-read* field item value #'listp "~R is not a list!"))
+			 &key parent-item &allow-other-keys)
+  (let ((name (getf field :name))
+	(final-val)
+	(list (apply #'digx parent-item
+		     (digx field :db-type :container-accessor))))
+    
+    (if (not (empty-p value))
+
+	(if (stringp value)
+	    (setf final-val (find-contained-item value
+						 list ))
+	    (if (equalp (type-of value) 'item)
+		(setf final-val value)
+		(error (frmt "~S is not of type ~A!" value
+			   (dig field :db-type :data-spec))))))
+
+    (setf (getx item name) final-val)))
 
 
 (defmethod (setf getsfx) (value (type (eql :collection-containde-item)) field item   
