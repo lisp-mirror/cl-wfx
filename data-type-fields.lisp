@@ -223,6 +223,10 @@
 			  &key &allow-other-keys)
   (setf (getx item (getf field :name)) (frmt "~A" value)))
 
+(defmethod (setf getsfx) (value (type (eql :text)) field item
+			  &key &allow-other-keys)
+  (setf (getx item (getf field :name)) (frmt "~A" value)))
+
 (defmethod (setf getsfx) (value (type (eql :image)) field item
 			  &key &allow-other-keys)
   (setf (getx item (getf field :name)) (frmt "~A" value)))
@@ -349,7 +353,8 @@
 			 &key &allow-other-keys)
   (let* ((list (dig field :db-type :values))
 	 (*read-eval* nil)
-	 (valid (find (if (not (equalp (dig field :db-type :type) :string))
+	 (valid (find (if (not (or (equalp (dig field :db-type :type) :string)
+				   (equalp (dig field :db-type :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
 			  value)
@@ -364,7 +369,8 @@
   (let* ((name (getf field :name))
 	 (list (dig field :db-type :values))
 	 (*read-eval* nil)
-	 (val (find (if (not (equalp (dig field :db-type :type) :string))
+	 (val (find (if (not (or (equalp (dig field :db-type :type) :string)
+				   (equalp (dig field :db-type :type) :text)))
 			  (if (and value (not (empty-p value)))
 			      (read-from-string value))
 			  value)
