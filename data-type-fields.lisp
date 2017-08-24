@@ -194,7 +194,7 @@
 		(setf final-val (read-from-string value)))
 	    (setf final-val value))
 	(setf final-val value))
-   (break "?? ~A" (apply type-test (list final-val)))
+ 
     (if final-val
 	(if  (apply type-test (list final-val))
 	     (setf (getx item name) final-val)
