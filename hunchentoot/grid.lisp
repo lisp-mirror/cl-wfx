@@ -167,6 +167,10 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql :time)) field item
+			   &key &allow-other-keys)
+  (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql :boolean)) field item
 			   &key &allow-other-keys)
   (if (getfx item field)
@@ -377,6 +381,32 @@
 		  :id name
 		  :name name 
 		  :type "date"	     
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item)))))))
+
+(defmethod render-input-val ((type (eql :time)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "time"	     
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item))
+		  :disabled "disabled"))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "time"	     
 		  :value
 		  (cl-who:str (print-item-val 
 			       type

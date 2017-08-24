@@ -130,6 +130,9 @@
 (defmethod getsfx ((type (eql :date)) field item &key &allow-other-keys)
   (getsfx* field item))
 
+(defmethod getsfx ((type (eql :time)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
 (defmethod getsfx ((type (eql :email)) field item &key &allow-other-keys)
   (getsfx* field item))
 
@@ -244,6 +247,10 @@
   (setsfx-read* field item value #'numberp "~R is not an integer!"))
 
 (defmethod (setf getsfx) (value (type (eql :date)) field item
+			 &key &allow-other-keys)
+  (set-getsfx* field item value))
+
+(defmethod (setf getsfx) (value (type (eql :time)) field item
 			 &key &allow-other-keys)
   (set-getsfx* field item value))
 
@@ -423,7 +430,8 @@
     (setf (getx item name) final-val)))
 
 
-(defmethod (setf getsfx) (value (type (eql :collection-containde-item)) field item   
+(defmethod (setf getsfx) (value (type (eql :collection-containde-item))
+			  field item   
 			 &key &allow-other-keys)
   (setsfx-read* field item value #'listp "~R is not a list!"))
 
