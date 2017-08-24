@@ -115,6 +115,9 @@
 (defmethod getsfx ((type (eql :string)) field item &key &allow-other-keys)
   (getsfx* field item))
 
+(defmethod getsfx ((type (eql :text)) field item &key &allow-other-keys)
+  (getsfx* field item))
+
 (defmethod getsfx ((type (eql :image)) field item &key &allow-other-keys)
   (getsfx* field item))
 

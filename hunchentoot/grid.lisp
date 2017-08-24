@@ -143,6 +143,10 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql :text)) field item
+			   &key &allow-other-keys)
+  (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
@@ -305,6 +309,31 @@
 (defmethod render-input-val ((type (eql :string)) field item
 			     &key &allow-other-keys)
   (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql :text)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   (cl-who:str
+	    (print-item-val 
+	     type
+	     field 
+	     item)))))))
 
 (defmethod render-input-val ((type (eql :image)) field item
 			     &key &allow-other-keys)
