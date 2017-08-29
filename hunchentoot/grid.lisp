@@ -1922,7 +1922,7 @@
 	  (when parent-slot
 	    (let ((exists (exist-child-item item
 					    (getx parent-item parent-slot))))
-	      
+	     
 	      (if exists
 		  (setf exists item)		  
 		  (setf (getx parent-item parent-slot)
@@ -1964,7 +1964,8 @@
 (defun exist-child-item (item children)
   (let ((exists nil))
     (dolist (child children)
-      (when (equalp (item-values item) (item-values item))
+      (when (equalp (item-values child) (item-values item))
+	
 	(setf exists child)))
     exists))
 
