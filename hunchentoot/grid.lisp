@@ -1893,10 +1893,14 @@
 	  
 	  ;;Append parent-slot only if new
 	  (when parent-slot
-	    
-	    (setf (getx parent-item parent-slot)
-		  (append (getx parent-item parent-slot)
-			  (list item))))
+	    (let ((exists (exist-child-item item
+					    (getx parent-item parent-slot))))
+	      
+	      (if exists
+		  (setf exists item)		  
+		  (setf (getx parent-item parent-slot)
+			(append (getx parent-item parent-slot)
+				(list item))))))
 
 
 ;;	  (break "~A ~A" item parent-item)
@@ -1930,6 +1934,12 @@
 	      (setf (getcx data-type :edit-item) nil)
 	      (setf (getcx data-type :item-id) nil))))))))
 
+(defun exist-child-item (item children)
+  (let ((exists nil))
+    (dolist (child children)
+      (when (equalp (item-values item) (item-values item))
+	(setf exists child)))
+    exists))
 
 (defun store-from-stash (store-name)
   (dolist (store (getcx (gethash :data-type (cache *context*)) :stores))
