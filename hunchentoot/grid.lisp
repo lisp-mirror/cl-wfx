@@ -1076,6 +1076,7 @@
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
 
+  
   (let ((sub-level-p (not (equalp data-type 
 				   (gethash :data-type (cache *context*))))))
     
@@ -1703,9 +1704,31 @@
 	(setf (gethash indicator (cache *context*)) value))))
 
 
+(defun set-grid-search (data-type)
+;;  (break "fuck ~A" (hunchentoot::post-parameters*))
+  (when (or (equalp (parameter "action") "filter")
+	    (equalp (parameter "action") "un-filter"))
+    
+    (when (equalp (parameter "action") "filter")
+      (if (empty-p (parameter "search"))
+	  (setf (getcx data-type :search)
+		(parameter "search"))))
+    
+    (when (equalp (parameter "action") "un-filter")
+      (setf (getcx data-type :search) nil)))
+
+  (unless (or (equalp (parameter "action") "filter")
+	      (equalp (parameter "action") "un-filter"))
+    (if (and (parameter "search") (not (empty-p (parameter "search"))))
+	(setf (getcx data-type :search) (parameter "search"))
+	(if (string-equal (parameter "search") "")
+	    (setf (getcx data-type :search) nil)))
+    )
+  )
+
 (defun set-grid-filter (data-type)
   (when (equalp (parameter "action") "filter")
-    (setf (getcx data-type :filter) t))
+    (setf (getcx data-type :filter) (param)))
   
   (when (equalp (parameter "action") "un-filter")
     (setf (getcx data-type :filter) nil))
@@ -1734,6 +1757,8 @@
     (setf (getcx data-type :fields) 
 	  (dig (getcx data-type :data-type) :data-type :fields))))
 
+
+
 (defun set-grid-context (collection-name data-type)
   (unless (gethash :collection-name (cache *context*))
 
@@ -1745,10 +1770,8 @@
     
     (unless (equalp (parameter "action") "save")
       (setf (getcx data-type :root-item) nil))
-    
-    (setf (getcx data-type :search)
-	  (or (parameter "search")
-	      (getcx data-type :search)))))
+
+    ))
 
 (defun set-grid-expand ()
   
@@ -1757,6 +1780,8 @@
   
   (when (equalp (parameter "action") "unexpand")    
     (setf (getcx (parameter "data-type") :expand-id) nil)))
+
+
 
 
 (defun render-grid (collection-name)
@@ -1773,6 +1798,8 @@
 	(set-type-context data-type)
 
 	(set-type-context (parameter "data-type"))
+
+	(set-grid-search data-type)
 	
 	(set-grid-filter data-type)
 	
