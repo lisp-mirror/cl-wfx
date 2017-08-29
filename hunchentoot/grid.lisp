@@ -1728,7 +1728,7 @@
 
 (defun set-grid-filter (data-type)
   (when (equalp (parameter "action") "filter")
-    (setf (getcx data-type :filter) (param)))
+    (setf (getcx data-type :filter) t))
   
   (when (equalp (parameter "action") "un-filter")
     (setf (getcx data-type :filter) nil))
