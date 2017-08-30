@@ -150,63 +150,9 @@
 
 
 
-(defun render-unit-selection ()
-  (let* ((list (wfx-fetch-items "units")))
-    (with-html-string
-      (:div
-       :class "row"
-       :id "unit-select":name "unit-select"
-       (:div :class "col"
-	     (:div :class "dropdown"
-		   (:input :type "hidden" :class "selected-value" 
-			   :name "unit" :value "")
-		   (:button :class "btn btn-secondary dropdown-toggle"
-			    :type "button"
-			    :data-toggle "dropdown"
-			    :aria-haspopup "true" :aria-expanded "false"
-			    "Select a unit to invoice")
-		   
-		   (:div :class "dropdown-menu" :aria-labelledby "wtf-unit"
-			 (dolist (option list)
-			   (cl-who:htm
-			    (:span :class "dropdown-item" 			      
-				   (:input :type "hidden"
-					   :value (frmt "~A" (item-hash option)))
-				   (cl-who:str (getx option :unit-code))))))))
-       (:div :class "col"
-	(:input :class "form-control"
-		:id "start"
-		:name "start" 
-		:type "date"	     
-		:value (cl-who:str
-			(or
-			 (parameter "start")
-			 (cl-wfx::format-date (get-universal-time))))))
-       (:div :class "col"
-	(:input :class "form-control"
-		:id "end"
-		:name "end" 
-		:type "date"	     
-		:value (cl-who:str
-			(or
-			 (parameter "end")
-			 (cl-wfx::format-date (get-universal-time))))))
-       (:div :class "col"
-	     (:button
-	      :name "save" 				   
-	      :type "submit" 
-	      :class "btn btn-outline-primary btn-sm"
-	      :onclick 
-	      (cl-wfx::js-render-form-values 
-	       "cl-wfx:ajax-report"
-	       "grid-table"
-	       "unit-select"
-	       (js-pair "action" "invoice"))
-	      "Invoice"))))))
-
-(defun render-selection (report)  
-  (when (digx report :code :selection-script)   
-   (render-unit-selection)))
+(defun render-selection (report)
+  (when (digx report :code :selection-script)
+    (eval (digx report :code :selection-script))))
 
 
 (defmethod render-report ((type (eql :html)) report-name)
@@ -215,7 +161,7 @@
 					(equalp (getx item :name)
 						report-name))))
 	 (*data* (eval (digx report :code :data-script))))
-;;    (break "*data* ~A" *data*)
+    
     (cl-wfx::with-html-string
       (:div (cl-who:str (render-selection report)))
       (:div
