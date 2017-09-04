@@ -40,8 +40,7 @@
 			(fetch-items 
 			 collection
 			 :test (lambda (item)
-				 (when item
-				  
+				 (when item				  
 				   (when (or
 					  (and (not entity-type-p)
 					       (not entity-p))
@@ -1074,7 +1073,23 @@
 (defvar *rendering-shit* nil)
 
 
+(defun keysx (fields)
+  (let ((keys))
+    
+    (dolist (field fields)
+      (when (getf field :key-p)
+	
+	(setf keys (append keys (list (getf field :name))))))
+    keys))
 
+(defun sort-by-keys (items keys)
+  (flet ((sort-val (item)
+	   (let ((val))
+	     (dolist (key keys)
+	       (setf val (frmt "~A~A" val (getx item key))))	    
+	     val)))
+
+    (sort items #'string-lessp :key #'sort-val)))
 
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
@@ -1092,6 +1107,8 @@
 						 :hierarchical))
 	    (pushnew field subs)))
 
+
+	(setf page-items (sort-by-keys page-items (keysx fields)))
 
 	(dolist (item page-items)
 
