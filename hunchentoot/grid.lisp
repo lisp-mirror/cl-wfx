@@ -40,25 +40,28 @@
 			(fetch-items 
 			 collection
 			 :test (lambda (item)
-				 (when (or
-					(and (not entity-type-p)
-					     (not entity-p))
-					(and entity-type-p
-					     (find (item-hash
-						    (digx item :entity))
-						   (getx (active-user)
-							 :selected-entities)
-						   :test #'equalp))
-					(and entity-p
-					     (find (item-hash
-						    item)
-						   (getx (active-user)
-							 :selected-entities)
-						   :test #'equalp)))
-				   
-				   (if test
-				       (funcall test item)
-				       item)))
+				 (when item
+				  
+				   (when (or
+					  (and (not entity-type-p)
+					       (not entity-p))
+					  (and entity-type-p
+					       (digx item :entity)
+					       (find (item-hash
+						      (digx item :entity))
+						     (getx (active-user)
+							   :selected-entities)
+						     :test #'equalp))
+					  (and entity-p
+					       (find (item-hash
+						      item)
+						     (getx (active-user)
+							   :selected-entities)
+						     :test #'equalp)))
+				     
+				     (if test
+					 (funcall test item)
+					 item))))
 				     :result-type result-type))))))
     
     items))
