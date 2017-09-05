@@ -347,9 +347,16 @@
   (with-html-string
     (:div :class "row"
 	  (:div :class "col"
-		(:img :src "/umage/cor/web/images/logo-small.png"))
+	;;	(break "~A" item)
+		(if (getx item (getf field :name))
+		    (cl-who:htm
+		     (:img
+		      :style "width:128px;height:128px;"
+		      :src (frmt "/umage/cor/web/images/~A"
+				      (getx item (getf field :name)))))
+		    (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))
 	  (:div :class "col"
-		(cl-who:str (render-input-val* type field item))))))
+		(cl-who:str (getx item (getf field :name)))))))
 
 (defmethod render-input-val ((type (eql :email)) field item
 			     &key &allow-other-keys)
@@ -1072,22 +1079,38 @@
 
 (defvar *rendering-shit* nil)
 
-
 (defun keysx (fields)
-  (let ((keys))
-    
+  (let ((keys))   
     (dolist (field fields)
       (when (getf field :key-p)
-	
-	(setf keys (append keys (list (getf field :name))))))
+	(setf keys
+	      (append keys
+		      (list
+		       (list
+			:name (getf field :name)
+			:accessor (if (find (complex-type field)
+					    (list :collection
+						  :collection-items :list-items
+						  :hierarchical))
+				      (dig field :db-type :accessor))))))))
     keys))
 
 (defun sort-by-keys (items keys)
   (flet ((sort-val (item)
-	   (let ((val))
+	   (let ((values))
 	     (dolist (key keys)
-	       (setf val (frmt "~A~A" val (getx item key))))	    
-	     val)))
+	       (let* ((accessor (getf key :accessor))
+		      (val (if accessor
+			       (if (getx item (getf key :name))
+				   (apply #'digx
+					  (getx item (getf key :name))
+					  (if (listp accessor)
+					      accessor
+					      (list accessor))))
+			       (getx item (getf key :name)))))
+	;;	 (when accessor (break "~A - ~A" accessor val))
+		 (setf values (frmt "~A~A" values val))))	    
+	     values)))
 
     (sort items #'string-lessp :key #'sort-val)))
 
@@ -1107,7 +1130,7 @@
 						 :hierarchical))
 	    (pushnew field subs)))
 
-
+  	
 	(setf page-items (sort-by-keys page-items (keysx fields)))
 
 	(dolist (item page-items)
