@@ -747,19 +747,28 @@
 	       (js-pair "page"
 			(or active-page 1)))))
 
+
+(defun hierarchy-string (items)
+  (let ((hierarchy ""))
+    (dolist (item items)
+      (setf hierarchy  (concatenate 'string hierarchy " " (frmt "~A" item))))
+    (frmt "(~A)" hierarchy)))
+
 (defun grid-js-render-edit (data-type &key action item)
   (let ((active-page (getcx data-type :active-page))
 	(items))
 
     (dolist (hierarchy-item *item-hierarchy*)
-      (setf items (push 
+      (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
 			 (item-hash (getf hierarchy-item :item)))
 		   items)))
 
+    (setf items (reverse items))
+    (setf items (pushnew (list data-type (item-hash item))
+			 items))
+    (setf items (remove-duplicates items :test #'equalp))
     
-    (setf items (push (list data-type (item-hash item))
-		      items))
     (js-render "cl-wfx:ajax-grid-edit"
 	       (frmt "ajax-edit-~A" (item-hash item))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -767,7 +776,8 @@
 	       (js-pair "action" (or action ""))
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
-	       (js-pair "item-hierarchy" (frmt "(~{~a~^~})" (reverse items)))
+	       (js-pair "item-hierarchy"
+			(hierarchy-string (reverse items)))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -829,6 +839,7 @@
 (defun render-grid-edit (data-type fields item parent-item
 			 parent-spec)
 
+;;  (break "~A" item)
   (setf (getcx data-type :edit-item) item)
   (setf (getcx data-type :parent-spec) parent-item)
   (setf (getcx data-type :parent-spec) parent-spec)
@@ -1200,7 +1211,11 @@
 	       
 	       (js-pair "action" "new")
 	       
-	       (js-pair "item-hierarchy" (frmt "(~{~a~^~})" (reverse items)))
+	       (js-pair "item-hierarchy"
+			(cl-wfx::replace-all
+			 (frmt "(~{~a~^~})" (reverse items))
+			 (frmt "~A" #\Newline)
+			 ""))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -1996,12 +2011,11 @@
 			  :hierarchical))
       (when (string-equal data-type (dig field :db-type :data-type))
 	(dolist (item (getx parent-item (getf field :name)))
-	  
 	    (when (equalp (item-hash item) (ensure-parse-integer hash))
 	      (return-from get-child (list (getf field :name) item))))
 	(return-from get-child (list (getf field :name)
-				     (make-item :data-type data-type)
-				     ))))))
+				     (make-item :data-type data-type)))
+	))))
 
 
 (defun fetch-grid-root-edit-item (data-type hash)
@@ -2044,21 +2058,27 @@
        (setf edit-objects (list (list :data-type root-type :item root-item)))
        
        (if (> (length hierarchy) 1)
-	   (let ((item root-item)
-		 (item-type root-type))
+	   (let ((item ;;root-item
+		  )
+		 (item-type root-type)
+		 )
 
+	  ;;  (break "shit ~A" hierarchy)
 	     (dolist (child (cdr hierarchy))
-	       
-	       (setf item (get-child (getcx item-type :fields) root-item
+	      ;; (break "poes ~A~% ~A" item-type (getcx item-type :fields))
+	       (setf item (get-child (getcx item-type :fields)
+				     (or (if item (second item)) root-item)
 				     (first child)
 				     (second child)))
 	       (setf item-type (string-downcase (frmt "~A" (first child))))
+	  ;;     (break "~A ~%~A" item item-type)
 	       (setf edit-objects
 		     (push (list :data-type item-type
 				 :item (second item)
 				 :field-name (first item))
 			   edit-objects)))
 	     (setf (getcx data-type :edit-object) edit-objects)
+	    ;; (break "wtf ~A" edit-objects)
 	     (render-grid-edit item-type
 			       (getcx item-type :fields)
 			       (second item)
