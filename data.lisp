@@ -100,7 +100,6 @@
 			 list)))
 
 (defun core-store ()
-  
   (cl-naive-store::get-store* (universe *system*) "core"))
 
 (defun core-collection (name)

@@ -286,22 +286,85 @@
   (let ((access-p))
 
     (when (and (active-user) (digx (active-user) :selected-licenses))
- 
-      (dolist (permission
-		(getx (license-user
-		       (first
-			(digx
-			 (active-user)
-			 :selected-licenses)))
-		      :permissions))
-	
-	(when (or (getx (current-user) :super-user-p)
-		  (equalp context
-			  (digx permission
-				:context)))
-	  (setf access-p t)
-	  )))
+      
+      (dolist (lic (digx (active-user)
+			 :selected-licenses))
+
+	(dolist (permission
+		  (getx (license-user lic)
+			:permissions))
+	  
+	  (when (or (getx (current-user) :super-user-p)
+		    (equalp context
+			    (digx permission
+				  :context)))
+	    
+	    (setf access-p t)))))
     access-p))
+
+(defun render-user-admin-menu ()
+  (with-html-string
+    (:div :class "nav-item dropdown"	  
+	  (:a :class "nav-link dropdown-toggle" 
+	      :href ""
+	      :id "userDropdown" 
+	      :data-toggle "dropdown" 
+	      :aria-haspopup="true"
+	      :aria-expanded "false" 
+	      (if (current-user) 
+		  (cl-who:str (cl-who:htm
+			       (digx (current-user) :email)))))
+	  
+	  (:div :class "dropdown-menu"
+		:aria-labelledby "userDropdown"
+		
+		(let ((sys-mod 
+		       (fetch-item
+			(core-collection "modules")
+			:test (lambda (item)
+				(string-equal
+				 "Core" 
+				 (digx item :name))))))
+		  
+		 ; (break "sys-mod ~A" (digx sys-mod :menu))
+		  (dolist (menu (digx sys-mod :menu))
+		    (when (equalp (digx menu :name) "System")
+		      
+		      (dolist (item (digx menu :menu-items))
+
+			(let ((parameters))
+			  
+			  (dolist (param (digx item :context-parameters))
+			    
+			    (setf parameters 
+				  (if parameters
+				      (frmt "~A&~A=~A" 
+					    parameters
+					    (digx param :name)
+					    (digx param :value))
+				      (frmt "~A=~A" 
+					    (digx param :name)
+					    (digx param :value)))))
+			  
+			  (when (or (equalp (digx item :name) "Logout")
+				    (context-access-p
+				     (digx item :context-spec)))
+			    
+			    (cl-who:htm
+			     
+			     (:a :class "dropdown-item"
+				 :href 
+				 (if parameters
+				     (frmt "~A?~A" 
+					   (context-url 
+					    (digx item :context-spec)
+					    sys-mod)
+					   parameters)
+				     (context-url 
+				      (digx item :context-spec)
+				      sys-mod))
+				 
+				 (cl-who:str (digx item :name))))))))))))))
 
 (defun render-page (menu-p body)
   
@@ -400,64 +463,7 @@
 						    (getx entity :name) )))))))
 			    entities)))))
 		    
-	       (:div :class "nav-item dropdown"
-			  
-		     (:a :class "nav-link dropdown-toggle" 
-			 :href ""
-			 :id "userDropdown" 
-			 :data-toggle "dropdown" 
-			 :aria-haspopup="true"
-			 :aria-expanded "false" 
-			 (if (current-user) 
-			     (cl-who:str (cl-who:htm
-					  (digx (current-user) :email)))))
-		     (:div :class "dropdown-menu"
-			   :aria-labelledby "userDropdown"
-				
-			   (let ((sys-mod 
-				  (fetch-item
-				   (core-collection "modules")
-				   :test (lambda (item)
-					   (string-equal
-					    "Core" 
-					    (digx item :name))))))
-				  
-			     ;;	(break "sys-mod ~A" sys-mod)
-			     (dolist (item (digx (first (digx sys-mod :menu))
-						 :menu-items))
-
-			       (let ((parameters))
-				      
-				 (dolist (param (digx item :context-parameters))
-					
-				   (setf parameters 
-					 (if parameters
-					     (frmt "~A&~A=~A" 
-						   parameters
-						   (digx param :name)
-						   (digx param :value))
-					     (frmt "~A=~A" 
-						   (digx param :name)
-						   (digx param :value)))))
-				 (when (or (equalp (digx item :name) "Logout")
-					(context-access-p
-					 (digx item :context-spec)))
-				   
-				   (cl-who:htm
-				    
-				    (:a :class "dropdown-item"
-					:href 
-					(if parameters
-					    (frmt "~A?~A" 
-						  (context-url 
-						   (digx item :context-spec)
-						   sys-mod)
-						  parameters)
-					    (context-url 
-					     (digx item :context-spec)
-					     sys-mod))
-					
-					(cl-who:str (digx item :name))))))))))))
+	       (cl-who:str (render-user-admin-menu))))
 	     (:nav :class "navbar"
 		   (if (current-user)
 		       (cl-who:htm 
