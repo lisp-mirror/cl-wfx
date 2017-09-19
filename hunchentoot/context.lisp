@@ -7,14 +7,12 @@
 	    (:div :class "card col-5"
 		  (:img :class "card-image-top"
 			:src  (frmt "~Acor/web/images/logo.png"
-				    (site-url *system*)))
-		  
+				    (site-url *system*)))		  
 		  (:div :class "card-block"
 			(:h4 :class "card-title"
 			     "Login")
 			(:form :method "post"
-			       :action ""
-			       
+			       :action ""			       
 			       (:input :type "hidden" :id "contextid" 
 				       :value (context-id *context*))
 			       (:div :class "form-group"
@@ -366,6 +364,77 @@
 				 
 				 (cl-who:str (digx item :name))))))))))))))
 
+(defun render-entity-display ()
+  (with-html-string
+    (:span :class "navbar-text mr-auto"	   
+	   (cl-who:str
+	    (frmt
+	     "Entities: ~A"
+	     (when (active-user)
+	       (let ((entities))
+		 (dolist (license-code (digx (active-user)
+					     :selected-licenses))
+		   
+		   (dolist (entity (digx (license-user license-code)
+					 :accessible-entities))
+		     (dolist (selected (getx (active-user)
+					     :selected-entities))
+		       (when (equalp (item-hash entity)
+				     selected)
+			 (if (not entities)
+			     (setf entities (getx entity :name))
+			     (setf entities
+				   (frmt "~A|~A"
+					 entities
+					 (getx entity :name) )))))))
+		 entities)))))))
+
+(defun render-left-user-menu ()
+  (with-html-string
+    (:nav :class "nav  flex-column"
+	   (dolist (mod (user-mods))
+	     (dolist (menu (digx mod :menu))
+	       (dolist (item (digx menu :menu-items))
+		 (when (context-access-p
+			(digx item :context-spec))
+		   (cl-who:htm
+		    (:a :class "nav-item nav-link"
+			:href (context-url
+			       (digx item :context-spec)
+			       mod)
+			(cl-who:str (digx item :name)))))))))
+    ))
+
+(defun render-right-menu ()
+  (with-html-string
+
+    (:form
+      (:div :class "row bg-faded"
+	    "Accessible License Codes")
+      (cl-who:str (render-licence-codes))				 
+      
+      (:button
+       :name "set-licenses" 
+       :type "submit" 
+       :formmethod "post"
+       :class "btn btn-outline-success"
+       :aria-pressed "false"
+       :value "set-licenses"
+       "Set Licenses"))
+     
+     (:div :class "row bg-faded"
+	   "Accessible Entities")
+     (:div :class "row"
+	   (dolist (license-code (digx (active-user) 
+				       :selected-licenses))
+	     (when (license-user license-code)
+	       (cl-who:str
+		(render-entity-tree 
+		 license-code
+		 (getx (license-user license-code)
+		       :accessible-entities))))))
+    ))
+
 (defun render-page (menu-p body)
   
   (with-html-string
@@ -376,11 +445,11 @@
 	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/font-awesome-4.7.0/css/font-awesome.min.css\">
 " (site-url *system*)))
 	
-	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css\" integrity=\"sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ\" crossorigin=\"anonymous\">"
+	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css\" integrity=\"sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M\" crossorigin=\"anonymous\">"
 	
-	"<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js\"></script>"
-	" <script src=\"https://cdnjs.cloudflare.com/ajax/libs/tether/1.2.0/js/tether.min.js\" integrity=\"sha384-Plbmg8JY28KFelvJVai01l8WyZzrYWG825m+cZ0eDDS1f7d/js6ikvy1+X+guPIB\" crossorigin=\"anonymous\"></script>" 
-	"<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js\" integrity=\"sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn\" crossorigin=\"anonymous\"></script>"
+	"<script src=\"https://code.jquery.com/jquery-3.2.1.slim.min.js\" integrity=\"sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN\" crossorigin=\"anonymous\"></script>
+<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js\" integrity=\"sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4\" crossorigin=\"anonymous\"></script>
+<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js\" integrity=\"sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1\" crossorigin=\"anonymous\"></script>"
 
 	(cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
 	
@@ -419,76 +488,41 @@
 	     (:div :class "container"
 		   (cl-who:str body)))
 	    (cl-who:htm
+	     
 	     (:nav 
-	      :class "navbar sticky-top navbar-toggleable-md hidden-print"
-	      
+	      :class "navbar sticky-top hidden-print justify-content-between bg-white"
+
 	      (if (current-user)
 		  (cl-who:htm 
 		   (:button :class "navbar-toggler navbar-toggler-left"
 			    :type "button btn-small"
 			    :data-toggle "collapse"
-			    :data-target "#menushit"
-			    :aria-controls "menushit"
+			    :data-target "#exNavbarLeft"
+			    :aria-controls "exNavbarLeft"
 			    :aria-expanded "true"
-			    :aria-label "Toggle menu"
-			    (:span :class "navbar-toggler-icon"))))
+			    :aria-label "Toggle application menu"
+			    "&#9776;")))
 	      
 	      (:a :class "navbar-brand" :href "#" 
 		  (:img :src (frmt "~Acor/web/images/logo-small.png"
-				    (site-url *system*)))
+				   (site-url *system*)))
 		  (name *system*))
-	      (:div
-	       :class "collapse navbar-collapse" :id "menushit"
-	       (:span :class "navbar-text mr-auto"
-		      
-		      (cl-who:str
-		       (frmt
-			"Entities: ~A"
-			(when (active-user)
-			  (let ((entities))
-			    (dolist (license-code (digx (active-user)
-							:selected-licenses))
-			      
-			      (dolist (entity (digx (license-user license-code)
-						    :accessible-entities))
-				(dolist (selected (getx (active-user)
-							:selected-entities))
-				  (when (equalp (item-hash entity)
-						selected)
-				    (if (not entities)
-					(setf entities (getx entity :name))
-					(setf entities
-					      (frmt "~A|~A"
-						    entities
-						    (getx entity :name) )))))))
-			    entities)))))
-		    
-	       (cl-who:str (render-user-admin-menu))))
-	     (:nav :class "navbar"
-		   (if (current-user)
-		       (cl-who:htm 
-			(:button :class "navbar-toggler navbar-toggler-left"
-				 :type "button btn-small"
-				 :data-toggle "collapse"
-				 :data-target "#exNavbarLeft"
-				 :aria-controls "exNavbarLeft"
-				 :aria-expanded "true"
-				 :aria-label "Toggle application menu"
-				 "&#9776;")))
-		   (if (current-user)
-		       (cl-who:htm
-			(:button :class "navbar-toggler navbar-toggler-right"
-				 :type "button"
-				 :data-toggle "collapse"
-				 :data-target "#exNavbarRight"
-				 :aria-controls "exNavbarRight"
-				 :aria-expanded "false"
-				 :aria-label "Toggle system menu"
-				 "&#9776;")))
-		   
-		   )
+
+	      (cl-who:str (render-entity-display))
+	      
+	      (cl-who:str (render-user-admin-menu))
+	      
+	      (if (current-user)
+		  (cl-who:htm
+		   (:button :class "navbar-toggler navbar-toggler-right"
+			    :type "button"
+			    :data-toggle "collapse"
+			    :data-target "#exNavbarRight"
+			    :aria-controls "exNavbarRight"
+			    :aria-expanded "false"
+			    :aria-label "Toggle system menu"
+			    "&#9776;"))))
 	     
-	     (:br "")
 	     (:div
 	      :class "container-fluid"
 		   
@@ -496,51 +530,15 @@
 		    (:div
 		     :class "collapse col-md-2 col-md-auto show hidden-print"
 		     :id "exNavbarLeft"
-		     (:nav :class "nav nav-pills flex-column"
-			   (dolist (mod (user-mods))
-			     (dolist (menu (digx mod :menu))
-			       (dolist (item (digx menu :menu-items))
-				 (when (context-access-p
-					(digx item :context-spec))
-				   (cl-who:htm
-				      (:a :class 
-					  "nav-link ~A"
-					  :href (context-url
-						 (digx item :context-spec)
-						 mod)
-					  (cl-who:str (digx item :name))))))))))
+		     
+		     (cl-who:str (render-left-user-menu)))
 			 
 		    (:div  :class "col" :id "grid-table"
 			   (cl-who:str body))
-			 
 		    (:div
 		     :class "collapse col-md-2 hidden-print " 
 		     :id "exNavbarRight" :style "background-color:#FFFFFF"
-		     (:form
-		      (:div :class "row bg-faded"
-			    "Accessible License Codes")
-		      (cl-who:str (render-licence-codes))				 
-				
-		      (:button
-		       :name "set-licenses" 
-		       :type "submit" 
-		       :formmethod "post"
-		       :class "btn btn-outline-success"
-		       :aria-pressed "false"
-		       :value "set-licenses"
-		       "Set Licenses"))
-			       
-		     (:div :class "row bg-faded"
-			   "Accessible Entities")
-		     (:div :class "row"
-			   (dolist (license-code (digx (active-user) 
-						       :selected-licenses))
-			     (when (license-user license-code)
-			       (cl-who:str
-				(render-entity-tree 
-				 license-code
-				 (getx (license-user license-code)
-				       :accessible-entities)))))))))))
+		     (cl-who:str (render-right-menu)))))))
 
 
 	"<script>$(document).on('click', '.dropdown-item', function(){
@@ -654,5 +652,63 @@
 	  :allow-other-keys t) ,(digx context-spec :args)
       (with-html-string
 	  "<!itemtype html>"
-	(cl-who:str (render-page nil (render-login)))))))
+	  (cl-who:str (render-page nil (render-login)))))))
+
+(defun render-repl ()
+  (with-html-string
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "card"
+		      
+		      (:div :class "card-block"
+			    (:h4 :class "card-title"
+				 "Run Script")
+			    (:form :method "post"
+				   :action ""			       
+				   (:input :type "hidden" :id "contextid" 
+					   :value (context-id *context*))
+				   (:div :class "form-group"
+					 (:label :for "script" "Script")
+					 (:textarea
+					  :class "form-control"
+					  
+					  :rows 20
+					  :name "script"
+					  :id "script"
+					  (cl-who:str
+					   (or (parameter "script") ""))))
+				   
+				   (:button :name "action"
+					    :class "btn btn-primary"
+					    :type "submit"
+					    :value "eval-repl"
+					    "run")))
+		      (:div :class "card-footer"
+			    (cl-who:str
+			     (gethash :repl-result (cache *context*)))))))))
+
+
+(defmethod action-handler ((action (eql :eval-repl)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (when (and (parameter "action") (parameter "script"))
+    (multiple-value-bind (result error)
+	(ignore-errors
+	  (eval (read-no-eval (parameter "script"))))
+      (setf (gethash :repl-result (cache *context*))
+	    (or error result)))))
+
+(defmethod setup-context-repl ()
+  
+  (eval
+   `(hunchentoot:define-easy-handler
+	(repl 
+	  :uri ,(frmt "~Acor/repl" (site-url *system*))  
+	  :allow-other-keys t)
+	nil
+      (with-html-string
+	  "<!itemtype html>"
+	(cl-who:str (render-page t (render-repl)))))))
 

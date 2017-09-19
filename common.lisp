@@ -27,8 +27,6 @@ Dont set manually use with-system macro.")
 
 
 
-
-
 ;;#############################STRINGS
 ;;FORMAT
 (declaim (inline frmt))

@@ -13,6 +13,8 @@
 	       "split-sequence"
 	       "ht-simple-ajax"
 	       "cl-json"
+	       "cl-smtp"
+	      ;; "postoffice"
 	       )
   :components ((:file "packages")
                (:file "common" :depends-on ("packages"))	       
@@ -20,7 +22,8 @@
 	       (:file "session" :depends-on ("system"))
 	       (:file "data" :depends-on ("system"))
 	       (:file "script" :depends-on ("system" "data"))
-	    ;;   (:file "report" :depends-on ("script"))
+	       
+	       (:file "mailer" :depends-on ("data"))
 	       
 	       (:file "user" :depends-on ("system" "data"))
 	       (:file "license" :depends-on ("data"))

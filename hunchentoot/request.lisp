@@ -55,7 +55,7 @@
     (if (find (parameter "action") 
 	      (list "save" "delete" "login" "logout"
 		    "assign-campaign" "select-action"
-		    "add-selection") 
+		    "add-selection" "eval-repl") 
 	      :test #'string-equal)
 	(action-handler (intern (string-upcase (parameter "action")) :keyword)
 			context
@@ -68,6 +68,8 @@
 	   (action-handler :set-entities
 			   context
 			   request))
+
+	  
 	  )
     
     ;;TODO: why checking for ajax?

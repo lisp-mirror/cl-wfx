@@ -14,6 +14,12 @@
 		  '(:name "Login"
 		    :permissions nil
 		    :for-everyone t)))
+
+  (unless (get-context-spec (core-store) "REPL")
+    (persist-item (core-collection "context-specs")
+		  '(:name "REPL"
+		    :permissions nil
+		    :for-everyone t)))
   
   (unless (get-context-spec (core-store ) "Data Types")
     (persist-item (core-collection "context-specs")    
@@ -135,7 +141,16 @@
 				     spec)))))
 	
 	(setf menu-items (append menu-items
-				 (list (make-item
+				 (list
+				  (make-item
+					:data-type "menu-item"
+					:values
+					(list
+					 :name "REPL"
+					 :context-spec 
+					 (get-context-spec (core-store )
+							   "REPL")))
+				  (make-item
 					:data-type "menu-item"
 					:values
 					(list
@@ -147,8 +162,8 @@
 						:values
 						(list
 						 :name "action"
-						 :value "logout"))))))))
-	
+						 :value "logout")))))
+				       )))
 	
 	
 	(setf (getf sys-mod :menu)
@@ -162,7 +177,8 @@
     
     (dolist (spec (digx sys-mod :contexts))
       (setup-context sys-mod spec *system*))
- 
+
+    (setup-context-repl)
     (setup-context-login sys-mod
 			 (get-context-spec (core-store ) "Login") *system*))
   (call-next-method))
