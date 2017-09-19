@@ -45,7 +45,7 @@
     (:name "mail-accounts"
      :label "Mail Accounts"
      :data-type "mail-account")
-    :destinations (:core)
+    :destinations (:license)
     :access
     (:stores
      (:core
