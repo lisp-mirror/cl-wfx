@@ -539,7 +539,8 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (if selected
-			 (cl-who:str (frmt "~S" selected))))
+			 (cl-who:str (frmt "~S" selected))
+			 (cl-who:str "Select a value")))
 	    
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
@@ -567,7 +568,10 @@
 			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :collection)) field item 
+
+
+
+(defmethod render-input-val ((type (eql :collection??)) field item 
 			     &key &allow-other-keys)
 
   (let* ((name (getf field :name))
@@ -580,7 +584,9 @@
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value "")
+		    :name (frmt "~A" name) :value
+		    "")
+	  
 	    (:button :class "btn btn-secondary dropdown-toggle"
 		     :type "button"
 		     :data-toggle "dropdown"
@@ -592,7 +598,9 @@
 						accessors
 						(list accessors))))))
 	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+	    (:div :class "dropdown-menu"
+		  :style "overflow: scroll;"
+		  :aria-labelledby (frmt "wtf-~A" name)
 		  (dolist (option list)
 		    (cl-who:htm
 		     (:span :class "dropdown-item" 			      
@@ -603,6 +611,55 @@
 				    (if (listp accessors)
 					accessors
 					(list accessors))))))))))))
+
+(defmethod render-input-val ((type (eql :collection)) field item 
+			     &key data-type &allow-other-keys)
+
+  (let* ((name (getf field :name))
+	 (list (grid-fetch-items (dig field :db-type :data-type)
+				 (dig field :db-type :collection)))
+	 (selected (find (getx item name)  
+			 list :test #'equalp))
+	 (accessors (dig field :db-type :accessor)))
+
+    (with-html-string
+      (:div :class "auto-complete"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name) :value
+		    "")
+	  
+	    (:input :class "form-control auto-complete-text"
+		    :type "text"
+		    :placeholder "Press enter for list or start typing and then press enter for list..."
+		    :name (frmt "~A-drop" name) 
+		    :id (frmt "~A-drop" name)
+		    :value (if selected
+			       (cl-who:str (apply #'digx
+						  selected
+						  (if (listp accessors)
+						      accessors
+						      (list accessors))))
+			       (or (parameter (frmt "~A-drop" name))
+				   (getcx 
+				    (dig field :db-type :data-type)
+				    (frmt "~A-drop" name))
+				   ""))
+		    :onkeydown
+		    ;;fires ajax call on enter (13)
+		    (js-render-event-key 
+		     (frmt "~A-drop" name)
+		     13
+		     "cl-wfx:ajax-auto-complete"
+		     (frmt "~A-drop-div" name)
+		     (js-pair "data-type"
+			      data-type)
+		     (js-pair "field-name"
+			      (frmt "~A" name))
+		     
+		     
+		     (js-pair "action" "grid-auto-complete")))
+	    (:div :id (frmt "~A-drop-div" name) :class "auto-list"
+		  )))))
 
 (defmethod render-input-val ((type (eql :contained-item)) field item 
 			     &key parent-item &allow-other-keys)
@@ -889,7 +946,8 @@
 					     (complex-type field) 
 					     field item
 					     :parent-item
-					     parent-item))))))))))))
+					     parent-item
+					     :data-type data-type))))))))))))
 	  (:div :class "card-footer"
 		(when (getcx data-type :validation-errors)
 		  (let ((errors (getcx data-type :validation-errors)))
@@ -2028,6 +2086,52 @@
 					    hash)
 				item)))))
 
+(defun ajax-auto-complete (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+  (let* ((data-type (parameter "data-type"))
+	 (field-name (intern (parameter "field-name") :KEYWORD))
+	 (fields (getcx data-type :fields))
+	 (field))
+    (dolist (fieldx fields)
+      (when (string-equal (getf fieldx :name) field-name)
+	(setf field fieldx)))
+    
+    (when field
+      (let* ((accessors (dig field :db-type :accessor))
+	     (list (grid-fetch-items
+		    (dig field :db-type :data-type)
+		    (dig field :db-type :collection)
+		    :test (lambda (item)
+			    (or
+			     (string-equal (parameter
+					     (frmt "~A-drop" field-name))
+					    "")
+			     (search (parameter
+				      (frmt "~A-drop" field-name))
+				     (apply #'digx
+					    item
+					    (if (listp accessors)
+						accessors
+						(list accessors)))
+				     :test #'string-equal))))))
+	(with-html-string
+	  (:div :class "bg-white rounded border"
+		:style "z-index:1070;position:absolute;top:30px;over-flow:scroll;"
+		:class "auto-complete-menu nav flex-column"
+		;; :aria-labelledby (frmt "~A-drop" name)
+	;;	(break "~A" list)
+		(dolist (option list)
+		  (cl-who:htm
+		   (:span :class "auto-complete-item nav-link" 			      
+			  (:input :type "hidden"
+				  :value (frmt "~A" (item-hash option)))
+			  (cl-who:str
+			   (trim-whitespace 
+			    (apply #'digx option
+				   (if (listp accessors)
+				       accessors
+				       (list accessors)))))))))))))
+  )
 
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))

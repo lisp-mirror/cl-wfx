@@ -488,7 +488,8 @@
 	     (:div :class "container"
 		   (cl-who:str body)))
 	    (cl-who:htm
-	     
+	     (unless (active-user)
+	       (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
 	     (:nav 
 	      :class "navbar sticky-top hidden-print justify-content-between bg-white"
 
@@ -544,9 +545,19 @@
 	"<script>$(document).on('click', '.dropdown-item', function(){
        var selVal = $(this).children().first();
        var selText = $(this).text();
-       $(this).parents('.dropdown').find('.dropdown-toggle').html(selText);
+       $(this).parents('.dropdown').find('.dropdown-toggle').html($.trim(selText));
        $(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
 });</script>"
+
+	"<script>$(document).on('click', '.auto-complete-item', function(){
+       var selVal = $(this).children().first();
+       var selText = $(this).text();
+
+       $(this).parents('.auto-complete').find('.auto-complete-text').val($.trim(selText));
+       $(this).parents('.auto-complete').find('.selected-value').val($(selVal).val());
+       $(this).parents('.auto-complete').find('.auto-list').empty();
+});
+</script>"
 	
 	(:script 
 	 (cl-who:str (frmt	      
@@ -709,6 +720,7 @@
 	  :allow-other-keys t)
 	nil
       (with-html-string
-	  "<!itemtype html>"
+	"<!itemtype html>"
+	
 	(cl-who:str (render-page t (render-repl)))))))
 
