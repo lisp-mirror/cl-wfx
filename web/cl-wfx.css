@@ -118,6 +118,13 @@ select {
 
 }
 
+.auto-complete-menu {
+    z-index: 1070;
+    position:absolute;
+    top:30px;
+    over-flow:scroll;
+}
+
 .auto-list span:hover {
     background-color: #007bff !important;
 }

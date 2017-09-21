@@ -2115,11 +2115,18 @@
 						(list accessors)))
 				     :test #'string-equal))))))
 	(with-html-string
-	  (:div :class "bg-white rounded border"
-		:style "z-index:1070;position:absolute;top:30px;over-flow:scroll;"
-		:class "auto-complete-menu nav flex-column"
+	  (:div
+		;;:style "z-index:1070;position:absolute;top:30px;over-flow:scroll;"
+		:class "auto-complete-menu nav flex-column bg-white  rounded border"
 		;; :aria-labelledby (frmt "~A-drop" name)
-	;;	(break "~A" list)
+		;;	(break "~A" list)
+
+		(setf list (sort list #'string<
+				 :key (lambda (item)
+					(apply #'digx item
+					       (if (listp accessors)
+						   accessors
+						   (list accessors))))))
 		(dolist (option list)
 		  (cl-who:htm
 		   (:span :class "auto-complete-item nav-link" 			      
@@ -2130,8 +2137,7 @@
 			    (apply #'digx option
 				   (if (listp accessors)
 				       accessors
-				       (list accessors)))))))))))))
-  )
+				       (list accessors))))))))))))))
 
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
