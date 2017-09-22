@@ -1351,31 +1351,33 @@
 			     (:div :class "col"
 				   (when *rendering-shit*
 
-				     (cl-who:htm (:div (frmt "ajax-edit-~A" (item-hash item))
+				     (cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item))
 						      )))
 				   
 				   (unless *rendering-shit*
 				     
-				     (when (getcx data-type :edit-item)
-				       (break "?")
+				     (if (getcx data-type :edit-item)
+				      
 				       (when (equalp (item-hash (getcx data-type :edit-item))
-						     (item-hash item))
-
-					 (cl-who:htm
-					  
-					  (:div :id (frmt "ajax-edit-~A" (item-hash item))
-
-						(when (and (and (equalp (parameter "action") "save")
-								(getcx data-type :edit-object)
-								(getcx data-type :validation-errors))
-							   (string-equal (parameter "data-type")
-									 (frmt "~A" data-type)))
-
-						  (cl-who:str (render-grid-edit data-type fields
-										(or (getcx data-type :edit-item)
-										    item )
-										parent-item parent-spec)))
-					))))
+						   (item-hash item))
+					   
+					   (cl-who:htm
+					    
+					    (:div :id (frmt "ajax-edit-~A" (item-hash item))
+						  
+						  (when (and (and (equalp (parameter "action") "save")
+								  (getcx data-type :edit-object)
+								  (getcx data-type :validation-errors))
+							     (string-equal (parameter "data-type")
+									   (frmt "~A" data-type)))
+						    
+						    (cl-who:str (render-grid-edit data-type fields
+										  (or (getcx data-type :edit-item)
+										      item )
+										  parent-item parent-spec)))))
+					   )
+				       (cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item))
+						      )))
 				  
 				     (when (equalp (ensure-parse-integer
 						    (getcx data-type :expand-id)) 
