@@ -2148,7 +2148,7 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
-
+    (setf (getcx data-type :edit-object) nil)
     
      (setf root-type (if  hierarchy
 			  (string-downcase (frmt "~A"
@@ -2332,6 +2332,7 @@
      (setf root-hash (if hierarchy
 			 (second (first hierarchy))))
 
+     
      (setf fields (getcx root-type :fields))
 
      (setf root-item (fetch-grid-root-edit-item root-type root-hash))
