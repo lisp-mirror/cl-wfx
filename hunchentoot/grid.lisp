@@ -1282,7 +1282,7 @@
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
 
-  
+
   (let ((sub-level-p (not (equalp data-type 
 				  (gethash :data-type (cache *context*))))))
     
@@ -1319,6 +1319,7 @@
 				   (cl-who:str
 				    (render-expand-buttons subs data-type item)))))
 			(dolist (half (rough-half-list (get-data-fields fields) 7))
+			  
 			  (cl-who:htm
 			   (:div :class "col"
 				 (:div :class "row no-gutters"
@@ -1344,35 +1345,42 @@
 				       (render-grid-buttons data-type item )))
 				    (cl-who:str
 				     (render-select-button item)))))
+		       
+		    
 		       (:div :class "row"
 			     (:div :class "col"
 				   (when *rendering-shit*
+
 				     (cl-who:htm (:div (frmt "ajax-edit-~A" (item-hash item))
-						      ))
-				     )
+						      )))
 				   
 				   (unless *rendering-shit*
-				     (when (equalp (item-hash (getcx data-type :edit-item))
-							    (item-hash item))									       
-				       (cl-who:htm
-					
-					(:div :id (frmt "ajax-edit-~A" (item-hash item))
-					      
-					      (when (and (and (equalp (parameter "action") "save")
-							      (getcx data-type :edit-object)
-							      (getcx data-type :validation-errors))
-							 (string-equal (parameter "data-type")
-								       (frmt "~A" data-type)))
+				     
+				     (when (getcx data-type :edit-item)
+				       (break "?")
+				       (when (equalp (item-hash (getcx data-type :edit-item))
+						     (item-hash item))
 
-						(cl-who:str (render-grid-edit data-type fields
-									      (or (getcx data-type :edit-item)
-										  item )
-									      parent-item parent-spec))))))
-					   
+					 (cl-who:htm
+					  
+					  (:div :id (frmt "ajax-edit-~A" (item-hash item))
+
+						(when (and (and (equalp (parameter "action") "save")
+								(getcx data-type :edit-object)
+								(getcx data-type :validation-errors))
+							   (string-equal (parameter "data-type")
+									 (frmt "~A" data-type)))
+
+						  (cl-who:str (render-grid-edit data-type fields
+										(or (getcx data-type :edit-item)
+										    item )
+										parent-item parent-spec)))
+					))))
+				  
 				     (when (equalp (ensure-parse-integer
 						    (getcx data-type :expand-id)) 
 						   (item-hash item))
-					     
+					 
 				       (unless sub-level-p
 					 (setf (getcx data-type :root-item) item))
 					     
@@ -1412,7 +1420,7 @@
 						     (render-grid-header
 						      sub-data-spec
 						      t))
-							  
+					
 						    (:div :class "card-block"
 							  (cl-who:str
 							   (render-grid-data
@@ -1493,17 +1501,18 @@
 	
 
 	(cl-who:htm (:div :id (frmt "ajax-new-~A" data-type)
-			  (when (not (item-hash (getcx data-type :edit-item)))
-			    (when (and (and (equalp (parameter "action") "save")
-					    (getcx data-type :edit-object)
-					    (getcx data-type :validation-errors))
-				       (string-equal (parameter "data-type")
-						     (frmt "~A" data-type)))
+			  (when (getcx data-type :edit-item)
+			    (when (not (item-hash (getcx data-type :edit-item)))
+			      (when (and (and (equalp (parameter "action") "save")
+					      (getcx data-type :edit-object)
+					      (getcx data-type :validation-errors))
+					 (string-equal (parameter "data-type")
+						       (frmt "~A" data-type)))
 
-			      (cl-who:str
-			       (render-grid-edit data-type fields
-						 (getcx data-type :edit-item)
-						 parent-item parent-spec))))))))))
+				(cl-who:str
+				 (render-grid-edit data-type fields
+						   (getcx data-type :edit-item)
+						   parent-item parent-spec)))))))))))
 
 (defun render-grid-sizing (data-type)
   (with-html-string
