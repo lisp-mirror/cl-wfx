@@ -18,109 +18,7 @@
     (when (equalp (getf field :name) :entity)
       (return-from entity-type-p t))))
 
-(defun grid-fetch-items (data-type collection &key test (result-type 'list))
-  (let ((items)
-	(entity-type-p (entity-type-p (getcx data-type :fields)))
-	(entity-p (equalp data-type "entity"))
-	(collection-name (if (stringp collection)
-			     collection
-			     (digx collection :collection :name))))
-    
-    
-    (unless (getcx data-type :stores)
-      (setf (getcx data-type :stores)
-	    (collection-stores *system* collection-name)))
 
-    
-    (dolist (store (getcx data-type :stores))
-      (let ((collection (get-collection
-				  store 
-				  collection-name)))
-	(when collection
-	  (setf items
-		(append items
-			(fetch-items 
-			 collection
-			 :test (lambda (item)
-				 (when item				  
-				   (when (or
-					  (and (not entity-type-p)
-					       (not entity-p))
-					  (and entity-type-p
-					       (digx item :entity)
-					       (find (item-hash
-						      (digx item :entity))
-						     (getx (active-user)
-							   :selected-entities)
-						     :test #'equalp))
-					  (and entity-p
-					       (find (item-hash
-						      item)
-						     (getx (active-user)
-							   :selected-entities)
-						     :test #'equalp)))
-				     
-				     (if test
-					 (funcall test item)
-					 item))))
-				     :result-type result-type))))))
-    
-    items))
-
-(defun grid-fetch-item (data-type collection &key test)
-  (let ((items)
-	(entity-type-p (entity-type-p (getcx data-type :fields)))
-	(entity-p (equalp data-type "entity"))
-	(collection-name (if (stringp collection)
-			     collection
-			     (digx collection :collection :name))))
-
-    
-    
-    (unless (getcx data-type :stores)
-      (setf (getcx data-type :stores)
-	    (collection-stores *system* collection-name)))
-    
-    (dolist (store (getcx data-type :stores))
-      (let ((collection (get-collection
-				  store 
-				  collection-name)))
-
-	(when collection
-	  (setf items
-		(append
-		 items
-		 (list (fetch-item 
-			collection
-			:test (lambda (item)
-				
-				(when (or
-				       (and (not entity-type-p)
-					    (not entity-p))
-				     
-				       (and entity-type-p
-					    (digx item
-						  :entity)
-					    (find (item-hash
-						   (digx item
-							 :entity))
-						  (getx (active-user)
-							:selected-entities)
-						  :test #'equalp))
-				     
-				       (and entity-p
-					    (find (item-hash
-						   item)
-						  (getx (active-user)
-							:selected-entities)
-						  :test #'equalp)))
-				 
-				  
-				  (if test
-				      (funcall test item)
-				      item))))))))))
-  
-    (first (remove-if #'not items))))
 
 
 (defun print-item-val-s* (field item)
@@ -160,7 +58,15 @@
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+  (with-html-string
+   
+    (if (getx item (getf field :name))
+		    (cl-who:htm
+		     (:img
+		      :style "width:128px;height:128px;"
+		      :src (frmt "/umage/cor/web/images/~A"
+				 (getx item (getf field :name)))))
+		    (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png")))))
 
 (defmethod print-item-val ((type (eql :email)) field item
 			   &key &allow-other-keys)
@@ -359,7 +265,7 @@
 		(if (getx item (getf field :name))
 		    (cl-who:htm
 		     (:img
-		      :style "width:128px;height:128px;"
+		      :style "width:400px;height:500px;"
 		      :src (frmt "/umage/cor/web/images/~A"
 				      (getx item (getf field :name)))))
 		    (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))
@@ -533,7 +439,10 @@
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value "")
+		    :name (frmt "~A" name)
+		    :value (frmt "~S"
+				 (if selected
+				     selected)))
 	    (:button :class "btn btn-secondary dropdown-toggle"
 		     :type "button"
 		     :data-toggle "dropdown"
@@ -575,8 +484,7 @@
 			     &key &allow-other-keys)
 
   (let* ((name (getf field :name))
-	 (list (grid-fetch-items (dig field :db-type :data-type)
-				 (dig field :db-type :collection)))
+	 (list (wfx-fetch-context-items (dig field :db-type :collection)))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
@@ -616,17 +524,27 @@
 			     &key data-type &allow-other-keys)
 
   (let* ((name (getf field :name))
-	 (list (grid-fetch-items (dig field :db-type :data-type)
-				 (dig field :db-type :collection)))
+	 (list (wfx-fetch-context-items (dig field :db-type :collection)))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
-
+   
     (with-html-string
       (:div :class "auto-complete"
 	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value
-		    "")
+		    :name (frmt "~A" name)
+		    :value
+		    (if selected
+			       (apply #'digx
+						  selected
+						  (if (listp accessors)
+						      accessors
+						      (list accessors)))
+			       (or (parameter (frmt "~A-drop" name))
+				   (getcx 
+				    (dig field :db-type :data-type)
+				    (frmt "~A-drop" name))
+				   "")))
 	  
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
@@ -671,10 +589,13 @@
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
 
+    
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value "")
+		    :name (frmt "~A" name)
+		    :value (frmt "~A" (if selected
+					  (item-hash selected))))
 	    (:button :class "btn btn-secondary dropdown-toggle"
 		     :type "button"
 		     :data-toggle "dropdown"
@@ -1331,12 +1252,16 @@
 					   (let ((val (print-item-val 
 						       (complex-type field)
 						       field item)))
-
-					     (if (> (length val) 100)
+					     (if (not (equalp (complex-type field)
+							      :image))
+						 (if (> (length val) 100)
+						     (cl-who:str 
+						      (subseq val 0 100))
+						     (cl-who:str 
+						      val))
 						 (cl-who:str 
-						  (subseq val 0 100))
-						 (cl-who:str 
-						  val))))))))))
+						      val)
+						 )))))))))
 
 			(:div :class "col-sm-2"
 			      (:div :class "btn-group float-right"
@@ -1453,8 +1378,7 @@
 							  (cl-who:str
 							   (render-grid-data
 							    sub-data-spec
-							    (grid-fetch-items
-							     sub-data-spec
+							    (wfx-fetch-context-items
 							     (dig sub :db-type :collection)
 							     :test (filter-function data-type))
 							    -1 parent-item data-type))
@@ -1729,7 +1653,7 @@
 	 (filter-p (getcx data-type :filter)))
     
      (unless (or search-p filter-p)
-       (setf items (grid-fetch-items data-type collection-name
+       (setf items (wfx-fetch-context-items collection-name
 				     :test test)))
 
      
@@ -1740,7 +1664,7 @@
 	      :filter-fields)
 	  
 	  (setf items
-		(grid-fetch-items data-type collection-name
+		(wfx-fetch-context-items collection-name
 				  :test (filter-function data-type)))
 	  (when items
 	    (setf items
@@ -1752,7 +1676,7 @@
 		:filter-fields)
 	 
 	   (setf items
-		 (grid-fetch-items data-type collection-name
+		 (wfx-fetch-context-items collection-name
 				   :test (search-function
 					  data-type search-term)))))
     
@@ -1854,7 +1778,7 @@
 	  (when (equalp (first spliff) "true")
 	    (setf persist-p t)
 	    (pushnew
-	     (grid-fetch-item (parameter "data-type")
+	     (wfx-fetch-context-item 
 			      (getcx (parameter "data-type")
 				     :collection-name)
 			      :test (lambda (item)
@@ -1884,7 +1808,7 @@
 	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
 	  (when (equalp (first spliff) "true")
 	    (pushnew
-	     (grid-fetch-item (parameter "data-type")
+	     (wfx-fetch-context-item 
 			      (gethash :collection-name (cache *context*))
 			      :test (lambda (item)
 				      
@@ -1976,9 +1900,6 @@
 
     (setf  (gethash :collection-name (cache *context*)) collection-name)
     (setf  (gethash :data-type (cache *context*)) data-type)
-    
-    (setf (getcx data-type :stores)
-	  (collection-stores *system* collection-name))
     
     (unless (equalp (parameter "action") "save")
       (setf (getcx data-type :root-item) nil))
@@ -2092,9 +2013,9 @@
 	))))
 
 
-(defun fetch-grid-root-edit-item (data-type hash)
+(defun fetch-grid-root-edit-item (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))
-     (grid-fetch-item data-type collection-name
+     (wfx-fetch-context-item  collection-name
 		      :test (lambda (item)
 			      (when (equalp (item-hash item)
 					    hash)
@@ -2112,8 +2033,8 @@
     
     (when field
       (let* ((accessors (dig field :db-type :accessor))
-	     (list (grid-fetch-items
-		    (dig field :db-type :data-type)
+	     (list (wfx-fetch-context-items
+		   
 		    (dig field :db-type :collection)
 		    :test (lambda (item)
 			    (or
@@ -2172,7 +2093,7 @@
 
      (setf fields (getcx root-type :fields))
      
-     (setf root-item (fetch-grid-root-edit-item root-type root-hash))
+     (setf root-item (fetch-grid-root-edit-item root-hash))
 
      
      (unless root-item
@@ -2358,7 +2279,7 @@
      
      (setf fields (getcx root-type :fields))
 
-     (setf root-item (fetch-grid-root-edit-item root-type root-hash))
+     (setf root-item (fetch-grid-root-edit-item root-hash))
 
      (unless root-item
        (setf root-item (make-item :data-type data-type)))

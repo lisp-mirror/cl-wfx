@@ -155,8 +155,6 @@
 			      (find-collection-def system collection)
 			      collection) 
 			  :destinations))
-      
-      
 	(cond ((equalp dest :core)
 	       (push (core-store) stores))
 	      ((equalp dest :system)
@@ -179,3 +177,55 @@
 
 (defun wfx-fetch-item (collection-name &key test (result-type 'list))
   (first (last (wfx-fetch-items collection-name :test test :result-type result-type))))
+
+(defun wfx-fetch-context-items (collection &key test (result-type 'list))
+  (let* ((items)
+	(collection-name (if (stringp collection)
+			     collection
+			     (digx collection :collection :name)))
+	(stores (collection-stores *system* collection-name)))
+        
+    (dolist (store stores)
+      (let ((collection (get-collection
+				  store 
+				  collection-name)))
+	(when collection
+	  (setf items
+		(append items
+			(fetch-items 
+			 collection
+			 :test (lambda (item)
+				 (when item				  
+				   (when (match-context-entities item)
+				     (if test
+					 (funcall test item)
+					 item))))
+			 :result-type result-type))))))
+      items))
+
+(defun wfx-fetch-context-item (collection &key test)
+  (let* ((items)
+	(collection-name (if (stringp collection)
+			     collection
+			     (digx collection :collection :name)))
+	(stores (collection-stores *system* collection-name)))
+
+    (dolist (store stores)
+      (let ((collection (get-collection
+				  store 
+				  collection-name)))
+
+	(when collection
+	  (setf items
+		(append
+		 items
+		 (list (fetch-item 
+			collection
+			:test (lambda (item)
+				(when item
+				  (when (match-context-entities item)
+				    (if test
+					(funcall test item)
+					item)))))))))))
+  
+    (first (remove-if #'not items))))

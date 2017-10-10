@@ -14,6 +14,7 @@
 	       "ht-simple-ajax"
 	       "cl-json"
 	       "cl-smtp"
+	       "sandbox"
 	      ;; "postoffice"
 	       )
   :components ((:file "packages")

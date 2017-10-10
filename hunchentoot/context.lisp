@@ -696,7 +696,20 @@
 					    "run")))
 		      (:div :class "card-footer"
 			    (cl-who:str
-			     (gethash :repl-result (cache *context*)))))))))
+			      (gethash :repl-result (cache *context*)))))))))
+
+(defparameter *script-functions*
+  (list 'cl-wfx:frmt
+	'cl-wfx::wfx-fetch-context-item
+	'cl-wfx::wfx-fetch-context-items
+	'cl-wfx:with-html
+	'cl-wfx:with-html-string
+	'cl-who:htm
+	'cl-who:str
+	'cl-who:esc
+	'cl-naive-store:getx
+	))
+
 
 
 (defmethod action-handler ((action (eql :eval-repl)) 
@@ -705,11 +718,23 @@
 			   &key &allow-other-keys)
 
   (when (and (parameter "action") (parameter "script"))
-    (multiple-value-bind (result error)
-	(ignore-errors
-	  (eval (read-no-eval (parameter "script"))))
-      (setf (gethash :repl-result (cache *context*))
-	    (or error result)))))
+    
+    (let* ((sandbox-impl::*allowed-extra-symbols*
+	    *script-functions*)
+	  (eish (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+
+      (with-output-to-string (s eish)
+	(let ((sandbox::*msg-value-prefix* "")
+	      (sandbox::*msg-error-prefix* "")
+	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
+	      (sandbox::*msg-no-value-message* "Nil"))
+	  
+	  (sandbox::read-eval-print  (parameter "script")  s)
+
+	  (setf (gethash :repl-result (cache *context*))
+		eish)))
+     )))
 
 (defmethod setup-context-repl ()
   

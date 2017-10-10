@@ -81,6 +81,13 @@
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "scripts")))
+
+  (unless (get-context-spec (core-store) "Email Accounts")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Email Accounts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "email-accounts")))
   
   (unless (get-context-spec (core-store) "Reports")
     (persist-item (core-collection "context-specs")
@@ -124,6 +131,7 @@
 			      (get-context-spec (core-store ) "Users")
 			      (get-context-spec (core-store ) "License Users")
 			      (get-context-spec (core-store ) "Scripts")
+			      (get-context-spec (core-store ) "Email Accounts")
 			      (get-context-spec (core-store ) "Reports")
 			      ;; (get-context-spec "import-data")
 			      

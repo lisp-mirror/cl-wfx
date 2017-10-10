@@ -98,6 +98,8 @@
 	(search ".ttf" script-name)
 	(search ".svg" script-name)
 	(search "get-meters" script-name)
+	(search "set-reading" script-name)
+	(search "set-image" script-name)
 	))
   )
 
@@ -128,7 +130,9 @@
 	      (system-request acceptor *request*))	 
 	 
 	    (call-next-method))
-	  (call-next-method)))))
+	  (progn
+	    
+	    (call-next-method))))))
 
 (defvar *widget-parameters*)
 

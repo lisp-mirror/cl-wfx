@@ -280,8 +280,7 @@
     (if (not (empty-p value))
 
 	(if (stringp value)
-	    (setf final-val (first (grid-fetch-items
-				    (dig field :db-type :data-type)
+	    (setf final-val (first (wfx-fetch-context-items
 				    (dig field :db-type :collection)
 				    :test (lambda (item)
 					    (equalp (item-hash item)
@@ -297,8 +296,7 @@
 			 &key &allow-other-keys)
   
   
-    (let* ((valid (grid-fetch-items
-		   (dig field :db-type :data-type)
+    (let* ((valid (wfx-fetch-context-items
 		   (dig field :db-type :collection)
 		   :test (lambda (item)
 			   (equalp (item-hash item)

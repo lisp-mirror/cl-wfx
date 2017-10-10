@@ -3,8 +3,8 @@
 (add-core-definitions
  '((:data-type
     (:name
-     "mail-account"
-     :label "Mail Account"
+     "email-account"
+     :label "Email Account"
      :top-level-p t
      :fields
      ((:name :email
@@ -19,7 +19,7 @@
 	     :db-type :string
 	     :attributes (:display t :editable t)
 	     :documentation "")
-      (:name :host
+      (:name :port
 	     :label "port"
 	     :db-type :integer
 	     :attributes (:display t :editable t)
@@ -36,15 +36,15 @@
 	     :documentation "")
       (:name :password
 	     :label "password"
-	     :db-type :password
+	     :db-type :string
 	     :attributes (:display t :editable t)
 	     :documentation "")))
     :destinations ( :license))
    
    (:collection
-    (:name "mail-accounts"
-     :label "Mail Accounts"
-     :data-type "mail-account")
+    (:name "email-accounts"
+     :label "Email Accounts"
+     :data-type "email-account")
     :destinations (:license)
     :access
     (:stores
@@ -55,8 +55,8 @@
        (:license (:update :delete :lookup))))))))
 
 (setf cl-smtp::*debug* t)
-(defun send-mail (mail-account to from subject message html-message)
 
+(defun send-mail (mail-account to from subject message html-message)
   
   (handler-case
       (progn
@@ -65,7 +65,9 @@
 			    (list to)
 			    subject
 			    message
-			    :html-message html-message
+			    :html-message (if (stringp html-message)
+					      html-message
+					      (eval html-message))
 			    :port (getx mail-account :port)
 			    :ssl (getx mail-account :ssl)
 			    :reply-to (or from (getx mail-account :email))

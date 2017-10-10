@@ -85,8 +85,13 @@
 	      (return-from get-entity entity))))))))
 
 (defun match-entity (item)
-  (when (active-user) 
-    (find item (getx (active-user) :selected-entities))))
+  (if (or (equalp (item-data-type item) "entity") (exists-p item :entity))
+      (if (active-user)
+	  (or (not (getx item :entity))
+	      (find (item-hash (getx item :entity))
+		    (getx (active-user) :selected-entities)
+		    :test #'equalp)))
+      t))
 
 (defmethod match-context-entities ((item item))
-  (match-entity (getx item :entity)))
+  (match-entity item))

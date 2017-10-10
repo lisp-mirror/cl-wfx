@@ -26,6 +26,8 @@
    :license-collection
    :wfx-fetch-items
    :wfx-fetch-item
+   :wfx-context-fetch-items
+   :wfx-context-fetch-item
    
    ;;????
    :system 
@@ -39,6 +41,7 @@
    :session
    :url
    :cache
+   :*script-functions*
    
    ;;#### 
    :load-context-specs
@@ -57,6 +60,9 @@
    ;;#### license.lisp
    :get-license
    :get-license-entity
+
+   ;;entity.lisp
+   :match-context-entities
    
    ;;#### module.lisp
    :get-module
