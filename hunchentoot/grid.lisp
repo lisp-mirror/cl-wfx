@@ -2,6 +2,7 @@
 
 (defparameter *item-hierarchy* nil)
 
+
 (defun complex-type (field)
   (if (listp (getf field :db-type))
       (or (dig field :db-type :complex-type)
@@ -17,9 +18,6 @@
   (dolist (field fields)
     (when (equalp (getf field :name) :entity)
       (return-from entity-type-p t))))
-
-
-
 
 (defun print-item-val-s* (field item)
   (let ((*print-case* :downcase)
@@ -913,8 +911,9 @@
 
 	    :id (frmt "~A-filter" col-name)
 	    :value (or (parameter (frmt "~A-filter" col-name))
-		       (getcx 
-			data-type (frmt "~A-filter" col-name))
+		       (getcx data-type
+		       (intern (string-upcase
+				(frmt "~A-filter" col-name))))
 		       "")
 	    :onkeydown
 	    ;;fires ajax call on enter (13)
@@ -1170,8 +1169,7 @@
 			       (getx item (getf key :name)))))
 		 (setf values (frmt "~A~A" values val))))	    
 	     values)))
-
-    (sort items #'string-lessp :key #'sort-val)))
+    (sort (copy-list items) #'string-lessp :key #'sort-val)))
 
 
 (defun grid-js-render-new (data-type)
@@ -1200,23 +1198,263 @@
 	       (js-pair "page"
 			(or active-page 1)))))
 
+(defun render-sub-new-button (sub data-spec)
+  (with-html-string
+      (:div
+       :class "card-footer bg-white"
+       (:div :class "row"	  
+	     (:div :class "col"
+		   (:button
+		    :name "new" :type "submit" 
+		    :class "btn btn-outline-success"
+		    :aria-pressed "false"
+		    :onclick 
+		    (grid-js-render-new
+		     data-spec)
+		    (cl-who:str "+"))
+		   (when (find (complex-type sub)
+			       (list :collection-items
+				     :hierarchical))
+
+		     (cl-who:htm
+		      (:button
+		       :name "new" :type "submit" 
+		       :class "btn btn-outline-success"
+		       :aria-pressed "false"
+		       :onclick 
+		       (grid-js-render
+			data-spec
+			:action "select-from" )
+		       (cl-who:str "Select From")))))))))
+
+(defun render-item-row (subs data-type item fields)
+  (with-html-string
+    (:div 
+     :class "row "		 
+     (if subs
+	 (cl-who:htm
+	  (:div :class "col-sm-1"
+		(cl-who:str
+		 (render-expand-buttons subs data-type item)))))
+     (dolist (half (rough-half-list (get-data-fields fields) 7))
+       
+       (cl-who:htm
+	(:div :class "col"
+	      (:div :class "row no-gutters"
+		    (dolist (field half)
+		      (cl-who:htm
+		       (:div 
+			:class "col text-left text-truncate"
+			
+			(let ((val (print-item-val 
+				    (complex-type field)
+				    field item)))
+			  (if (not (equalp (complex-type field)
+					   :image))
+			      (if (> (length val) 100)
+				  (cl-who:str 
+				   (subseq val 0 100))
+				  (cl-who:str 
+				   val))
+			      (cl-who:str 
+			       val))))))))))
+
+     (:div :class "col-sm-2"
+	   (:div :class "btn-group float-right"
+		 (unless *rendering-shit*
+		   (cl-who:str			      
+		    (render-grid-buttons data-type item )))
+		 (cl-who:str
+		  (render-select-button item)))))))
+
+(defun render-select-from-grid (data-type sub sub-data-spec parent-item)
+  (when (and (equalp (parameter "action")
+		     "select-from")
+	     (string-equal
+	      (parameter "data-type")
+	      (frmt "~A" sub-data-spec)))
+				   
+    (let ((*rendering-shit* t))
+
+				     
+      (with-html-string
+       (:div
+	:id (frmt "select-from-~A"
+		  sub-data-spec)
+	:class "card-block"
+	(:h6 :class "card-title text-muted"
+	     (cl-who:str
+	      (frmt "Select ~A to add..."
+		    (dig sub :db-type
+			 :collection))))
+	(cl-who:str
+	 (render-grid-data sub-data-spec
+			   (wfx-fetch-context-items
+			    (dig sub :db-type :collection)
+			    :test (filter-function data-type))
+	  -1 parent-item data-type))
+
+	(:div
+	 :class "card-footer"
+	 (:button
+	  :name "select" :type "submit" 
+	  :class
+	  "btn btn-outline-success float-right"
+	  :aria-pressed "false"
+	  :onclick
+	  (grid-js-render-form-values
+	   sub-data-spec
+	   (frmt "select-from-~A"
+		 sub-data-spec)
+	   :action "add-selection")
+	  (cl-who:str "Add Selection"))))))))
+
+(defun render-expand (data-type item subs sub-level sub-level-p parent-item)
+  (when (equalp (ensure-parse-integer
+		 (getcx data-type :expand-id)) 
+		(item-hash item))
+		    
+    (unless sub-level-p
+      (setf (getcx data-type :root-item) item))
+
+    (with-html-string
+      (dolist (sub subs)
+	 
+	 
+	(let* ((sub-data-spec (dig sub :db-type :data-type)))
+
+	  (setf (getcx sub-data-spec :parent-item) item)
+
+	  (setf (getcx sub-data-spec :collection-name)
+		(dig sub :db-type :collection))
+	  
+	  
+	  (unless (getcx sub-data-spec :data-type)
+	    (setf (getcx sub-data-spec :data-type)
+		  (find-type-def *system* 
+				 sub-data-spec))
+	    
+	    (setf (getcx sub-data-spec :fields) 
+		  (dig (getcx sub-data-spec :data-type)
+		       :data-type :fields)))
+	  
+	  (setf (getcx sub-data-spec :active-item) item)
+
+	  
+	  (cl-who:htm
+	   (:div
+	    :id sub-data-spec
+	    :class "row"
+	    (:div
+	     :class "col"
+	     (:div :class "card"
+		   (:h5 :class "card-header"
+			(cl-who:str
+			 (frmt "~A" (string-capitalize
+				     (getf sub :name)))))
+		   (cl-who:str
+		    (render-grid-header
+		     sub-data-spec
+		     t))
+
+		   (:div :class "card-block"
+			 (cl-who:str
+			  (render-grid-data
+			   sub-data-spec
+			   (getfx item sub) 
+			   (+ sub-level 1)
+			   
+			   item
+			   data-type)))
+		   
+		   (cl-who:str
+		    (render-select-from-grid
+		     data-type sub
+		     sub-data-spec parent-item))
+		   
+		   (cl-who:str
+		    (render-sub-new-button
+		     sub
+		     sub-data-spec)))))))))))
+
+(defun render-data-edit (data-type item fields parent-item parent-spec)
+  (with-html-string
+    (if (getcx data-type :edit-item)
+	
+	(when (equalp (item-hash (getcx data-type :edit-item))
+		      (item-hash item))
+	  
+	  (cl-who:htm
+	   
+	   (:div :id (frmt "ajax-edit-~A" (item-hash item))
+		 
+		 (when (and (and (equalp (parameter "action") "save")
+				 (getcx data-type :edit-object)
+				 (getcx data-type :validation-errors))
+			    (string-equal (parameter "data-type")
+					  (frmt "~A" data-type)))
+		   
+		   (cl-who:str (render-grid-edit data-type fields
+						 (or (getcx data-type :edit-item)
+						     item )
+						 parent-item parent-spec))))))
+	(cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item)))))))
+
+(defun render-row-goodies (subs sub-level-p sub-level data-type
+			   item fields parent-item parent-spec)
+  (with-html-string
+    (:div :class "row"
+	  (:div :class "col"
+		(when *rendering-shit*
+
+		  (cl-who:htm
+		   (:div :id (frmt "ajax-edit-~A"
+				   (item-hash item)))))
+		
+		(unless *rendering-shit*
+		  
+		  (cl-who:str (render-data-edit data-type item fields
+						parent-item parent-spec))
+
+		  (cl-who:str (render-expand data-type item subs
+					     sub-level sub-level-p
+					     parent-item)))))))
+
+
+(defun render-new-edit (data-type fields parent-item parent-spec)
+  (with-html-string
+    (:div :id (frmt "ajax-new-~A" data-type)
+	  (when (and (getcx data-type :edit-item)
+		     (not (item-hash (getcx data-type :edit-item))))
+	    (when (and (and (equalp (parameter "action") "save")
+			      (getcx data-type :edit-object)
+			      (getcx data-type :validation-errors))
+			 (string-equal (parameter "data-type")
+				       (frmt "~A" data-type)))
+
+		(cl-who:str
+		 (render-grid-edit data-type fields
+				   (getcx data-type :edit-item)
+				   parent-item parent-spec)))))))
+
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
 
-
   (let ((sub-level-p (not (equalp data-type 
-				  (gethash :data-type (cache *context*))))))
+				  (gethash :data-type (cache *context*)))))
+	(data-items))
     
     (with-html-string
       (let ((fields (getcx data-type :fields))
 	    (subs))
 	
 	(dolist (field fields)
-	  (when (find (complex-type field) (list :collection-items :list-items
-						 :hierarchical))
+	  (when (find (complex-type field)
+		      (list :collection-items :list-items
+			    :hierarchical))
 	    (pushnew field subs)))
-	
-	(setf page-items (sort-by-keys page-items (keysx fields)))
+
+	(setf data-items (sort-by-keys page-items (keysx fields)))
 
 	(if parent-item
 	    (setf *item-hierarchy* (push
@@ -1225,220 +1463,25 @@
 				    *item-hierarchy*))
 	    (setf *item-hierarchy* nil))
 
-	(dolist (item page-items)
+	(dolist (item data-items)
+
 	  (cl-who:htm
 	   (:div :class "row"
 		 (when sub-level-p
 		   (cl-who:htm
 		    (:div :class "col-sm-1")))
 		 (:div :class "col"
-		       (:div 
-			:class "row "		 
-			(if subs
-			    (cl-who:htm
-			     (:div :class "col-sm-1"
-				   (cl-who:str
-				    (render-expand-buttons subs data-type item)))))
-			(dolist (half (rough-half-list (get-data-fields fields) 7))
-			  
-			  (cl-who:htm
-			   (:div :class "col"
-				 (:div :class "row no-gutters"
-				       (dolist (field half)
-					 (cl-who:htm
-					  (:div 
-					   :class "col text-left text-truncate"
-					   
-					   (let ((val (print-item-val 
-						       (complex-type field)
-						       field item)))
-					     (if (not (equalp (complex-type field)
-							      :image))
-						 (if (> (length val) 100)
-						     (cl-who:str 
-						      (subseq val 0 100))
-						     (cl-who:str 
-						      val))
-						 (cl-who:str 
-						      val)
-						 )))))))))
-
-			(:div :class "col-sm-2"
-			      (:div :class "btn-group float-right"
-				    (unless *rendering-shit*
-				      (cl-who:str			      
-				       (render-grid-buttons data-type item )))
-				    (cl-who:str
-				     (render-select-button item)))))
-		       
-		    
-		       (:div :class "row"
-			     (:div :class "col"
-				   (when *rendering-shit*
-
-				     (cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item))
-						      )))
-				   
-				   (unless *rendering-shit*
-				     
-				     (if (getcx data-type :edit-item)
-				      
-				       (when (equalp (item-hash (getcx data-type :edit-item))
-						   (item-hash item))
-					   
-					   (cl-who:htm
-					    
-					    (:div :id (frmt "ajax-edit-~A" (item-hash item))
-						  
-						  (when (and (and (equalp (parameter "action") "save")
-								  (getcx data-type :edit-object)
-								  (getcx data-type :validation-errors))
-							     (string-equal (parameter "data-type")
-									   (frmt "~A" data-type)))
-						    
-						    (cl-who:str (render-grid-edit data-type fields
-										  (or (getcx data-type :edit-item)
-										      item )
-										  parent-item parent-spec)))))
-					   )
-				       (cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item))
-						      )))
-				  
-				     (when (equalp (ensure-parse-integer
-						    (getcx data-type :expand-id)) 
-						   (item-hash item))
-					 
-				       (unless sub-level-p
-					 (setf (getcx data-type :root-item) item))
-					     
-				       (dolist (sub subs)
-					 (let* ((sub-data-spec (dig sub :db-type :data-type)))
-
-					   (setf (getcx sub-data-spec :parent-item) item)
-
-					   (setf (getcx sub-data-spec :collection-name)
-						 (dig sub :db-type :collection))
-						 
-											 
-					   (unless (getcx sub-data-spec :data-type)
-					     (setf (getcx sub-data-spec :data-type)
-						   (find-type-def *system* 
-								  sub-data-spec))
-						   
-					     (setf (getcx sub-data-spec :fields) 
-						   (dig (getcx sub-data-spec :data-type)
-							:data-type :fields)))
-						 
-					   (setf (getcx sub-data-spec :active-item) item)
-
-						 
-					   (cl-who:htm
-					    (:div
-					     :id sub-data-spec
-					     :class "row"
-					     (:div
-					      :class "col"
-					      (:div :class "card"
-						    (:h5 :class "card-header"
-							 (cl-who:str
-							  (frmt "~A" (string-capitalize
-								      (getf sub :name)))))
-						    (cl-who:str
-						     (render-grid-header
-						      sub-data-spec
-						      t))
-					
-						    (:div :class "card-block"
-							  (cl-who:str
-							   (render-grid-data
-							    sub-data-spec
-							    (getfx item sub) 
-							    (+ sub-level 1)
-								  
-							    item
-							    data-type)))
-						    (when (and (equalp (parameter "action")
-								       "select-from")
-							       (string-equal
-								(parameter "data-type")
-								(frmt "~A" sub-data-spec)))
-						      (let ((*rendering-shit* t))
-
-							      
-							(cl-who:htm
-							 (:div
-							  :id (frmt "select-from-~A"
-								    sub-data-spec)
-							  :class "card-block"
-							  (:h6 :class "card-title text-muted"
-							       (cl-who:str
-								(frmt "Select ~A to add..."
-								      (dig sub :db-type
-									   :collection))))
-							  (cl-who:str
-							   (render-grid-data
-							    sub-data-spec
-							    (wfx-fetch-context-items
-							     (dig sub :db-type :collection)
-							     :test (filter-function data-type))
-							    -1 parent-item data-type))
-
-							  (:div
-							   :class "card-footer"
-							   (:button
-							    :name "select" :type "submit" 
-							    :class
-							    "btn btn-outline-success float-right"
-							    :aria-pressed "false"
-							    :onclick
-							    (grid-js-render-form-values
-							     sub-data-spec
-							     (frmt "select-from-~A"
-								   sub-data-spec)
-							     :action "add-selection")
-							    (cl-who:str "Add Selection")))))))
-						    (:div
-						     :class "card-footer bg-white"
-						     (:div :class "row"	  
-							   (:div :class "col"
-								 (:button
-								  :name "new" :type "submit" 
-								  :class "btn btn-outline-success"
-								  :aria-pressed "false"
-								  :onclick 
-								  (grid-js-render-new
-								   sub-data-spec)
-								  (cl-who:str "+"))
-								 (when (find (complex-type sub)
-									     (list :collection-items
-										   :hierarchical))
-
-								   (cl-who:htm
-								    (:button
-								     :name "new" :type "submit" 
-								     :class "btn btn-outline-success"
-								     :aria-pressed "false"
-								     :onclick 
-								     (grid-js-render
-								      sub-data-spec
-								      :action "select-from" )
-								     (cl-who:str "Select From")))))))))))))))))))))
-
+		       (cl-who:str
+			(render-item-row subs data-type item fields))
+		       		       
+		       (cl-who:str
+			(render-row-goodies subs sub-level-p
+					    sub-level data-type
+					    item fields
+					    parent-item parent-spec))))))
 	
-
-	(cl-who:htm (:div :id (frmt "ajax-new-~A" data-type)
-			  (when (getcx data-type :edit-item)
-			    (when (not (item-hash (getcx data-type :edit-item)))
-			      (when (and (and (equalp (parameter "action") "save")
-					      (getcx data-type :edit-object)
-					      (getcx data-type :validation-errors))
-					 (string-equal (parameter "data-type")
-						       (frmt "~A" data-type)))
-
-				(cl-who:str
-				 (render-grid-edit data-type fields
-						   (getcx data-type :edit-item)
-						   parent-item parent-spec)))))))))))
+	(cl-who:str (render-new-edit data-type fields
+				     parent-item parent-spec))))))
 
 (defun render-grid-sizing (data-type)
   (with-html-string
@@ -1552,6 +1595,8 @@
     (remove-if #'not found)))
 
 (defun filter-function (data-type)
+
+  
   (lambda (item)
     
     (let ((found nil))
@@ -1562,9 +1607,9 @@
 	       (or
 		(parameter 
 		 (frmt "~A-filter" (getf field :name)))
-		(getcx 
-		 data-type (frmt "~A-filter" 
-				 (getf field :name))))))
+		(getcx data-type
+		       (intern (string-upcase
+				(frmt "~A-filter" (getf field :name))))))))
 	  (when filter-term			       
 	    (when (getf field :db-type)
 	      (when (find (complex-type field)
@@ -1602,6 +1647,7 @@
 		      data-type 
 		      :fields))
 
+	
 	(when (getf field :db-type)
 	   
 	    (when (find (complex-type field)
@@ -1610,7 +1656,7 @@
 	      
 	      (let ((accessor (dig field :db-type :accessor)))
 		(dolist (sub-val (getfx item field))
-
+		  
 		  (when sub-val
 		    (let* ((val (apply #'digx
 				       item
@@ -1869,10 +1915,10 @@
   (when (equalp (parameter "action") "un-filter")
     (setf (getcx data-type :filter) nil))
 
-  (when (equalp (parameter "action") "grid-col-filter")
-    (let ((fields (getcx data-type :filter-fields)))
+  (let ((fields (getcx data-type :filter-fields)))
 
-      (dolist (field (getcx data-type :fields))	
+    (dolist (field (getcx data-type :fields))
+
 	(when (parameter (frmt "~A-filter" (getf field :name)))
 	  
 	  (pushnew field fields)
@@ -1882,7 +1928,7 @@
 				(frmt "~A-filter" (getf field :name)))))  
 		(parameter (frmt "~A-filter" (getf field :name))))))
     
-      (setf (getcx data-type :filter-fields) fields))))
+      (setf (getcx data-type :filter-fields) fields)))
 
 
 (defun set-type-context (data-type)
@@ -2014,7 +2060,7 @@
 
 
 (defun fetch-grid-root-edit-item (hash)
-  (let ((collection-name (gethash :collection-name (cache *context*))))
+  (let ((collection-name (gethash :collection-name (cache *context*))))   
      (wfx-fetch-context-item  collection-name
 		      :test (lambda (item)
 			      (when (equalp (item-hash item)
@@ -2056,7 +2102,7 @@
 		;; :aria-labelledby (frmt "~A-drop" name)
 		;;	(break "~A" list)
 
-		(setf list (sort list #'string<
+		(setf list (sort (copy-list list) #'string<
 				 :key (lambda (item)
 					(apply #'digx item
 					       (if (listp accessors)
@@ -2074,6 +2120,9 @@
 				       accessors
 				       (list accessors))))))))))))))
 
+(declaim (optimize (debug 3))
+	 (notinline ajax-grid-edit))
+
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (let* ((data-type (parameter "data-type"))
@@ -2083,11 +2132,12 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
+   
     (setf (getcx data-type :edit-object) nil)
     
-     (setf root-type (if  hierarchy
-			  (string-downcase (frmt "~A"
-						  (first (first hierarchy))))))
+    (setf root-type (if  hierarchy
+			 (string-downcase (frmt "~A"
+						(first (first hierarchy))))))
      (setf root-hash (if hierarchy
 			 (second (first hierarchy))))
 
@@ -2147,6 +2197,7 @@
 	 (parent-slot)
 	 (edit-objects (reverse (getcx data-type :edit-object))))
 
+    
 
     (when edit-objects      
       (setf root-item (getf (first edit-objects) :item))
@@ -2191,6 +2242,7 @@
 		 (getcx data-type :validation-errors)))
 	      
 	      (when (first valid)
+	;;	(break "~A" (getfx edit-item field :parent-item parent-item))
 		(setf (getfx edit-item field :parent-item parent-item)
 		      (parameter field-name)))))
 	  
@@ -2212,7 +2264,8 @@
 
 	
       (unless (getcx data-type :validation-errors)
-	  ;;Append parent-slot only if new
+	;;Append parent-slot only if new
+;;	(break "append")
 	  (when parent-slot
 	    (let ((exists (exist-child-item edit-item
 					    (getx parent-item parent-slot))))

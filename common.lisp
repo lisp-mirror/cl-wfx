@@ -1,5 +1,19 @@
 (in-package :cl-wfx)
 
+(defparameter *log-shit-p* nil)
+
+(defun log-shit (shit)
+  (when *log-shit-p*
+    (with-open-file (out "/home/phil/source/shit.log"
+			 :direction :output
+			 :if-exists :append
+			 :if-does-not-exist :create)
+      (pprint (frmt "***********************************************************~%~A" shit) out)
+      (close out)
+      
+      ))
+  nil)
+
 ;;GLOBAL VARS and Shortcut functions ################################
 (defvar *sys-license-code* "000000")
 

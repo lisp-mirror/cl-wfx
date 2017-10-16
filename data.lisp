@@ -216,6 +216,7 @@
 				  collection-name)))
 
 	(when collection
+	  
 	  (setf items
 		(append
 		 items
