@@ -1381,7 +1381,7 @@
   (with-html-string
     (if (getcx data-type :edit-item)
 	
-	(when (equalp (item-hash (getcx data-type :edit-item))
+	(if (equalp (item-hash (getcx data-type :edit-item))
 		      (item-hash item))
 	  
 	  (cl-who:htm
@@ -1397,7 +1397,8 @@
 		   (cl-who:str (render-grid-edit data-type fields
 						 (or (getcx data-type :edit-item)
 						     item )
-						 parent-item parent-spec))))))
+						 parent-item parent-spec)))))
+	  (cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item)))))
 	(cl-who:htm (:div :id (frmt "ajax-edit-~A" (item-hash item)))))))
 
 (defun render-row-goodies (subs sub-level-p sub-level data-type
@@ -1418,7 +1419,8 @@
 
 		  (cl-who:str (render-expand data-type item subs
 					     sub-level sub-level-p
-					     parent-item)))))))
+					     parent-item)))
+		))))
 
 
 (defun render-new-edit (data-type fields parent-item parent-spec)
@@ -1470,6 +1472,7 @@
 		 (when sub-level-p
 		   (cl-who:htm
 		    (:div :class "col-sm-1")))
+		 
 		 (:div :class "col"
 		       (cl-who:str
 			(render-item-row subs data-type item fields))
