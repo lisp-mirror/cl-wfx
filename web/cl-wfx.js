@@ -11,6 +11,18 @@ function before_ajax(context)
 
 function applyPeach (context)
 {
+
+     $('.wfx-script').each(function(i,textarea) {
+
+     	  	editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+          	    mode: "text/x-common-lisp"});
+	 CodeMirror.css("font-size","12px");
+         editor.refresh();});
+    
    /* $('.date', context).datepicker({format: 'dd M yyyy'});
 
     $("textarea:not('.no-mce')", context).each(function () {
@@ -44,7 +56,7 @@ function applyPeach (context)
     });
 
 */}
-applyPeach();
+
 
 
 function fetchURI(uri, callback, parameters) {
@@ -125,7 +137,7 @@ function ajax_render (script_name, renderer, id, args) {
 //alert(json);
                            before_ajax(widget);
                            widget.innerHTML = json[0];
-                          ;; applyPeach(widget);
+                           applyPeach(widget);
 
                            if (json[1]) {
                                eval(json[1]);

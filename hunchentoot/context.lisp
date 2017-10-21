@@ -558,8 +558,21 @@
        $(this).parents('.auto-complete').find('.auto-list').empty();
 });
 </script>"
-	
-	(:script 
+
+	(:script :type "text/javascript"
+	 (cl-who:str
+	  "$(document).ready(function() {
+        $('.wfx-script').each(function(i,textarea) {
+
+     	  	editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+          	    mode: \"text/x-common-lisp\"});
+          editor.refresh();});});")
+	 )
+	(:script :type "text/javascript"
 	 (cl-who:str (frmt	      
 		      "function ajax_call(func, callback, args, widget_args) {
 
@@ -681,7 +694,7 @@
 				   (:div :class "form-group"
 					 (:label :for "script" "Script")
 					 (:textarea
-					  :class "form-control"
+					  :class "form-control wfx-script"
 					  
 					  :rows 20
 					  :name "script"
@@ -737,7 +750,6 @@
      )))
 
 (defmethod setup-context-repl ()
-  
   (eval
    `(hunchentoot:define-easy-handler
 	(repl 

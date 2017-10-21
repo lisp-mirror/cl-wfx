@@ -375,7 +375,7 @@
     (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
-	   :class "form-control"
+	   :class "form-control wfx-script"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
@@ -385,7 +385,7 @@
 			item))))
 	(with-html-string
 	  (:textarea 
-	   :class "form-control"
+	   :class "form-control wfx-script"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   (cl-who:str
