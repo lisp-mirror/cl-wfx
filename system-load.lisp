@@ -129,15 +129,8 @@
 
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
-  (let ((sys-mod (get-module (core-store) "Core")))
-    
-    (unless sys-mod
-      (setf sys-mod	   
-	    (list :name "Core"
-		  :module-short "cor"
-		  :menu nil))
-      (setf (getf sys-mod :contexts)
-	    (remove-if #'not (list
+  (let* ((sys-mod (get-module (core-store) "Core"))
+	(contexts (list
 			      ;;  (get-context-spec "theme")
 			      ;;(get-context-spec "Allsorts")
 			      ;; (get-context-spec "script")
@@ -160,10 +153,8 @@
 			      (get-context-spec (core-store ) "Entity Reports")
 			      ;; (get-context-spec "import-data")
 			      
-			      )))
-      
-      
-      (let ((menu-items (loop for spec in (getf sys-mod :contexts)
+			      ))
+	(menu-items (loop for spec in contexts
 			   when spec
 			   collect (make-item
 				    :data-type "context-spec"
@@ -172,8 +163,8 @@
 				     :name (digx spec :name)
 				     :context-spec
 				     spec)))))
-	
-	(setf menu-items (append menu-items
+
+    (setf menu-items (append menu-items
 				 (list
 				  (make-item
 					:data-type "menu-item"
@@ -197,16 +188,30 @@
 						 :name "action"
 						 :value "logout")))))
 				       )))
-	
-	
-	(setf (getf sys-mod :menu)
+    (when sys-mod
+      (setf (getx sys-mod :contexts) contexts)
+      (let ((menu
+	     (find-in-item-list (getx sys-mod :menu)
+				(lambda (item)
+				  (equalp (getx item :name) "System")))))
+	(setf (getx menu :menu-items) menu-items)))
+    
+    (unless sys-mod
+      (setf sys-mod	   
+	    (list :name "Core"
+		  :module-short "cor"
+		  :menu nil))
+      (setf (getf sys-mod :contexts)
+	    (remove-if #'not contexts))
+      
+      (setf (getf sys-mod :menu)
 	      (list (make-item
 		     :data-type "menu-item"
 		     :values
 		     (list :name "System"
 			   :menu-items  menu-items)))))
 
-      (setf sys-mod (persist-item (core-collection "modules") sys-mod)))
+    (setf sys-mod (persist-item (core-collection "modules") sys-mod))
     
     (dolist (spec (digx sys-mod :contexts))
       (setup-context sys-mod spec *system*))
