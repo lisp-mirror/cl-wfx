@@ -4,6 +4,22 @@
 
 (add-core-definitions
  '((:data-type
+    (:name "file"
+     :label "file"
+     :fields
+     ((:name :name 
+	     :label "Name"
+	     :key-p t
+	     :db-type :string
+	     :attributes (:display t :editable t))
+      (:name :path
+	     :label "path"
+	     :key-p nil
+	     :db-type :script
+	     :attributes (:display t :editable t)))
+     :destinations (:core :system :license)))
+
+   (:data-type
     (:name "report"
      :label "Report"
      :top-level-p t
@@ -31,7 +47,13 @@
 	     :db-type (:type :keyword
 			     :complex-type :value-string-list
 			     :delimiter " ")
-	     :attributes (:display t :editable t)))
+	     :attributes (:display t :editable t))
+      (:name :files
+	     :label "Files"
+	     :db-type (:type :item
+			     :complex-type :list-items
+			     :data-type "file"
+			     :accessor (:name))))
      :destinations (:core :system :license)))
    
    (:collection
@@ -53,7 +75,62 @@
 	(:user-levels
 	 (:core (:update :delete :lookup))
 	 (:system (:update :delete :lookup))
-	 (:license (:update :delete :lookup))))))))
+	 (:license (:update :delete :lookup))))))
+
+   (:data-type
+    (:name "entity-report"
+     :label "Entity Report"
+     :top-level-p t
+     :fields
+     ((:name :entity
+	     :label "Entity"
+	     :key-p t
+	     :db-type (:type :list
+			     :complex-type :collection
+			     :data-type "entity"
+			     :collection "entities"
+			     :accessor (:name))
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :name 
+	     :label "Name"
+	     :key-p t
+	     :db-type :string
+	     :attributes (:display t :editable t))
+      (:name :code
+	     :label "Code"
+	     :key-p nil
+	     :db-type :script
+	     :attributes (:display t :editable t))
+      (:name :permissions 
+	     :label "Permissions"
+	     :key-p nil
+	     :db-type (:type :keyword
+			     :complex-type :value-string-list
+			     :delimiter " ")
+	     :attributes (:display t :editable t))
+      (:name :args 
+	     :label "Args"
+	     :key-p nil
+	     :db-type (:type :keyword
+			     :complex-type :value-string-list
+			     :delimiter " ")
+	     :attributes (:display t :editable t))
+      (:name :files
+	     :label "Files"
+	     :db-type (:type :item
+			     :complex-type :list-items
+			     :data-type "file"
+			     :accessor (:name))))
+     :destinations (:license)))
+
+   (:collection
+	(:name "entity-reports"
+	 :label "Entity Reports"
+	 :data-type "entity-report"
+;;	 :bucket-keys (:entity)
+	 )
+	:destinations (:license))))
 
 (defun call-data-script (name)
   (let ((script (wfx-fetch-items "scripts"
@@ -80,9 +157,10 @@
 			 (cl-who:htm
 			;;  (break "wtf ~A" *item*)
 			  (:div :class "col"
-				(cl-who:str (if (getf cell :value)
-						(getf cell :value)
-						(eval (getf cell :script)))))))))))))))
+				(cl-who:str
+				 (if (getf cell :value)
+				     (getf cell :value)
+				     (eval (getf cell :script)))))))))))))))
 
 
 (defmethod render-report-element ((type (eql :html))
@@ -108,9 +186,10 @@
 	    (cl-who:htm
 	     (:div :class "col"
 		   (:h5
-		    (cl-who:str (if (getf cell :value)
-						(getf cell :value)
-						(eval (getf cell :script)))))))))))
+		    (cl-who:str
+		     (if (getf cell :value)
+			 (getf cell :value)
+			 (eval (getf cell :script)))))))))))
 
 (defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :footer-row))
@@ -121,9 +200,10 @@
 	    (cl-who:htm
 	     (:div :class "col"
 		   (:h5
-		    (cl-who:str (if (getf cell :value)
-						(getf cell :value)
-						(eval (getf cell :script)))))))))))
+		    (cl-who:str
+		     (if (getf cell :value)
+			 (getf cell :value)
+			 (eval (getf cell :script)))))))))))
 
 (defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :table))

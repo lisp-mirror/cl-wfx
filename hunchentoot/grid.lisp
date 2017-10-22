@@ -2275,7 +2275,7 @@
 	;;Append parent-slot only if new
 ;;	(break "append")
 	  (when parent-slot
-	    (let ((exists (exist-child-item edit-item
+	    (let ((exists (find-equalp-item edit-item
 					    (getx parent-item parent-slot))))
 	     
 	      (if exists
@@ -2306,13 +2306,6 @@
 	    (when collection
 	      (persist-item collection root-item)))))))
 
-(defun exist-child-item (item children)
-  (let ((exists nil))
-    (dolist (child children)
-      (when (equalp (item-values child) (item-values item))
-	
-	(setf exists child)))
-    exists))
 
 (defun store-from-stash (store-name)
   (dolist (store (getcx (gethash :data-type (cache *context*)) :stores))

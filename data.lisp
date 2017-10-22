@@ -18,9 +18,7 @@
       (let ((destinations (or (getf definition :destinations)
 			      (list destination))))
 	(when (find destination destinations :test 'equalp)
-	  (when (equalp destination :system)
-	 ;;   (break "~A" definition)
-	    )
+
 	  (let ((data-type-def (getf definition :data-type))
 		(collection-def (getf definition :collection)))
 	    (cond (collection-def			   
@@ -86,18 +84,7 @@
   (init-definitions (universe system) :license license-code
 		    (data-definitions system)))
 
-(defun find-in-item-list (list test)
-  (map nil
-       (lambda (item)
-	 (when (apply test (list item))
-	       (return-from find-in-item-list item)))
-       list))
 
-(defun find-items-in-item-list (list test)
-  (remove-if #'not  (map 'list
-			 (lambda (item)
-			   (apply test (list item)))
-			 list)))
 
 (defun core-store ()
   (cl-naive-store::get-store* (universe *system*) "core"))
@@ -215,8 +202,7 @@
 				  store 
 				  collection-name)))
 
-	(when collection
-	  
+	(when collection  
 	  (setf items
 		(append
 		 items

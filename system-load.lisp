@@ -82,19 +82,40 @@
 		    :for-everyone t 
 		    :collection "scripts")))
 
+  (unless (get-context-spec (core-store) "Entity Scripts")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Entity Scripts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "entity-scripts")))
+
   (unless (get-context-spec (core-store) "Email Accounts")
     (persist-item (core-collection "context-specs")
 		  '(:name "Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "email-accounts")))
+
+  (unless (get-context-spec (core-store) "Entity Email Accounts")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Entity Email Accounts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "entity-email-accounts")))
   
   (unless (get-context-spec (core-store) "Reports")
     (persist-item (core-collection "context-specs")
 		  '(:name "Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "reports"))))
+		    :collection "reports")))
+  
+  (unless (get-context-spec (core-store) "Entity Reports")
+    (persist-item (core-collection "context-specs")
+		  '(:name "Entity Reports"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "entity-reports"))))
 
 (defun make-menu-item (name context-spec)
   (make-item
@@ -131,8 +152,12 @@
 			      (get-context-spec (core-store ) "Users")
 			      (get-context-spec (core-store ) "License Users")
 			      (get-context-spec (core-store ) "Scripts")
+			      (get-context-spec (core-store ) "Entity Scripts")
 			      (get-context-spec (core-store ) "Email Accounts")
+			      (get-context-spec (core-store )
+						"Entity Email Accounts")
 			      (get-context-spec (core-store ) "Reports")
+			      (get-context-spec (core-store ) "Entity Reports")
 			      ;; (get-context-spec "import-data")
 			      
 			      )))

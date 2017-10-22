@@ -298,6 +298,63 @@ must be valid email to enable confirmation.")
 
 (defparameter *user* nil)
 
+(defun add-user (email password &key name licenses contexts
+				  entities super-user-p)
+  (let ((user (get-user email))
+	(permissions))
+
+    
+    (when user
+      (multiple-value-bind (password salt)
+	  (make-password password)
+	(setf (getx user :password) password)
+	(setf (getx user :salt) salt))
+      (setf (getx user :name) name)
+      (setf (getx user :license-codes) licenses)
+      (persist user))
+    
+    (unless user
+      (setf user (cl-wfx::make-user email password
+				    :name name
+				    :license-codes licenses
+				    :super-user-p super-user-p)))
+    
+    (dolist (context contexts)	    
+	    (push
+	     (make-item
+	      :data-type "user-permission"
+	      :values
+	      (list :context
+		    context
+		    :permissions '(:update :delete :search)))
+	     permissions))
+    
+    (dolist (code licenses)
+      (unless (find code (getx user :license-codes) :test #'equalp)
+	(setf (getx user :license-codes)
+	      (append (getx user :license-codes)
+		      (list code)))
+	(persist-item
+	   (item-collection user)
+	   user))
+
+      (let ((lic-user (get-license-user code email)))
+
+	(when lic-user
+	  (setf (getx lic-user :permissions) permissions)
+	  (setf (getx lic-user :accessible-entities) entities)
+	  (persist-item (license-collection code "license-users") lic-user))
+	
+	(unless lic-user	  
+	  (persist-item
+	   (license-collection code "license-users")
+	   (list
+	    :email email
+	    :permissions permissions
+	    :accessible-entities entities	   
+	    :status :active)))))
+    user))
+
 (defgeneric ensure-user (system email password &key &allow-other-keys))
 
 (defmethod ensure-user ((system system) email password 

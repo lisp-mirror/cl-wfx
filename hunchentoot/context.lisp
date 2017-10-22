@@ -69,18 +69,16 @@
   ;; (break "~A" (core-collection "active-users"))
   
   (let ((active-user (fetch-item (core-collection "active-users")
-				 :test (lambda (item)
-					 
+				 :test (lambda (item)				 
 					 (equalp (parameter "email")
 						 (digx item :email))))))
      (unless active-user
-     
+       
       (setf active-user (persist-item (core-collection "active-users")
 				      (list :email (digx user :email) 
 					    :selected-licenses nil
 					    :selected-entities nil))))
-    
-    (setf (user *session*) user)
+     (setf (user *session*) user)
     (setf (active-session-user *session*) active-user))
   
   ;;(init-user-session user)
@@ -121,7 +119,6 @@
   
   (setf (contexts *session*) nil)
   (setf *session* nil)
-
   (persist-item (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
@@ -236,19 +233,17 @@
      
       (dolist (license-code (digx (active-user) :selected-licenses))
 	
-	(dolist (entity (digx (license-user license-code) :accessible-entities))	  
+	(dolist (entity (digx (license-user license-code)
+			      :accessible-entities))	  
 	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
 	    (pushnew (item-hash entity)
-		     (getf (item-values (active-user)) :selected-entities))
-	    ;;(persist-item (core-collection "active-users") (active-user))
-))))))
+		     (getx (active-user) :selected-entities))
+	    (persist-item (core-collection "active-users") (active-user))))))))
 
 (defun render-licence-codes ()
   (with-html-string
-    (dolist (code (digx (current-user) :license-codes))
-      
-      (cl-who:htm
-       
+    (dolist (code (digx (current-user) :license-codes))    
+      (cl-who:htm       
        (:div :class "row"
 	     (:div :class "form-check"
 		   (:div :class "form-check-label"
@@ -275,9 +270,9 @@
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
       (pushnew (cdr parameter)
-	       (getf (item-values (active-user)) :selected-licenses)
+	       (getx (active-user) :selected-licenses)
 	       :test #'string-equal)
-      ;;(persist-item (core-collection "active-users") (active-user))
+      (persist-item (core-collection "active-users") (active-user))
       )))
 
 (defun context-access-p (context)

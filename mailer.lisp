@@ -52,7 +52,67 @@
       (:user-levels
       ;; (:core (:update :delete :lookup))
      ;;  (:system (:update :delete :lookup))
-       (:license (:update :delete :lookup))))))))
+       (:license (:update :delete :lookup))))))
+
+   (:data-type
+    (:name
+     "entity-email-account"
+     :label "Entity Email Account"
+     :top-level-p t
+     :fields
+     ((:name :entity
+	     :label "Entity"
+	     :key-p t
+	     :db-type (:type :list
+			     :complex-type :collection
+			     :data-type "entity"
+			     :collection "entities"
+			     :accessor (:name))
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :email
+	     :label "Email"
+	     :key-p t
+	     :db-type :email
+	     :attributes (:display t :editable t)
+	     :documentation	     
+	     "")
+      (:name :host
+	     :label "Host"
+	     :db-type :string
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :port
+	     :label "port"
+	     :db-type :integer
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :ssl
+	     :label "SSL"
+	     :db-type :boolean
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :user-name
+	     :label "User Name"
+	     :db-type :string
+	     :attributes (:display t :editable t)
+	     :documentation "")
+      (:name :password
+	     :label "password"
+	     :db-type :string
+	     :attributes (:display t :editable t)
+	     :documentation "")))
+    :destinations ( :license))
+
+   (:collection
+	(:name "entity-email-accounts"
+	 :label "Entity Email Accounts"
+	 :data-type "entity-email-account"
+;;	 :bucket-keys (:entity)
+	 )
+	:destinations (:license))
+
+   ))
 
 (setf cl-smtp::*debug* t)
 

@@ -83,11 +83,19 @@
   (let ((code ))
     (setf (getx license :license-code) code)))
 
-(defun make-license (system license-holder &optional code)
+(defun make-license (system license-holder &optional code status date)
   (bordeaux-threads:with-lock-held (*license-code-lock*)
     (let ((license (get-license (if  code
 				     code
 				     (generate-new-license-code)))))
+
+      (when license	
+	(setf (getx license :license-holder) license-holder)
+	(when status
+	  (setf (getx license :license-status) status))
+	(when date
+	  (setf (getx license :license-date) date)))
+      
       (unless license
 	(setf license (make-item
 		       :data-type "license"
@@ -96,13 +104,14 @@
 					       code
 					       (generate-new-license-code))
 			     :license-holder license-holder
-			     :license-date (get-universal-time)
+			     :license-date (format-date (get-universal-time))
 			     :license-status :active)))
 	
 	(persist-item (core-collection "licenses") license)
 	
 	(init-license-universe system
-			       (getx license :license-code))))))
+			       (getx license :license-code)))
+      )))
 
 
 (defgeneric make-license-package (system-name license-code))
