@@ -19,6 +19,7 @@ function applyPeach (context)
              smartIndent: true,
              autoCloseBrackets: true,
  	     showTrailingSpace: true,
+	     matchBrackets: true,
              mode: "text/x-common-lisp"});
 	 editor.display.wrapper.style.fontSize = "12px";
          editor.refresh();});
