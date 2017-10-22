@@ -41,16 +41,16 @@
 
 
 (defun context-url (spec module)
-
-  (let ((spec (or spec (get-context-spec (get-store-from-short-mod 
-					  (digx module :module-short))
+  (let* ((short (if spec
+		   (digx module :module-short)
+		   "sys"))
+	(spec (or spec (get-context-spec (get-store-from-short-mod 
+					  short)
 					 (default-context *system*)))))
     
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
-	   (id-string (if module
-			  (digx module :module-short)
-			  "cor")))
+	   (id-string short))
 	  (if (and spec (digx spec :url))
 	      (digx spec :url)
 	      (string-downcase 
