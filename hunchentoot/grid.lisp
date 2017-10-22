@@ -146,7 +146,8 @@
 	(accessor (dig field :db-type :accessor)))
     
     (when (or (listp item-val) (equalp (type-of item-val) 'item))
-       (when item-val
+      (when item-val
+	
 	(frmt "~A"
 	      (if (listp accessor)
 		  (apply #'digx item-val accessor)
@@ -579,15 +580,18 @@
 
 (defmethod render-input-val ((type (eql :contained-item)) field item 
 			     &key parent-item &allow-other-keys)
-
+  (declare (ignore parent-item))
   (let* ((name (getf field :name))
-	 (list (apply #'digx parent-item
-		      (digx field :db-type :container-accessor)))
+	 (list (apply #'digx
+		      (getf
+		       (second (getcx (parameter "data-type") :edit-object))
+		       :item)
+		      (dig field :db-type :container-accessor)))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
 
-    
+   
     (with-html-string
       (:div :class "dropdown"
 	    (:input :type "hidden" :class "selected-value" 
@@ -606,6 +610,7 @@
 						(list accessors))))))
 	    
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
+		  
 		  (dolist (option list)
 		    (cl-who:htm
 		     (:span :class "dropdown-item" 			      
