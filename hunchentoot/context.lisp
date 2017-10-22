@@ -563,13 +563,14 @@
 	 (cl-who:str
 	  "$(document).ready(function() {
         $('.wfx-script').each(function(i,textarea) {
-
+               
      	  	editor = CodeMirror.fromTextArea(textarea, {
                 lineNumbers: true,
                 smartIndent: true,
           	autoCloseBrackets: true,
  		showTrailingSpace: true,
           	    mode: \"text/x-common-lisp\"});
+          editor.display.wrapper.style.fontSize = \"12px\";
           editor.refresh();});});")
 	 )
 	(:script :type "text/javascript"

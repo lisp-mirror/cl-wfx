@@ -13,14 +13,14 @@ function applyPeach (context)
 {
 
      $('.wfx-script').each(function(i,textarea) {
-
-     	  	editor = CodeMirror.fromTextArea(textarea, {
-                lineNumbers: true,
-                smartIndent: true,
-          	autoCloseBrackets: true,
- 		showTrailingSpace: true,
-          	    mode: "text/x-common-lisp"});
-	 CodeMirror.css("font-size","12px");
+	
+     	 editor = CodeMirror.fromTextArea(textarea, {
+             lineNumbers: true,
+             smartIndent: true,
+             autoCloseBrackets: true,
+ 	     showTrailingSpace: true,
+             mode: "text/x-common-lisp"});
+	 editor.display.wrapper.style.fontSize = "12px";
          editor.refresh();});
     
    /* $('.date', context).datepicker({format: 'dd M yyyy'});
