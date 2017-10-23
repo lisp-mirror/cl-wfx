@@ -441,9 +441,17 @@
 " (site-url *system*)))
 	
 	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css\" integrity=\"sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M\" crossorigin=\"anonymous\">"
-	
-	"<script src=\"https://code.jquery.com/jquery-3.2.1.slim.min.js\" integrity=\"sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN\" crossorigin=\"anonymous\"></script>
+
+	"<script  src=\"https://code.jquery.com/jquery-3.2.1.min.js\" integrity=\"sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=\"  crossorigin=\"anonymous\"></script>
+
+<link href=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/css/fileinput.min.css\" media=\"all\" rel=\"stylesheet\" type=\"text/css\" />
+
+<script src=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/js/fileinput.min.js\"></script>
+
+<script src=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/themes/fa/theme.min.js\"></script>
+
 <script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js\" integrity=\"sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4\" crossorigin=\"anonymous\"></script>
+
 <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js\" integrity=\"sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1\" crossorigin=\"anonymous\"></script>"
 
 	(cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
@@ -569,6 +577,22 @@
           editor.display.wrapper.style.fontSize = \"12px\";
           editor.refresh();});});")
 	 )
+
+	(:script :type "text/javascript"
+	 (cl-who:str
+	  "$(document).ready(function() {
+              $(\".file-upload\").each(function (i,file) {
+
+                 file.fileinput({
+                 uploadUrl: \"/cor/file-upload\",
+                 uploadAsync: false,
+                 theme: \"fa\",
+                  initialPreviewAsData: true,
+                 initialPreview: [$(\"#init\" + file.id).val() ],
+                 maxFileCount: 1})});
+            });")
+	 )
+	
 	(:script :type "text/javascript"
 	 (cl-who:str (frmt	      
 		      "function ajax_call(func, callback, args, widget_args) {
@@ -757,4 +781,38 @@
 	"<!itemtype html>"
 	
 	(cl-who:str (render-page t (render-repl)))))))
+
+(defparameter *unsecure-upload-dir* "/home/phil/Temp/shit/")
+
+(defun handle-file (post-parameter)
+  ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
+  
+  (when (and post-parameter (listp post-parameter))
+   ;; (break "You got here with: ~A." post-parameter)
+    (destructuring-bind (path filex content-type)
+        post-parameter
+      (declare (ignore content-type))
+      
+      ;; strip directory info send by Windows browsers
+      #|
+      (when (search "Windows" (hunchentoot:user-agent) :test #'char-equal)
+        (setf filename (ppcre:regex-replace ".*\\\\" filename "")))
+      |#
+      ;;(break "~A" path)
+      (ensure-directories-exist *unsecure-upload-dir*)
+   ;;   (break "~A" (merge-pathnames filename *unsecure-upload-dir*))
+      (fad:copy-file path
+                     (merge-pathnames filex *unsecure-upload-dir*)
+                     :overwrite t)
+      )))
+
+(hunchentoot:define-easy-handler (upload-file :uri "/cor/file-upload") ()
+  
+
+  (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
+			      (hunchentoot:post-parameter "image"))
+		     (handle-file (hunchentoot:post-parameter "image")
+				  )))))
+  
+  "{}")
 

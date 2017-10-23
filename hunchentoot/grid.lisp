@@ -70,6 +70,10 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql :file)) field item
+			   &key &allow-other-keys)
+  (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql :number)) field item
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
@@ -255,21 +259,65 @@
 	     field 
 	     item)))))))
 
+(defun ajax-render-file-upload (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+  
+  (let* ((data-type (parameter "data-type"))
+	(item (getcx data-type :edit-item))
+	(fields (getcx data-type :fields)))
+
+    (dolist (field fields)
+      (when (equalp (getf field :name) (parameter "field-name"))
+	(return-from ajax-render-file-upload
+	  (render-image field item))))
+    )
+  )
+
+(defun render-image (field item)
+  (with-html-string
+    (:input :type "hidden"
+	    :id (string-downcase
+		       (frmt "init-~A-~A" (getf field :name)
+			     (item-hash item)))
+	    :value (frmt "/umage/cor/web/images/~A"
+			 (getx item (getf field :name)))
+	    :name (string-downcase
+			 (frmt "~A" (getf field :name))))
+    (:input :type "file"
+		  :class "file-upload"
+		  :multiple t
+		  :id (string-downcase
+		       (frmt "~A-~A" (getf field :name)
+			     (item-hash item)))
+		 ))
+  )
+
 (defmethod render-input-val ((type (eql :image)) field item
 			     &key &allow-other-keys)
 
   (with-html-string
+    (:div :class "row"	  
+	  :id (string-downcase
+	       (frmt "file-upload-row-~A" (item-data-type item)))
+	  :name (string-downcase
+	       (frmt "file-upload-row-~A" (item-data-type item)))
+	  (cl-who:str (render-image field item))
+	  )))
+
+(defmethod render-input-val ((type (eql :file)) field item
+			     &key &allow-other-keys)
+  (with-html-string
     (:div :class "row"
 	  (:div :class "col"
-		(if (getx item (getf field :name))
-		    (cl-who:htm
-		     (:img
-		      :style "width:400px;height:500px;"
-		      :src (frmt "/umage/cor/web/images/~A"
-				      (getx item (getf field :name)))))
-		    (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))
-	  (:div :class "col"
-		(cl-who:str (getx item (getf field :name)))))))
+		(:input :type "file"
+			:onchange (frmt "$(\"#file-~A\").val($(this).val());"
+					(getf field :name)))
+		
+		(:input :type "text" :class "form-control "
+			:name (frmt "file-~A" (getf field :name))
+			:id (frmt "file-~A" (getf field :name))
+			:value (getx item (getf field :name))
+			:readonly t)))))
 
 (defmethod render-input-val ((type (eql :email)) field item
 			     &key &allow-other-keys)
@@ -645,6 +693,16 @@
 	      (or (parameter "pages") 50))
      (js-pair "page"
 	      (or active-page 1)))))
+
+(defun grid-js-render-file-upload (data-type form-id row-id field-name)
+  (js-render-form-values 
+     "cl-wfx:ajax-render-file-upload"
+     row-id
+     form-id
+     (js-pair "data-type"
+	      (frmt "~A" data-type))
+     (js-pair "field-name" field-name)
+     (js-pair "action" "upload-file")))
 
 (defun grid-js-render (data-type &key action item-id)
   (let ((active-page (getcx data-type :active-page)))
@@ -2196,6 +2254,9 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
+
+    (break "~A" (hunchentoot:post-parameters*))
+  (break "~A" (parameter "image"))
   
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 

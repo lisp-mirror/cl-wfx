@@ -128,3 +128,11 @@ select {
 .auto-list span:hover {
     background-color: #007bff !important;
 }
+
+.file-preview-thumbnails {
+    height: 300px;
+}
+
+
+.file-drop-zone {
+    height: 300px;

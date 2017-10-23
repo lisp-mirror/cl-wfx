@@ -38,8 +38,42 @@
           form-name
           args-scripts))
 
+
+
+(defun move-upload (file new-name)
+  (let ((new-path (merge-pathnames new-name *tmp-directory*)))
+    (ensure-directories-exist new-path)
+    (nth-value 2 (rename-file file new-path))))
+
+
 #|
 
+(defun receive-image ()
+  (destructuring-bind (path name application-type)
+      (post-parameter "image-upload")
+    (declare (ignore application-type))
+    (let* ((dot (position #\. name :from-end t))
+           (type (and dot
+                      (subseq name (1+ dot))))
+           (new-name (make-pathname
+                      :name (format nil "~a~a~a"
+                                    (filter-pathname (subseq name 0 dot))
+                                    (random 99999) (get-universal-time))
+                      :type type
+                      :directory '(:relative "images")))
+           (new-path (move-upload path new-name)))
+      (when (probe-file new-path)
+        new-name))))
+
+(defajax image-upload ()
+  (setf (content-type*) "text/plain")
+  (let ((path (receive-image)))
+    (and path
+     (namestring (merge-pathnames path "/insite/")))))
+
+(loop for post-parameter in (hunchentoot:post-parameters*)
+            if (equal (car post-parameter) "files")
+            collect post-parameter))
 
 (defun js-render-disabled-form-values (widget form-name
                                        &rest args-scripts)

@@ -9,6 +9,8 @@ function before_ajax(context)
 */
 }
 
+
+
 function applyPeach (context)
 {
 
@@ -23,6 +25,22 @@ function applyPeach (context)
              mode: "text/x-common-lisp"});
 	 editor.display.wrapper.style.fontSize = "12px";
          editor.refresh();});
+
+    $(".file-upload").each(function (i,file) {
+
+        $("#" + file.id).fileinput({
+            uploadUrl: "/cor/file-upload",
+            uploadAsync: false,
+	    theme: "fa",
+	    //overwriteInitial: false,
+	    initialPreviewAsData: true,
+	    initialPreview: [$("#init-" + file.id).val() ],
+            maxFileCount: 1}).on('filebatchuploadsuccess', function(e, params) {
+		//console.log('file uploaded', e, params);
+		$("#init-" + file.id).val(params.files[0].name);
+      });
+
+    });
     
    /* $('.date', context).datepicker({format: 'dd M yyyy'});
 
@@ -128,7 +146,7 @@ function ajax_render (script_name, renderer, id, args) {
 	useOverlay  : false
     });*/
 
-
+    
     if (renderer) {
 	args.push(['context-uri',script_name]);
         cl_ajax_render(script_name, renderer ,id, args,
@@ -203,6 +221,7 @@ function get_form_values(form_id, disabled) {
     var widget = find_widget(form_id);
     var input_types = ['input', 'select', 'textarea'];
 
+    
     if (widget) {
         //tinyMCE.triggerSave();
         save_scripts();

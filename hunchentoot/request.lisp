@@ -100,6 +100,7 @@
 	(search "get-meters" script-name)
 	(search "set-reading" script-name)
 	(search "set-image" script-name)
+	(search "file-upload" script-name)
 	))
   )
 
@@ -112,6 +113,7 @@
       
       (hunchentoot:start-session)
 
+      ;;(break "~A" (hunchentoot::post-parameters*))
       
       (if (not dont)           
 	  (let* ((*session* (start-session acceptor))
