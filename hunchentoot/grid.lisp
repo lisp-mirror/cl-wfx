@@ -2255,9 +2255,6 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-    (break "~A" (hunchentoot:post-parameters*))
-  (break "~A" (parameter "image"))
-  
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 
 	 (root-item)
@@ -2265,8 +2262,6 @@
 	 (edit-item)
 	 (parent-slot)
 	 (edit-objects (reverse (getcx data-type :edit-object))))
-
-    
 
     (when edit-objects      
       (setf root-item (getf (first edit-objects) :item))

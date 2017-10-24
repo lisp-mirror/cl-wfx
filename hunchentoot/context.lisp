@@ -786,6 +786,8 @@
 
 (defun handle-file (post-parameter)
   ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
+
+ 
   
   (when (and post-parameter (listp post-parameter))
    ;; (break "You got here with: ~A." post-parameter)
@@ -807,7 +809,6 @@
       )))
 
 (hunchentoot:define-easy-handler (upload-file :uri "/cor/file-upload") ()
-  
 
   (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
 			      (hunchentoot:post-parameter "image"))

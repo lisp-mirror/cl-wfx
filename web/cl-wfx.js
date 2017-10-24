@@ -11,6 +11,26 @@ function before_ajax(context)
 
 
 
+function fileUploadPrep (args) {
+
+        $(".file-upload").each(function (i,file) {
+
+        $("#" + file.id).fileinput({
+            uploadUrl: "/cor/file-upload",
+            uploadAsync: false,
+	    theme: "fa",
+	    //overwriteInitial: false,
+	    initialPreviewAsData: true,
+	    initialPreview: [$("#init-" + file.id).val() ],
+	    uploadExtra: {args: JSON.stringify(args)},
+            maxFileCount: 1}).on('filebatchuploadsuccess', function(e, params) {
+		//console.log('file uploaded', e, params);
+		$("#init-" + file.id).val(params.files[0].name);
+      });
+
+    });
+}
+
 function applyPeach (context)
 {
 
@@ -26,21 +46,7 @@ function applyPeach (context)
 	 editor.display.wrapper.style.fontSize = "12px";
          editor.refresh();});
 
-    $(".file-upload").each(function (i,file) {
 
-        $("#" + file.id).fileinput({
-            uploadUrl: "/cor/file-upload",
-            uploadAsync: false,
-	    theme: "fa",
-	    //overwriteInitial: false,
-	    initialPreviewAsData: true,
-	    initialPreview: [$("#init-" + file.id).val() ],
-            maxFileCount: 1}).on('filebatchuploadsuccess', function(e, params) {
-		//console.log('file uploaded', e, params);
-		$("#init-" + file.id).val(params.files[0].name);
-      });
-
-    });
     
    /* $('.date', context).datepicker({format: 'dd M yyyy'});
 
@@ -158,6 +164,8 @@ function ajax_render (script_name, renderer, id, args) {
                            widget.innerHTML = json[0];
                            applyPeach(widget);
 
+			   fileUploadPrep(args);
+			   
                            if (json[1]) {
                                eval(json[1]);
                            }
