@@ -28,7 +28,6 @@ because hunchentoot does not have vhosts by default.")
 	      :accessor default-context
 	      :initform nil)))
 
-
 (defmacro define-ajax (system name lambda-list &body body)
    `(ht-simple-ajax:defun-ajax ,name ,lambda-list ((ajax-processor ,system))
        ,@body))

@@ -302,7 +302,6 @@ must be valid email to enable confirmation.")
 				  entities super-user-p)
   (let ((user (get-user email))
 	(permissions))
-
     
     (when user
       (multiple-value-bind (password salt)

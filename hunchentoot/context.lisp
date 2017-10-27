@@ -787,32 +787,38 @@
 (defun handle-file (post-parameter)
   ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
 
- 
-  
   (when (and post-parameter (listp post-parameter))
-   ;; (break "You got here with: ~A." post-parameter)
-    (destructuring-bind (path filex content-type)
+    ;; (break "You got here with: ~A." post-parameter)
+    (destructuring-bind (path filename content-type)
         post-parameter
       (declare (ignore content-type))
       
       ;; strip directory info send by Windows browsers
-      #|
       (when (search "Windows" (hunchentoot:user-agent) :test #'char-equal)
         (setf filename (ppcre:regex-replace ".*\\\\" filename "")))
-      |#
+     
       ;;(break "~A" path)
-      (ensure-directories-exist *unsecure-upload-dir*)
-   ;;   (break "~A" (merge-pathnames filename *unsecure-upload-dir*))
-      (fad:copy-file path
-                     (merge-pathnames filex *unsecure-upload-dir*)
-                     :overwrite t)
-      )))
+      (let ((server-path (frmt "~A/~A/~A/files/tmp/~A/~A/"
+			       (location (universe *system*))
+			       (parameter "license")
+			       (parameter "collection")
+			       (parameter "datatype")
+			       (parameter "field"))))
+
+	(ensure-directories-exist server-path)
+
+
+	(fad:copy-file path
+		       (merge-pathnames (replace-all filename "_" "-")
+					server-path)
+		       :overwrite t)))
+    ))
 
 (hunchentoot:define-easy-handler (upload-file :uri "/cor/file-upload") ()
-
+ ;; (break "~A~%~A"  (hunchentoot:post-parameters*)	 (hunchentoot:get-parameters*))
   (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
-			      (hunchentoot:post-parameter "image"))
-		     (handle-file (hunchentoot:post-parameter "image")
+			      (hunchentoot:get-parameter "datatype"))
+		     (handle-file (hunchentoot:post-parameter "file_data")
 				  )))))
   
   "{}")

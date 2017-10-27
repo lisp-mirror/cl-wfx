@@ -15,18 +15,31 @@ function fileUploadPrep (args) {
 
         $(".file-upload").each(function (i,file) {
 
-        $("#" + file.id).fileinput({
-            uploadUrl: "/cor/file-upload",
-            uploadAsync: false,
-	    theme: "fa",
-	    //overwriteInitial: false,
-	    initialPreviewAsData: true,
-	    initialPreview: [$("#init-" + file.id).val() ],
-	    uploadExtra: {args: JSON.stringify(args)},
-            maxFileCount: 1}).on('filebatchuploadsuccess', function(e, params) {
+	    var args = JSON.parse($("#args-" + file.id).val());
+	    //doing fucked up concat because "" + lic drops leeading 0's even
+	    //though type() syste license is a string????
+	    var fuck = "/cor/file-upload?license=";
+	    var license = args.license.toString();
+	    
+	   // alert($("#init-" + file.id).val() );
+	    
+            $("#" + file.id).fileinput({
+		uploadUrl: fuck.concat(license)
+		    + "&collection=" + args.collection
+		    + "&datatype=" + args.datatype
+		    + "&field=" + args.field + "",
+		uploadAsync: false,
+		theme: "fa",
+		//overwriteInitial: false,
+		initialPreviewAsData: true,
+		initialPreview: [$("#init-" + file.id).val() ],
+		//uploadExtra: {args: JSON.stringify(args)},
+		maxFileCount: 1
+	    }).on('filebatchuploadsuccess', function(e, params) {
 		//console.log('file uploaded', e, params);
-		$("#init-" + file.id).val(params.files[0].name);
-      });
+		//alert(params.files[0].name);
+		$("#init-" + file.id).val(params.files[0].name.toLowerCase());
+	    });
 
     });
 }

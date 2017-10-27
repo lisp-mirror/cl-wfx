@@ -54,17 +54,53 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defun file-server-path (collection field item)
+  (string-downcase
+   (frmt "~A/files/~A/~A/~A/~A"
+	 (if (and (item-collection item)
+		  (location (item-collection item)))
+	     (location (item-collection item))
+	     (string-downcase
+	      (frmt "~A~A"
+		    (location
+		     (store
+		      collection))
+		    (name collection))))
+	 (item-data-type item)
+	 (getf field :name)
+	 (item-hash item)
+	 (getx item (getf field :name)))))
+
+(defun file-url (collection field item)
+  (string-downcase
+     (frmt "~A~A/~A/~A/~A/~A/~A"
+	   (site-url *system*)
+	   (first (getx (active-user) :selected-licenses))
+	   (name collection)
+	   (item-data-type item)
+	   (getf field :name)
+	   (item-hash item)
+	   (getx item (getf field :name)))))
+
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
-  (with-html-string
-   
-    (if (getx item (getf field :name))
-		    (cl-who:htm
-		     (:img
-		      :style "width:128px;height:128px;"
-		      :src (frmt "/umage/cor/web/images/~A"
-				 (getx item (getf field :name)))))
-		    (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png")))))
+  (let* ((collection (get-perist-collection
+					  (gethash :collection-name
+						   (cache *context*))))
+	 (server-path (file-server-path collection field item)))
+    (with-html-string
+      (if (getx item (getf field :name))
+	  (let ((image-url (file-url collection field item)))
+;;	    (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
+	    (push (hunchentoot::create-static-file-dispatcher-and-handler
+		   image-url
+		   server-path)
+		  hunchentoot::*dispatch-table*)
+	    (cl-who:htm
+	     (:img
+	      :style "width:128px;height:128px;"
+	      :src image-url)))
+	(cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
 
 (defmethod print-item-val ((type (eql :email)) field item
 			   &key &allow-other-keys)
@@ -259,6 +295,39 @@
 	     field 
 	     item)))))))
 
+(defun render-image (field item)
+  (let* ((collection (get-perist-collection
+					  (gethash :collection-name
+						   (cache *context*))))
+	(image-path (file-url collection field item)))
+    (with-html-string
+      (:input :type "hidden"
+	      :id (string-downcase
+		   (frmt "args-~A-~A"
+			 (getf field :name)
+			 (item-hash item)))
+	      :value (string-downcase
+		      (frmt "{\"license\":\"~A\", \"collection\":\"~A\", \"datatype\":\"~A\", \"field\":\"~A\"}"
+			    (first (getx (active-user) :selected-licenses))
+			    (name collection)
+			    (item-data-type item)
+			    (getf field :name))))
+      
+      (:input :type "hidden"
+	      :id (string-downcase
+		   (frmt "init-~A-~A" (getf field :name)
+			 (item-hash item)))
+	      :value image-path
+	      :name (string-downcase
+		     (frmt "~A" (getf field :name))))
+      
+      (:input :type "file"
+	      :class "file-upload"
+	      :multiple t
+	      :id (string-downcase
+		   (frmt "~A-~A" (getf field :name)
+			 (item-hash item)))))))
+
 (defun ajax-render-file-upload (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   
@@ -273,34 +342,15 @@
     )
   )
 
-(defun render-image (field item)
-  (with-html-string
-    (:input :type "hidden"
-	    :id (string-downcase
-		       (frmt "init-~A-~A" (getf field :name)
-			     (item-hash item)))
-	    :value (frmt "/umage/cor/web/images/~A"
-			 (getx item (getf field :name)))
-	    :name (string-downcase
-			 (frmt "~A" (getf field :name))))
-    (:input :type "file"
-		  :class "file-upload"
-		  :multiple t
-		  :id (string-downcase
-		       (frmt "~A-~A" (getf field :name)
-			     (item-hash item)))
-		 ))
-  )
-
 (defmethod render-input-val ((type (eql :image)) field item
-			     &key &allow-other-keys)
+			     &key  &allow-other-keys)
 
   (with-html-string
     (:div :class "row"	  
 	  :id (string-downcase
 	       (frmt "file-upload-row-~A" (item-data-type item)))
 	  :name (string-downcase
-	       (frmt "file-upload-row-~A" (item-data-type item)))
+		 (frmt "file-upload-row-~A" (item-data-type item)))
 	  (cl-who:str (render-image field item))
 	  )))
 
@@ -2255,6 +2305,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
+  
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 
 	 (root-item)
@@ -2310,6 +2361,9 @@
 		(setf (getfx edit-item field :parent-item parent-item)
 		      (parameter field-name)))))
 	  
+	  
+
+	 
 	  (when (getf field :key-p)
 	   
 	    (when (empty-p (parameter (getf field :name)))
@@ -2319,13 +2373,120 @@
 	      )
 	    ))
 
+;;      (break "~A" (hunchentoot::post-parameters*))
+      
+      (if (item-hash edit-item)
+	  (let ((hash (item-hash edit-item))
+		(collection (get-perist-collection
+			     (gethash :collection-name (cache *context*))))
+		)
+	    (dolist (field fields)
+
+	      (when (equalp (complex-type field) :image)
+	
+		(let ((server-path
+		       (string-downcase
+			(frmt "~A/files/~A/~A/~A/"
+			      (if (location collection)
+				  (location collection)
+				  (string-downcase
+				   (frmt "~A~A"
+					 (location (store collection))
+					 (name collection))))
+			      (parameter "data-type")
+			      (getf field :name)
+			      hash)))
+		      (temp-path  (merge-pathnames				 
+				   (replace-all
+				    (parameter (string-downcase
+						   (frmt "~A" (getf field :name))))
+				    "_"
+				    "-")
+				   (string-downcase
+				    (frmt "~A/files/tmp/~A/~A/"
+					  (if (location collection)
+					     (location collection)
+					     (string-downcase
+					      (frmt "~A~A"
+						    (location (store collection))
+						    (name collection))))
+					  
+					  (parameter "data-type")
+					  (getf field :name)))) ))
+
+		  (ensure-directories-exist server-path)
+		  
+		  (fad:copy-file
+		   temp-path
+		   (merge-pathnames (replace-all
+				    (parameter (string-downcase
+						   (frmt "~A" (getf field :name))))
+				    "_"
+				    "-")
+				    server-path)
+		   :overwrite t)
+		  (delete-file temp-path)
+		  (setf (getx edit-item (getf field :name))
+			(parameter (string-downcase
+				    (frmt "~A" (getf field :name))))
+			)
+		  )
+		
+		))
+	    )
+	  (let* ((keys (index-keys fields
+				   (item-values edit-item)))
+		 (hash (sxhash keys))
+		 (collection (get-perist-collection
+			      (gethash :collection-name (cache *context*))))
+		 )
+	  
+	    (dolist (field fields)
+
+	      (when (equalp (complex-type field) :image)   
+		(let ((server-path (frmt "~A/files/~A/~A/~A/"
+					 (if (location collection)
+					     (location collection)
+					     (string-downcase
+					      (frmt "~A~A"
+						    (location (store collection))
+						    (name collection))))
+					 (parameter "data-type")
+					 (getf field :name)
+					 hash))
+		      (file-name (merge-pathnames
+				  (replace-all
+				    (parameter (string-downcase
+						   (frmt "~A" (getf field :name))))
+				    "_"
+				    "-")
+				  (string-downcase
+				   (frmt "~A/~A/files/temp/~A/~A/"
+					 (location (universe *system*))
+					 (name collection)
+					 (parameter "data-type")
+					 (getf field :name)))) ))
+		  (ensure-directories-exist server-path)
+
+		  (fad:copy-file
+		   file-name
+		   (merge-pathnames (parameter (string-downcase
+						(frmt "~A" (getf field :name))))
+				    server-path)
+		   :overwrite t)
+
+		  (delete-file file-name)
+		)
+	      
+		))))
+      
 
       	;;TODO: is this still needed????
 	;;Doing this to keep edit window open.
-	(when (getcx data-type :validation-errors)
-	  (setf (getcx data-type :validation-errors-id)
-		(item-hash edit-item)))
-
+      (when (getcx data-type :validation-errors)
+	(setf (getcx data-type :validation-errors-id)
+	      (item-hash edit-item)))
+      
 	
       (unless (getcx data-type :validation-errors)
 	;;Append parent-slot only if new
@@ -2417,6 +2578,8 @@
 	     edit-objects)
 	   edit-objects))))
 
+
+;;todo: file delete
 (defmethod action-handler ((action (eql :delete)) 
 			   (context context) 
 			   (request hunch-request)
