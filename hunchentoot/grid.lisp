@@ -2239,6 +2239,56 @@
 (declaim (optimize (debug 3))
 	 (notinline ajax-grid-edit))
 
+
+(defun set-edit-obects ()
+  (let* ((data-type (parameter "data-type"))
+	 (fields )
+	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
+	 (root-type)
+	 (root-hash)
+	 (root-item)
+	 (edit-objects))
+   
+    (setf (getcx data-type :edit-object) nil)
+    
+    (setf root-type (if  hierarchy
+			 (string-downcase (frmt "~A"
+						(first (first hierarchy))))))
+    (setf root-hash (if hierarchy
+			(second (first hierarchy))))
+
+    (setf fields (getcx root-type :fields))
+     
+    (setf root-item (fetch-grid-root-edit-item root-hash))
+
+     
+    (unless root-item
+      (setf root-item (make-item :data-type data-type)))
+
+    (when root-item
+      (setf edit-objects (list (list :data-type root-type :item root-item)))
+       
+      (if (> (length hierarchy) 1)
+	  (let ((item)
+		(item-type root-type))
+
+	    (dolist (child (cdr hierarchy))
+	      (setf item (get-child (getcx item-type :fields)
+				    (or (if item (second item)) root-item)
+				    (first child)
+				    (second child)))
+	      (setf item-type (string-downcase (frmt "~A" (first child))))
+	      (setf edit-objects
+		    (push (list :data-type item-type
+				:item (second item)
+				:field-name (first item))
+			  edit-objects)))
+	    (setf (getcx data-type :edit-object) edit-objects)
+
+	    )
+	  (setf (getcx data-type :edit-object) edit-objects))
+      edit-objects)))
+
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (let* ((data-type (parameter "data-type"))
@@ -2254,51 +2304,123 @@
     (setf root-type (if  hierarchy
 			 (string-downcase (frmt "~A"
 						(first (first hierarchy))))))
-     (setf root-hash (if hierarchy
-			 (second (first hierarchy))))
+    (setf root-hash (if hierarchy
+			(second (first hierarchy))))
 
-     (setf fields (getcx root-type :fields))
+    (setf fields (getcx root-type :fields))
      
-     (setf root-item (fetch-grid-root-edit-item root-hash))
+    (setf root-item (fetch-grid-root-edit-item root-hash))
 
      
-     (unless root-item
-       (setf root-item (make-item :data-type data-type)))
+    (unless root-item
+      (setf root-item (make-item :data-type data-type)))
 
-     (when root-item
-       (setf edit-objects (list (list :data-type root-type :item root-item)))
+    (when root-item
+      (setf edit-objects (list (list :data-type root-type :item root-item)))
        
-       (if (> (length hierarchy) 1)
-	   (let ((item ;;root-item
-		  )
-		 (item-type root-type)
-		 )
+      (if (> (length hierarchy) 1)
+	  (let ((item)
+		(item-type root-type))
 
-	  ;;  (break "shit ~A" hierarchy)
-	     (dolist (child (cdr hierarchy))
-	      ;; (break "poes ~A~% ~A" item-type (getcx item-type :fields))
-	       (setf item (get-child (getcx item-type :fields)
-				     (or (if item (second item)) root-item)
-				     (first child)
-				     (second child)))
-	       (setf item-type (string-downcase (frmt "~A" (first child))))
-	  ;;     (break "~A ~%~A" item item-type)
-	       (setf edit-objects
-		     (push (list :data-type item-type
-				 :item (second item)
-				 :field-name (first item))
-			   edit-objects)))
-	     (setf (getcx data-type :edit-object) edit-objects)
-	    ;; (break "wtf ~A" edit-objects)
-	     (render-grid-edit item-type
-			       (getcx item-type :fields)
-			       (second item)
-			       root-item root-type))
-	   (progn
-	     (setf (getcx data-type :edit-object) edit-objects)
-	     (render-grid-edit root-type fields root-item nil nil))))))
+	    (dolist (child (cdr hierarchy))
+	      (setf item (get-child (getcx item-type :fields)
+				    (or (if item (second item)) root-item)
+				    (first child)
+				    (second child)))
+	      (setf item-type (string-downcase (frmt "~A" (first child))))
+	      (setf edit-objects
+		    (push (list :data-type item-type
+				:item (second item)
+				:field-name (first item))
+			  edit-objects)))
+	    (setf (getcx data-type :edit-object) edit-objects)
+	    (render-grid-edit item-type
+			      (getcx item-type :fields)
+			      (second item)
+			      root-item root-type))
+	  (progn
+	    (setf (getcx data-type :edit-object) edit-objects)
+	    (render-grid-edit root-type fields root-item nil nil))))))
 
 
+(defun index-keys-x (fields item-values)
+  (let ((keys))
+    (dolist (field fields)
+      (when (getf field :key-p)
+	(if (equalp (type-of (getf item-values (getf field :name))) 'item)
+	    (push (item-hash (getf item-values (getf field :name))) keys)
+	    (push (getf item-values (getf field :name)) keys))))
+    (reverse keys)))
+
+(defun move-uploaded-file (fields edit-item)
+  (let ((hash (item-hash edit-item))
+	(collection (get-perist-collection
+		     (gethash :collection-name (cache *context*)))))
+
+    (unless hash
+    
+      (let* ((keys (index-keys-x fields
+			      (item-values edit-item)))
+	    (hashx (sxhash keys)))
+	(setf hash hashx)))
+    
+    (dolist (field fields)
+
+      (when (equalp (complex-type field) :image)
+	
+	(let ((server-path
+	       (string-downcase
+		(frmt "~A/files/~A/~A/~A/"
+		      (if (location collection)
+			  (location collection)
+			  (string-downcase
+			   (frmt "~A~A"
+				 (location (store collection))
+				 (name collection))))
+		      (parameter "data-type")
+		      (getf field :name)
+		      hash)))
+	      (temp-path  (merge-pathnames				 
+			   (replace-all
+			    (parameter (string-downcase
+					(frmt "~A" (getf field :name))))
+			    "_"
+			    "-")
+			   (string-downcase
+			    (frmt "~A/files/tmp/~A/~A/"
+				  (if (location collection)
+				      (location collection)
+				      (string-downcase
+				       (frmt "~A~A"
+					     (location (store collection))
+					     (name collection))))
+				  
+				  (parameter "data-type")
+				  (getf field :name)))) ))
+
+	  (ensure-directories-exist server-path)
+
+	  (unless (probe-file temp-path)
+	    (setf (getx edit-item (getf field :name))
+		  (getx edit-item (getf field :name)))
+	    )
+	  
+	  (when (probe-file temp-path)
+	    (fad:copy-file
+	     temp-path
+	     (merge-pathnames (replace-all
+			       (parameter (string-downcase
+					   (frmt "~A" (getf field :name))))
+			       "_"
+			       "-")
+			      server-path)
+	     :overwrite t)
+	    (delete-file temp-path)
+	    (setf (getx edit-item (getf field :name))
+		  (parameter (string-downcase
+			      (frmt "~A" (getf field :name))))))
+	  
+	  )))))
 
 (defmethod action-handler ((action (eql :save)) 
 			   (context context) 
@@ -2374,111 +2496,9 @@
 	    ))
 
 ;;      (break "~A" (hunchentoot::post-parameters*))
-      
-      (if (item-hash edit-item)
-	  (let ((hash (item-hash edit-item))
-		(collection (get-perist-collection
-			     (gethash :collection-name (cache *context*))))
-		)
-	    (dolist (field fields)
 
-	      (when (equalp (complex-type field) :image)
-	
-		(let ((server-path
-		       (string-downcase
-			(frmt "~A/files/~A/~A/~A/"
-			      (if (location collection)
-				  (location collection)
-				  (string-downcase
-				   (frmt "~A~A"
-					 (location (store collection))
-					 (name collection))))
-			      (parameter "data-type")
-			      (getf field :name)
-			      hash)))
-		      (temp-path  (merge-pathnames				 
-				   (replace-all
-				    (parameter (string-downcase
-						   (frmt "~A" (getf field :name))))
-				    "_"
-				    "-")
-				   (string-downcase
-				    (frmt "~A/files/tmp/~A/~A/"
-					  (if (location collection)
-					     (location collection)
-					     (string-downcase
-					      (frmt "~A~A"
-						    (location (store collection))
-						    (name collection))))
-					  
-					  (parameter "data-type")
-					  (getf field :name)))) ))
+      (move-uploaded-file fields edit-item)
 
-		  (ensure-directories-exist server-path)
-		  
-		  (fad:copy-file
-		   temp-path
-		   (merge-pathnames (replace-all
-				    (parameter (string-downcase
-						   (frmt "~A" (getf field :name))))
-				    "_"
-				    "-")
-				    server-path)
-		   :overwrite t)
-		  (delete-file temp-path)
-		  (setf (getx edit-item (getf field :name))
-			(parameter (string-downcase
-				    (frmt "~A" (getf field :name))))
-			)
-		  )
-		
-		))
-	    )
-	  (let* ((keys (index-keys fields
-				   (item-values edit-item)))
-		 (hash (sxhash keys))
-		 (collection (get-perist-collection
-			      (gethash :collection-name (cache *context*))))
-		 )
-	  
-	    (dolist (field fields)
-
-	      (when (equalp (complex-type field) :image)   
-		(let ((server-path (frmt "~A/files/~A/~A/~A/"
-					 (if (location collection)
-					     (location collection)
-					     (string-downcase
-					      (frmt "~A~A"
-						    (location (store collection))
-						    (name collection))))
-					 (parameter "data-type")
-					 (getf field :name)
-					 hash))
-		      (file-name (merge-pathnames
-				  (replace-all
-				    (parameter (string-downcase
-						   (frmt "~A" (getf field :name))))
-				    "_"
-				    "-")
-				  (string-downcase
-				   (frmt "~A/~A/files/temp/~A/~A/"
-					 (location (universe *system*))
-					 (name collection)
-					 (parameter "data-type")
-					 (getf field :name)))) ))
-		  (ensure-directories-exist server-path)
-
-		  (fad:copy-file
-		   file-name
-		   (merge-pathnames (parameter (string-downcase
-						(frmt "~A" (getf field :name))))
-				    server-path)
-		   :overwrite t)
-
-		  (delete-file file-name)
-		)
-	      
-		))))
       
 
       	;;TODO: is this still needed????
@@ -2531,52 +2551,7 @@
       (return-from store-from-stash store))))
 
 
-(defun get-delete-object ()
-  (let* ((data-type (parameter "data-type"))
-	 (fields )
-	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
-	 (root-type)
-	 (root-hash)
-	 (root-item)
-	 (edit-objects))
 
-    
-     (setf root-type (if  hierarchy
-			  (string-downcase (frmt "~A"
-						  (first (first hierarchy))))))
-     (setf root-hash (if hierarchy
-			 (second (first hierarchy))))
-
-     
-     (setf fields (getcx root-type :fields))
-
-     (setf root-item (fetch-grid-root-edit-item root-hash))
-
-     (unless root-item
-       (setf root-item (make-item :data-type data-type)))
-
-     
-     (when root-item
-       (setf edit-objects (list (list :data-type root-type :item root-item)))
-       
-       (if (> (length hierarchy) 1)
-	   (let ((item root-item)
-		 (item-type root-type))
-
-	     (dolist (child (cdr hierarchy))
-	       
-	       (setf item (get-child (getcx item-type :fields) root-item
-				     (first child)
-				     (second child)))
-	       (setf item-type (string-downcase (frmt "~A" (first child))))
-	       (setf edit-objects
-		     (push (list :data-type item-type
-				 :item (second item)
-				 :field-name (first item))
-			   edit-objects)))
-	    
-	     edit-objects)
-	   edit-objects))))
 
 
 ;;todo: file delete
@@ -2584,14 +2559,14 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
+
   
-  (let* ((edit-objects (reverse (get-delete-object)))
+  (let* ((edit-objects (reverse (set-edit-obects)))
 	 (root-item)
 	 (parent-item)
 	 (edit-item)
 	 (parent-slot))
 
- 
     (when edit-objects      
       (setf root-item (getf (first edit-objects) :item))
       (when (> (length edit-objects) 1)
@@ -2600,25 +2575,39 @@
 	(setf parent-item
 	      (getf (nth (- (length edit-objects) 2) edit-objects) :item))))
 
-   
- 
-    
     (when (and edit-item parent-slot)
-      (when parent-slot
-	(let ((clean-list (getx parent-item parent-slot)))
+       (let ((clean-list (getx parent-item parent-slot)))
 	  (dolist (item clean-list)
 	    (when (equalp (item-hash item)
 			  (ensure-parse-integer (parameter "item-id")))
-	    
+	      
 	      (setf clean-list
-		    (remove item clean-list))))
+		    (remove item clean-list))
+	      (let* ((collection (get-perist-collection
+		     (gethash :collection-name (cache *context*))))
+		    (server-path
+		      (string-downcase
+		       (frmt "~A/files/~A/~A/~A/"
+			     (if (location collection)
+				 (location collection)
+				 (string-downcase
+				  (frmt "~A~A"
+					(location (store collection))
+					(name collection))))
+			     (parameter "data-type")
+			     "**";;(getf field :name)
+			     (parameter "item-id"))))
+		     (files (directory server-path)))
+
+		(dolist (file files)
+		  (cl-fad:delete-directory-and-files file))
+
+		)))
 	  (setf (getx parent-item parent-slot) clean-list)
 
-
-	  (persist-item (item-collection root-item) root-item))))
+	  (persist-item (item-collection root-item) root-item)))
 
     (unless (and edit-item parent-slot)
-
       (setf (cl-naive-store::item-deleted-p root-item) t)
       (persist-item (item-collection root-item) root-item)
       (cl-naive-store::remove-item root-item))))
