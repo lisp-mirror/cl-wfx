@@ -267,16 +267,13 @@
   (let* ((report (wfx-fetch-item "reports"
 				:test (lambda (item)
 					(equalp (getx item :name)
-						report-name))))
-	 (*data* (eval (digx report :code :data-script))))
-    
+						report-name)))))
+;;    (break "~A" report-name)
     (cl-wfx::with-html-string
-      (cl-who:str (getx report :code))
-      (:div (cl-who:str (render-selection report)))
       (:div
-       (dolist (element (digx report :code :elements))
-	 (cl-who:str
-	  (render-report-element type (getf element :type) element)))))))
+       (when report
+	 (cl-who:str 
+	  (eval (getx report :code))))))))
 
 (defun ajax-report (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
