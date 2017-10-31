@@ -19,7 +19,7 @@
 		     :db-type (:type :keyword
 				     :complex-type :value-string-list
 				     :delimiter " ")
-		     :attibutes (:display t :editable t))))
+		     :attributes (:display t :editable t))))
     :destinations (:core))
    
    (:data-type
@@ -39,7 +39,7 @@
 				     :complex-type :list-items
 				     :data-type "user-permission"
 				     :accessor (:context-spec :name))
-		     :attibutes (:display t :editable t)))
+		     :attributes (:display t :editable t)))
      :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
     :destinations (:core :license))
  
@@ -109,7 +109,7 @@
 			     :complex-type :list-items
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
-	     :attibutes (:display t :editable t))     
+	     :attributes (:display t :editable t))     
       (:name :preferences
 	     :label "Preferences"
 	     :db-type (:type :list
@@ -161,15 +161,15 @@
 			     :complex-type :list-items
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
-	     :attibutes (:display t :editable t))     
+	     :attributes (:display t :editable t))     
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :db-type (:type :list
-			     :complex-type :collection
+			     :complex-type :collection-items
 			     :data-type"entity"
 			     :collection "entities"
 			     :accessor :name)
-	     :attibutes (:display t :editable t))
+	     :attributes (:display t :editable t))
       (:name :status
 	     :label "Status"
 	     :db-type (:type :keyword
@@ -214,7 +214,7 @@ must be valid email to enable confirmation.")
 			     :complex-type :value-string-list
 			     :delimiter ";"
 			     :accessor :code)
-	     :attibutes (:display t :editable t))      
+	     :attributes (:display t :editable t))      
       (:name :selected-entities 
 	     :label "Selected Entities"
 	     :key nil
@@ -222,7 +222,7 @@ must be valid email to enable confirmation.")
 			     :complex-type :list-items
 			     :data-type "entity"
 			     :accessor :name)
-	     :attibutes (:display t :editable t))))
+	     :attributes (:display t :editable t))))
     :destinations (:core))
    
    (:collection
@@ -323,7 +323,7 @@ must be valid email to enable confirmation.")
 	     (make-item
 	      :data-type "user-permission"
 	      :values
-	      (list :context
+	      (list :context-spec
 		    context
 		    :permissions '(:update :delete :search)))
 	     permissions))

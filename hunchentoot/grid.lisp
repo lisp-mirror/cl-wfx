@@ -204,7 +204,7 @@
   
   (let ((item-val (getfx item field))
 	(accessor (dig field :db-type :accessor)))
-    
+
     (when (or (listp item-val) (equalp (type-of item-val) 'item))
        (when item-val
 	(frmt "~A"

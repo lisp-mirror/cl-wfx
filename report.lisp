@@ -192,6 +192,34 @@
 			 (eval (getf cell :script)))))))))))
 
 (defmethod render-report-element ((type (eql :html))
+				  (element-type (eql :row))
+				  element)
+
+  (with-html-string
+    (:div :class "row"
+	  (dolist (cell (getf element :cells))
+	    (cl-who:htm
+	     (:div :class "col"
+		
+		   (cond ((getf cell :value)
+			   (cl-who:str
+			    (getf cell :value)))
+			 ((getf cell :type)
+		
+			   (dolist (elementx (getf cell :elements))
+			     (cl-who:str (render-report-element
+					  type
+					  (getf elementx :type)
+					  elementx
+					  ))))
+			  ((getf cell :script)
+			   (cl-who:str
+			    (eval (getf cell :script))))
+			  (t
+			   (break "?????")))
+		   ))))))
+
+(defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :footer-row))
 				  element)
   (with-html-string
@@ -209,7 +237,7 @@
 				  (element-type (eql :table))
 				  element)
   (cl-wfx::with-html-string
-    (:table
+    (:div :class "col"
      (dolist (table-element (getf element :elements))
        (cl-who:str
 	(render-report-element
@@ -224,7 +252,7 @@
 	  (:div :class "col"
 		(when (getf element :image)
 		  (cl-who:htm
-		   (:image :href (getf element :image))))
+		   (:image :src (getf element :image))))
 		(:h3
 		 (cl-who:str (getf element :text)))))))
 
@@ -243,6 +271,7 @@
 	 (*data* (eval (digx report :code :data-script))))
     
     (cl-wfx::with-html-string
+      (cl-who:str (getx report :code))
       (:div (cl-who:str (render-selection report)))
       (:div
        (dolist (element (digx report :code :elements))

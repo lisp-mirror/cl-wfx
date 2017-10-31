@@ -290,7 +290,7 @@
 	  (when (or (getx (current-user) :super-user-p)
 		    (equalp context
 			    (digx permission
-				  :context)))
+				  :context-spec)))
 	    
 	    (setf access-p t)))))
     access-p))
@@ -730,7 +730,7 @@
 					    "run")))
 		      (:div :class "card-footer"
 			    (cl-who:str
-			      (gethash :repl-result (cache *context*)))))))))
+			     (gethash :repl-result (cache *context*)))))))))
 
 (defparameter *script-functions*
   (list 'cl-wfx:frmt
@@ -738,37 +738,49 @@
 	'cl-wfx::wfx-fetch-context-items
 	'cl-wfx:with-html
 	'cl-wfx:with-html-string
+	'cl-wfx::render-report
+	'cl-wfx::parameter
 	'cl-who:htm
 	'cl-who:str
 	'cl-who:esc
-	'cl-naive-store:getx
-	))
+	'cl-naive-store:getx))
 
 
+(defun script-eval-safe (script)
+  (let* ((sandbox-impl::*allowed-extra-symbols*
+	    *script-functions*)
+	  (script-result (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+
+      (with-output-to-string (s script-result)
+	(let ((sandbox::*msg-value-prefix* "")
+	      (sandbox::*msg-error-prefix* "")
+	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
+	      (sandbox::*msg-no-value-message* "Nil"))
+	  
+	  (sandbox::read-eval-print script  s)
+
+	  script-result))))
+
+(defun script-eval (script)  
+  (handler-case      
+      (list (eval script) nil)
+    (error (c)
+       (list nil c))))
 
 (defmethod action-handler ((action (eql :eval-repl)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (when (and (parameter "action") (parameter "script"))
-    
-    (let* ((sandbox-impl::*allowed-extra-symbols*
-	    *script-functions*)
-	  (eish (make-array '(0) :element-type 'base-char
-			    :fill-pointer 0 :adjustable t)))
-
-      (with-output-to-string (s eish)
-	(let ((sandbox::*msg-value-prefix* "")
-	      (sandbox::*msg-error-prefix* "")
-	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
-	      (sandbox::*msg-no-value-message* "Nil"))
-	  
-	  (sandbox::read-eval-print  (parameter "script")  s)
-
-	  (setf (gethash :repl-result (cache *context*))
-		eish)))
-     )))
+  (when (and (parameter "action") (parameter "script")
+	     (not (empty-p (parameter "script"))))
+    (let ((result (script-eval
+		   (read-no-eval
+		     (parameter "script")))))
+      
+      (setf (gethash :repl-result (cache *context*))	   
+	    (or (first result) (second result)) ))))
 
 (defmethod setup-context-repl ()
   (eval
