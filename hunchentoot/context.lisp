@@ -384,20 +384,71 @@
 					 (getx entity :name) )))))))
 		 entities)))))))
 
+(defun data-menu (menu-items)
+  (let ((items))
+    (dolist (item menu-items)
+      (when (and
+	     (digx item :context-spec)
+	     (context-access-p
+	      (digx item :context-spec))
+	     (getx (digx item :context-spec) :collection))
+	(pushnew item items)))
+    (reverse items)))
+
+(defun report-menu (menu-items)
+  (let ((items))
+    (dolist (item menu-items)
+      (when (and
+	     (digx item :context-spec)
+	     (context-access-p
+	      (digx item :context-spec))
+	     (getx (digx item :context-spec) :report))
+	(pushnew item items)))
+    (reverse items)))
+
+(defun other-menu (menu-items)
+  (let ((items))
+    (dolist (item menu-items)
+      (when (and
+	     (digx item :context-spec)
+	     (context-access-p
+	      (digx item :context-spec))
+	     (and (not (getx (digx item :context-spec) :report))
+		  (not (getx (digx item :context-spec) :collection))))
+	(pushnew item items)))
+    (reverse items)))
+
+(defun render-menu-item (mod item)
+  (with-html-string
+   (:a :class "nav-item nav-link bg-light"
+       :href (context-url
+	      (digx item :context-spec)
+	      mod)
+       (cl-who:str (digx item :name)))))
+
 (defun render-left-user-menu ()
   (with-html-string
-    (:nav :class "nav  flex-column"
-	   (dolist (mod (user-mods))
-	     (dolist (menu (digx mod :menu))
-	       (dolist (item (digx menu :menu-items))
-		 (when (context-access-p
-			(digx item :context-spec))
-		   (cl-who:htm
-		    (:a :class "nav-item nav-link"
-			:href (context-url
-			       (digx item :context-spec)
-			       mod)
-			(cl-who:str (digx item :name)))))))))
+    (:nav :class "nav flex-column"
+	  (dolist (mod (user-mods))
+	   
+	    (dolist (menu (digx mod :menu))
+	      (cl-who:htm
+	       (:span :class "nav-item "
+		      (:strong "Data")))
+	      (dolist (item (data-menu (digx menu :menu-items)))
+		(cl-who:str (render-menu-item mod item)))
+	      (cl-who:htm
+	       (:span :class "nav-item"
+		      (:strong "Reports")))
+	      (dolist (item (report-menu (digx menu :menu-items)))
+		(cl-who:str (render-menu-item mod item)))
+	      (cl-who:htm
+	       (:span :class "nav-item"
+		      (:strong "Other")))
+	      (dolist (item (other-menu (digx menu :menu-items)))
+		(cl-who:str (render-menu-item mod item)))
+	      )
+	    ))
     ))
 
 (defun render-right-menu ()

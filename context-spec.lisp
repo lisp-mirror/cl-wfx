@@ -6,7 +6,7 @@
      :label "Context Script"
      :top-level-p t
      :fields
-     ((:name :Script
+     ((:name :script
 	     :label "Script"
 	     :key-p t
 	     :db-type (:type :list
@@ -59,7 +59,7 @@
 	     :db-type (:type :list
 			     :complex-type :list-items
 			     :data-type "context-scripts"
-			     :accessor :name)			  
+			     :accessor (:script :name))			  
 	     :attributes (:display t :editable t))
       (:name :url 
 	     :label "Url"

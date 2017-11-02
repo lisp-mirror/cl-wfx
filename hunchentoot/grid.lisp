@@ -527,6 +527,57 @@
 					    "#\Space"
 					    delimiter))))))))
 
+(defun html-value (value)
+  (cond ((symbolp value)
+	 (frmt "~S" value))
+	((stringp value)
+	 value)
+	((numberp value)
+	 value)
+	(t
+	 (frmt "~S" value))))
+
+(defun render-dropdown (name selected list
+			&key  (select-prompt "Select a value")
+			  key-func value-func
+			  select-onclick-func)
+  (let ((selected-value (if selected
+			    (if key-func
+				(funcall key-func selected)
+				selected)
+			    (or (parameter (frmt "~A-drop" name))
+				select-prompt))))
+    (with-html-string
+      (:div :class "dropdown"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name)
+		    :value (html-value (or selected-value "")))
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (cl-who:str (html-value (or selected-value ""))))
+	    
+	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
+		  (dolist (option list)
+		    (cl-who:htm
+		     (:span :class "dropdown-item"
+			    :onclick (if select-onclick-func
+					 (funcall
+					  select-onclick-func option))
+			    
+			    (:input :id "select-action"
+				    :type "hidden"
+				    :value (html-value
+					    (if key-func
+						(funcall key-func option)
+						option)))
+			    (cl-who:str
+			     (html-value
+			      (if value-func
+				  (funcall value-func option)
+				  option)))))))))))
+
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
   (let* ((name (getf field :name))
@@ -534,27 +585,7 @@
 	 (selected (find (getfx item field) list :test #'equalp)))
 
     (with-html-string
-      (:div :class "dropdown"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name)
-		    :value (frmt "~S"
-				 (if selected
-				     selected)))
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (if selected
-			 (cl-who:str (frmt "~S" selected))
-			 (cl-who:str "Select a value")))
-	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item" 
-			    (:input :type "hidden"
-				    :value (frmt "~S" option))
-			    (cl-who:str (frmt "~S" option))))))))))
+      (cl-who:str (render-dropdown name selected list)))))
 
 
 
@@ -575,47 +606,43 @@
   (render-input-val* type field item))
 
 
-
-
-(defmethod render-input-val ((type (eql :collection??)) field item 
-			     &key &allow-other-keys)
-
-  (let* ((name (getf field :name))
-	 (list (wfx-fetch-context-items (dig field :db-type :collection)))
-	 (selected (find (getx item name)  
-			 list :test #'equalp))
-	 (accessors (dig field :db-type :accessor)))
-
+(defun render-item-list-auto-complete (data-type field-name selected
+			&key  select-prompt
+			  value-func
+			  context-state-selected)
+  (let ((selected-value (if selected
+			    (if value-func
+				(funcall value-func selected)
+				selected)
+			    (or (parameter (frmt "~A-drop" field-name))
+				context-state-selected
+				select-prompt))))
     (with-html-string
-      (:div :class "dropdown"
+      (:div :class "auto-complete"
 	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name) :value
-		    "")
-	  
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (if selected
-			 (cl-who:str (apply #'digx
-					    selected
-					    (if (listp accessors)
-						accessors
-						(list accessors))))))
+		    :name (frmt "~A" field-name)
+		    :value (html-value (or selected-value "")))
 	    
-	    (:div :class "dropdown-menu"
-		  :style "overflow: scroll;"
-		  :aria-labelledby (frmt "wtf-~A" name)
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item" 			      
-			    (:input :type "hidden"
-				    :value (frmt "~A" (item-hash option)))
-			    (cl-who:str
-			     (apply #'digx option
-				    (if (listp accessors)
-					accessors
-					(list accessors))))))))))))
+	    (:input :class "form-control auto-complete-text"
+		    :type "text"
+		    :placeholder (or select-prompt "Press enter for list or start typing and then press enter for list...")
+		    :name (frmt "~A-drop" field-name) 
+		    :id (frmt "~A-drop" field-name)
+		    :value (html-value (or selected-value ""))
+		    :onkeydown
+		    ;;fires ajax call on enter (13)
+		    (js-render-event-key 
+		     (frmt "~A-drop" field-name)
+		     13
+		     "cl-wfx:ajax-auto-complete"
+		     (frmt "~A-drop-div" field-name)
+		     (js-pair "data-type"
+			      data-type)
+		     (js-pair "field-name"
+			      (frmt "~A" field-name))
+		     (js-pair "action" "grid-auto-complete")))
+	    
+	    (:div :id (frmt "~A-drop-div" field-name) :class "auto-list")))))
 
 (defmethod render-input-val ((type (eql :collection)) field item 
 			     &key data-type &allow-other-keys)
@@ -627,54 +654,17 @@
 	 (accessors (dig field :db-type :accessor)))
    
     (with-html-string
-      (:div :class "auto-complete"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name)
-		    :value
-		    (if selected
-			       (apply #'digx
-						  selected
-						  (if (listp accessors)
-						      accessors
-						      (list accessors)))
-			       (or (parameter (frmt "~A-drop" name))
-				   (getcx 
-				    (dig field :db-type :data-type)
-				    (frmt "~A-drop" name))
-				   "")))
-	  
-	    (:input :class "form-control auto-complete-text"
-		    :type "text"
-		    :placeholder "Press enter for list or start typing and then press enter for list..."
-		    :name (frmt "~A-drop" name) 
-		    :id (frmt "~A-drop" name)
-		    :value (if selected
-			       (cl-who:str (apply #'digx
-						  selected
-						  (if (listp accessors)
-						      accessors
-						      (list accessors))))
-			       (or (parameter (frmt "~A-drop" name))
-				   (getcx 
-				    (dig field :db-type :data-type)
-				    (frmt "~A-drop" name))
-				   ""))
-		    :onkeydown
-		    ;;fires ajax call on enter (13)
-		    (js-render-event-key 
-		     (frmt "~A-drop" name)
-		     13
-		     "cl-wfx:ajax-auto-complete"
-		     (frmt "~A-drop-div" name)
-		     (js-pair "data-type"
-			      data-type)
-		     (js-pair "field-name"
-			      (frmt "~A" name))
-		     
-		     
-		     (js-pair "action" "grid-auto-complete")))
-	    (:div :id (frmt "~A-drop-div" name) :class "auto-list"
-		  )))))
+      (cl-who:str (render-item-list-auto-complete
+		   data-type name selected
+		   :value-func (lambda (item)
+				 (apply #'digx
+					item
+					(if (listp accessors)
+					    accessors
+					    (list accessors))))
+		   :context-state-selected (getcx 
+					    (dig field :db-type :data-type)
+					    (frmt "~A-drop" name)))))))
 
 (defmethod render-input-val ((type (eql :contained-item)) field item 
 			     &key parent-item &allow-other-keys)
@@ -691,34 +681,16 @@
 
    
     (with-html-string
-      (:div :class "dropdown"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name)
-		    :value (frmt "~A" (if selected
-					  (item-hash selected))))
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (if selected
-			 (cl-who:str (apply #'digx
-					    selected
-					    (if (listp accessors)
-						accessors
-						(list accessors))))))
-	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "wtf-~A" name)
-		  
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item" 			      
-			    (:input :type "hidden"
-				    :value (frmt "~A" (item-hash option)))
-			    (cl-who:str
-			     (apply #'digx option
-				    (if (listp accessors)
-					accessors
-					(list accessors))))))))))))
+
+      (cl-who:str
+       (render-dropdown name selected list
+			:key-func 'cl-naive-store:item-hash
+			:value-func (lambda (item)
+				      (apply #'digx
+					     item
+					     (if (listp accessors)
+						 accessors
+						 (list accessors)))))))))
 
 (defun grid-js-render-form-values (data-type form-id 
 				   &key action action-script
@@ -1164,89 +1136,49 @@
     (reverse data-fields)))
 
 
-(defun render-select-actions (data-type)  
-  (with-html-string
-    (:div :class " float-right" :id "select-stuff" :name "select-stuff"
-	  (:div :class "dropdown"
-		(:input :type "hidden" :class "selected-value" 
-			:name "select-action" :value "")
-		(:button :class "btn btn-secondary dropdown-toggle"
-			 :type "button"
-			 :data-toggle "dropdown"
-			 :aria-haspopup "true" :aria-expanded "false"
-			 (cl-who:str "Select To Clipboard"))
-		
-		(:div :class "dropdown-menu" 
-		      (dolist (option (list "Select To Clipboard"
-					    "Export Selected"
-					    "Export Selected - Raw"))
-			(cl-who:htm
-			 (:span :id (id-string option)
-				:class "dropdown-item"
-				:onclick
-				(grid-js-render-form-values
-				 data-type
-				  (id-string option)
-				 :action "select-action")
-				(:input :id "select-action"
-					:type "hidden"
-					:value (id-string option))
-				(cl-who:str option))))
-		      
-		      (dolist (script (getx (context-spec *context*) :scripts))
-			
-			(when (find :select (getx script :events) :test #'equalp)
-			  
-			  (cl-who:htm
-			  
-			   (:span :id (id-string (digx script :script :name))
-				  :class "dropdown-item"
-				  :onclick
-				  (grid-js-render-form-values
-				   data-type
-				   data-type;;"select-stuff" ;;(id-string (digx script :script :name))
-				   :action "select-action"
-				   :action-data (id-string
-						  (digx script :script :name)))
-				  (:input :id "select-action" 
-					  :type "hidden"
-					  :value (id-string
-						  (digx script :script :name)))
-				  (cl-who:str (digx script :script :name))))))))
 
-	  (dolist (script (getx (context-spec *context*) :scripts))
-	    (when (find :select-action (getx script :events) :test #'equalp)
-	      (cl-who:htm
-	       (:div :class "dropdown float-right"
-		     (:input :type "hidden" :class "selected-value"
-			     :id "select-action-value"
-			     :name "select-action-value" :value "")
-		     (:button :class "btn btn-secondary dropdown-toggle"
-			      :type "button"
-			      :data-toggle "dropdown"
-			      :aria-haspopup "true" :aria-expanded "false")
-		     
-		     (:div :class "dropdown-menu"
-			   (dolist (option (eval (digx script :script :code)))
-			     (cl-who:htm
-			      (:span :id (id-string (getx option :name))
-				     :class "dropdown-item"
-				     :onclick
-				     (grid-js-render-form-values
-				      data-type
-				      data-type
-				      :action "select-action"
-				      :action-data (frmt "~A"
-							   (item-hash option))
-				      :action-script
-				      (id-string
-				       (digx script :script :name)))
-				     (:input :id "select-action-valuex"
-					     :id "select-action-valuex"
-					     :type "hidden"
-					     :value (frmt "~A"
-							  (item-hash option)))
-				     (cl-who:str (getx option :name)))))))))))))
+(defun render-select-actions (data-type)  
+  (let ((action-list))
+
+    (dolist (script (getx (context-spec *context*) :scripts))
+      (when (string-equal (digx script :script :name) "Select Action List")
+	(setf action-list (eval (digx script :script :code)))))
+
+    (when action-list 
+      (with-html-string
+	  (:div :class " float-right"
+		:id "select-stuff"
+		:name "select-stuff"
+		(cl-who:str
+		 (render-dropdown
+		  "grid-select-action"
+		  nil
+		  action-list			       
+		  :key-func (lambda (action)
+				(getf action :action-name))
+		  :value-func (lambda (action)
+				(getf action :action-name))
+		  :select-onclick-func
+		  (lambda (action)
+		    (js-render-form-values
+		     "cl-wfx:ajax-grid"
+		     (gethash :collection-name
+			      (cache *context*))
+		     (frmt "~A" data-type)
+		     (js-pair "action"
+			      "grid-select-action")
+		     (js-pair "action-data"
+			      (getf action :data))
+		     (js-pair "action-data"
+			      (getf action :data))
+		     (js-pair "action-handler-script"
+			      (getf action :handler-script))
+		     (js-pair "pages"
+			      (or (parameter "pages") 50))
+		     (js-pair "page"
+			      (or (getcx 
+				   data-type :active-page)
+				  1)))))))))))
 
 
 (defvar *rendering-shit* nil)
@@ -1941,13 +1873,13 @@
 	    (setf persist-p t)
 	    (pushnew
 	     (wfx-fetch-context-item 
-			      (getcx (parameter "data-type")
-				     :collection-name)
-			      :test (lambda (item)
-				      (equalp
-					       (item-hash item)
-					       (ensure-parse-integer
-						(second spliff)))))
+	      (getcx (parameter "data-type")
+		     :collection-name)
+	      :test (lambda (item)
+		      (equalp
+		       (item-hash item)
+		       (ensure-parse-integer
+			(second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
 		   (getcx (parameter "data-type") :expand-field-name)))))))
     (when persist-p
@@ -1958,9 +1890,9 @@
 	(gethash :collection-name (cache *context*)))
        (getcx (gethash :data-type (cache *context*)) :root-item)))))
 
-(defgeneric select-handler (action selected))
 
-(defmethod action-handler ((action (eql :select-action)) 
+
+(defmethod action-handler ((action (eql :grid-select-action)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
@@ -1971,19 +1903,22 @@
 	  (when (equalp (first spliff) "true")
 	    (pushnew
 	     (wfx-fetch-context-item 
-			      (gethash :collection-name (cache *context*))
-			      :test (lambda (item)
-				      
-				      (equalp
-				       (item-hash item)
-				       (ensure-parse-integer
-					(second spliff)))))
+	      (gethash :collection-name (cache *context*))
+	      :test (lambda (item)				      
+		      (equalp
+		       (item-hash item)
+		       (ensure-parse-integer
+			(second spliff)))))
 	     selected)))))
-
-    (when (parameter "action-script")
-      (select-handler
-       (intern (string-upcase (parameter "action-script")) :KEYWORD)
-       selected))))
+    
+    (setf (getcx (parameter "data-type") :selected-grid-items) selected)
+    
+    (dolist (script (getx (context-spec *context*) :scripts))
+     
+      (when (string-equal (digx script :script :name)
+			  "Select Action Handler")
+	(eval (digx script :script :code))))
+    (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
 
 (defun getcx (&rest indicators)
   (let* ((indicator (pop indicators))
@@ -2195,8 +2130,7 @@
     
     (when field
       (let* ((accessors (dig field :db-type :accessor))
-	     (list (wfx-fetch-context-items
-		   
+	     (list (wfx-fetch-context-items		   
 		    (dig field :db-type :collection)
 		    :test (lambda (item)
 			    (or
@@ -2226,7 +2160,7 @@
 						   (list accessors))))))
 		(dolist (option list)
 		  (cl-who:htm
-		   (:span :class "auto-complete-item nav-link" 			      
+		   (:span :class "auto-complete-item nav-link"
 			  (:input :type "hidden"
 				  :value (frmt "~A" (item-hash option)))
 			  (cl-who:str

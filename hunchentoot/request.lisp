@@ -54,7 +54,7 @@
     ;;TODO:: How to register actions? Contexs spec permissions?
     (if (find (parameter "action") 
 	      (list "save" "delete" "login" "logout"
-		    "assign-campaign" "select-action"
+		    "assign-campaign" "select-action" "grid-select-action"
 		    "add-selection" "eval-repl") 
 	      :test #'string-equal)
 	(action-handler (intern (string-upcase (parameter "action")) :keyword)
