@@ -116,7 +116,8 @@
 
 (setf cl-smtp::*debug* t)
 
-(defun send-mail (mail-account to from subject message html-message)
+(defun send-mail (mail-account to from subject message html-message
+		  &key data)
   
   (handler-case
       (progn

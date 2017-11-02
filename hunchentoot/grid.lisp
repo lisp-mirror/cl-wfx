@@ -2423,8 +2423,9 @@
 	  (when (getf field :key-p)
 	   
 	    (when (empty-p (parameter (getf field :name)))
+	     ;; (break "~A" (hunchentoot:post-parameters*))
 	      (pushnew
-	       "Key values may not be blank."
+	       (frmt "Key values may not be blank. (~A)~%" (getf field :name))
 	       (getcx data-type :validation-errors))
 	      )
 	    ))

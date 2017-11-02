@@ -46,7 +46,7 @@ function fileUploadPrep (args) {
 
 function applyPeach (context)
 {
-
+/*
      $('.wfx-script').each(function(i,textarea) {
 	
      	 editor = CodeMirror.fromTextArea(textarea, {
@@ -58,7 +58,7 @@ function applyPeach (context)
              mode: "text/x-common-lisp"});
 	 editor.display.wrapper.style.fontSize = "12px";
          editor.refresh();});
-
+*/
 
     
    /* $('.date', context).datepicker({format: 'dd M yyyy'});

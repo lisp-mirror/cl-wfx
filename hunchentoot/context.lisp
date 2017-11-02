@@ -505,6 +505,7 @@
 
 <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js\" integrity=\"sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1\" crossorigin=\"anonymous\"></script>"
 
+#|
 	(cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
 	
 	(cl-who:str
@@ -521,7 +522,7 @@
 	(cl-who:str
 	 (frmt  "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
 " (site-url *system*)))
-
+|#
 	(cl-who:str
 	 (frmt  "<script src=\"~Aweb/cl-wfx.js\"></script>
 " (site-url *system*)))
@@ -612,7 +613,7 @@
        $(this).parents('.auto-complete').find('.auto-list').empty();
 });
 </script>"
-
+#|
 	(:script :type "text/javascript"
 	 (cl-who:str
 	  "$(document).ready(function() {
@@ -626,8 +627,14 @@
                 matchBrackets: true,
           	    mode: \"text/x-common-lisp\"});
           editor.display.wrapper.style.fontSize = \"12px\";
-          editor.refresh();});});")
+          editor.refresh();
+function updateTextArea() {
+    editor.save();
+}
+myEditor.on('change', updateTextArea);
+});});")
 	 )
+|#
 
 	(:script :type "text/javascript"
 	 (cl-who:str
