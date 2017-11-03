@@ -116,30 +116,32 @@
 
 (setf cl-smtp::*debug* t)
 
+(defvar *mail-data* nil)
+
 (defun send-mail (mail-account to from subject message html-message
 		  &key data)
-  
-  (handler-case
-      (progn
-	(cl-smtp:send-email (getx mail-account :host)
-			    (or from (getx mail-account :email))
-			    (list to)
-			    subject
-			    message
-			    :html-message (if (stringp html-message)
-					      html-message
-					      (eval html-message))
-			    :port (getx mail-account :port)
-			    :ssl (getx mail-account :ssl)
-			    :reply-to (or from (getx mail-account :email))
-			    :authentication
-			    (list :login (getx mail-account :user-name)
-				  (getx mail-account :password))
-			    :extra-headers
-			    (list (cons "Return-Receipt-To"
-					(list (getx mail-account :email)))
-				  (cons "Disposition-Notification-To"
-					(list (getx mail-account :email)))))
-	nil)
-    (error (c)      
-      (princ-to-string c))))
+  (let ((*mail-data* data))
+    (handler-case
+	(progn
+	  (cl-smtp:send-email (getx mail-account :host)
+			      (or from (getx mail-account :email))
+			      (list to)
+			      subject
+			      message
+			      :html-message (if (stringp html-message)
+						html-message
+						(eval html-message))
+			      :port (getx mail-account :port)
+			      :ssl (getx mail-account :ssl)
+			      :reply-to (or from (getx mail-account :email))
+			      :authentication
+			      (list :login (getx mail-account :user-name)
+				    (getx mail-account :password))
+			      :extra-headers
+			      (list (cons "Return-Receipt-To"
+					  (list (getx mail-account :email)))
+				    (cons "Disposition-Notification-To"
+					  (list (getx mail-account :email)))))
+	  nil)
+      (error (c)      
+	(princ-to-string c)))))
