@@ -548,35 +548,35 @@
 			    (or (parameter (frmt "~A-drop" name))
 				select-prompt))))
     (with-html-string
-      (:div :class "dropdown"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" name)
-		    :value (html-value (or selected-value "")))
-	    (:button :class "btn btn-secondary dropdown-toggle"
-		     :type "button"
-		     :data-toggle "dropdown"
-		     :aria-haspopup "true" :aria-expanded "false"
-		     (cl-who:str (html-value (or selected-value ""))))
-	    
-	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
-		  (dolist (option list)
-		    (cl-who:htm
-		     (:span :class "dropdown-item"
-			    :onclick (if select-onclick-func
-					 (funcall
-					  select-onclick-func option))
-			    
-			    (:input :id "select-action"
-				    :type "hidden"
-				    :value (html-value
-					    (if key-func
-						(funcall key-func option)
-						option)))
-			    (cl-who:str
-			     (html-value
-			      (if value-func
-				  (funcall value-func option)
-				  option)))))))))))
+      (:div :class "bt-group dropdown"
+	     (:input :type "hidden" :class "selected-value" 
+		     :name (frmt "~A" name)
+		     :value (html-value (or selected-value "")))
+	     (:button :class "btn btn-secondary dropdown-toggle"
+		      :type "button"
+		      :data-toggle "dropdown"
+		      :aria-haspopup "true" :aria-expanded "false"
+		      (cl-who:str (html-value (or selected-value ""))))
+	     
+	     (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
+		   (dolist (option list)
+		     (cl-who:htm
+		      (:span :class "dropdown-item"
+			     :onclick (if select-onclick-func
+					  (funcall
+					   select-onclick-func option))
+			     
+			     (:input :id "select-action"
+				     :type "hidden"
+				     :value (html-value
+					     (if key-func
+						 (funcall key-func option)
+						 option)))
+			     (cl-who:str
+			      (html-value
+			       (if value-func
+				   (funcall value-func option)
+				   option)))))))))))
 
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
@@ -770,7 +770,8 @@
 (defun render-select-button (item)
   (with-html-string
       (:div :class "form-check-label"
-	    (:input	    
+	    (:input
+	     :class "grid-selection"
 	     :type "checkbox"
 	     :id "grid-selection"
 	     :name "grid-selection"
@@ -1104,10 +1105,23 @@
 	  (if sub-p
 	      (cl-who:htm	      
 	       (:div :class "col-sm-2"))
-	      (cl-who:htm	      
+	      (cl-who:htm
+	       
 	       (:div :class "col-sm-2"
-		     (cl-who:str
-		      (render-grid-sizing data-type))))))))
+		     (:div :class "float-right"
+		      (:input
+		       :class "form-check-input "
+		       :type "checkbox"
+		       :id "grid-select-all"
+		       :name "grid-select-all"
+		       :onclick "gridSelectAll();"
+		       :value "All"
+		       :checked (parameter "grid-select-all")
+		       
+		       ))
+		     (:div ;;:class "float-right"
+			   (cl-who:str
+			    (render-grid-sizing data-type)))))))))
 
 (defun render-grid-header (data-type sub-p)
   (let ((fields (getcx	data-type :fields))
@@ -1144,9 +1158,13 @@
       (when (string-equal (digx script :script :name) "Select Action List")
 	(setf action-list (eval (digx script :script :code)))))
 
+    (setf action-list (append action-list
+			      (list (list :action-name "Delete Selected"
+					  :handler-script "Delete Selected"))))
     (when action-list 
       (with-html-string
-	  (:div :class " float-right"
+	;;TODO: float right fucks up dropdown menu positioning
+	  (:div ;;:class " float-right"
 		:id "select-stuff"
 		:name "select-stuff"
 		(cl-who:str
@@ -1167,10 +1185,9 @@
 		     (frmt "~A" data-type)
 		     (js-pair "action"
 			      "grid-select-action")
+		     
 		     (js-pair "action-data"
-			      (getf action :data))
-		     (js-pair "action-data"
-			      (getf action :data))
+			      (or (getf action :data) ""))
 		     (js-pair "action-handler-script"
 			      (getf action :handler-script))
 		     (js-pair "pages"
@@ -1533,7 +1550,7 @@
 
 (defun render-grid-sizing (data-type)
   (with-html-string
-    (:input :type "text" :name "pages" :class "float-right" 
+    (:input :type "text" :name "pages" ;;:class "float-right" 
 	    :size 2
 	    :id "pages"
 	    :value (or  (parameter "pages")
@@ -1890,7 +1907,11 @@
 	(gethash :collection-name (cache *context*)))
        (getcx (gethash :data-type (cache *context*)) :root-item)))))
 
-
+(defun delete-selected (selected)
+  (dolist (item selected)
+    (setf (cl-naive-store::item-deleted-p item) t)
+    (persist-item (item-collection item) item)
+    (cl-naive-store::remove-item item)))
 
 (defmethod action-handler ((action (eql :grid-select-action)) 
 			   (context context) 
@@ -1912,12 +1933,17 @@
 	     selected)))))
     
     (setf (getcx (parameter "data-type") :selected-grid-items) selected)
+
     
-    (dolist (script (getx (context-spec *context*) :scripts))
-     
-      (when (string-equal (digx script :script :name)
-			  "Select Action Handler")
-	(eval (digx script :script :code))))
+    (cond ((string-equal (parameter "action-handler-script")
+			 "Delete Selected")
+	   (delete-selected selected))
+	  (t
+	   (dolist (script (getx (context-spec *context*) :scripts))
+	     
+	     (when (string-equal (digx script :script :name)
+				 "Select Action Handler")
+	       (eval (digx script :script :code))))))
     (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
 
 (defun getcx (&rest indicators)
@@ -2070,16 +2096,19 @@
 			 (render-grid-data data-type page-items 0 nil nil)))
 
 		  (:div :class "card-footer"
-			(:button 
+			(:div :class "row"
+			      (:div :class "col"
+				    (:button 
 				     :name "expand" :type "submit" 
 				     :class "btn btn-outline-success"
 				     :aria-pressed "false"
 				     :onclick 
 				     (grid-js-render-new data-type)
-				     (cl-who:str "+"))
-			(cl-who:str
-			 (render-select-actions
-			  data-type)))
+				     (cl-who:str "+")))
+			      (:div :class "col-2"
+				    (cl-who:str
+					   (render-select-actions
+					    data-type)))))
 		  
 		  (:div :class "card-footer"
 			(:div :class "row"	  
