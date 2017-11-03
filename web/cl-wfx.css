@@ -136,3 +136,9 @@ select {
 
 .file-drop-zone {
     height: 300px;
+
+}
+
+.report table,tr,td,span {
+    font-size: 12px;
+}
