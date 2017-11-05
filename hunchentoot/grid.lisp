@@ -2,7 +2,6 @@
 
 (defparameter *item-hierarchy* nil)
 
-
 (defun complex-type (field)
   (if (listp (getf field :db-type))
       (or (dig field :db-type :complex-type)
@@ -19,514 +18,6 @@
     (when (equalp (getf field :name) :entity)
       (return-from entity-type-p t))))
 
-(defun print-item-val-s* (field item)
-  (let ((*print-case* :downcase)
-	(val (getfx item field)))
-    
-    (if val
-	(frmt "~S" val)
-	"")))
-
-(defun print-item-val-a* (field item)
-  (let ((*print-case* :downcase)
-	(val (getfx item field)))
-    (if val
-	(frmt "~A" val)
-	"")))
-
-(defmethod print-item-val ((type (eql :symbol)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :keyword)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :script)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :string)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :text)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defun file-server-path (collection field item)
-  (string-downcase
-   (frmt "~A/files/~A/~A/~A/~A"
-	 (if (and (item-collection item)
-		  (location (item-collection item)))
-	     (location (item-collection item))
-	     (string-downcase
-	      (frmt "~A~A"
-		    (location
-		     (store
-		      collection))
-		    (name collection))))
-	 (item-data-type item)
-	 (getf field :name)
-	 (item-hash item)
-	 (getx item (getf field :name)))))
-
-(defun file-url (collection field item)
-  (string-downcase
-     (frmt "~A~A/~A/~A/~A/~A/~A"
-	   (site-url *system*)
-	   (first (getx (active-user) :selected-licenses))
-	   (name collection)
-	   (item-data-type item)
-	   (getf field :name)
-	   (item-hash item)
-	   (getx item (getf field :name)))))
-
-(defmethod print-item-val ((type (eql :image)) field item
-			   &key &allow-other-keys)
-  (let* ((collection (get-perist-collection
-					  (gethash :collection-name
-						   (cache *context*))))
-	 (server-path (file-server-path collection field item)))
-    (with-html-string
-      (if (getx item (getf field :name))
-	  (let ((image-url (file-url collection field item)))
-;;	    (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
-	    (push (hunchentoot::create-static-file-dispatcher-and-handler
-		   image-url
-		   server-path)
-		  hunchentoot::*dispatch-table*)
-	    (cl-who:htm
-	     (:img
-	      :style "width:128px;height:128px;"
-	      :src image-url)))
-	(cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
-
-(defmethod print-item-val ((type (eql :email)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :file)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :number)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :integer)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :date)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :time)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
-
-(defmethod print-item-val ((type (eql :boolean)) field item
-			   &key &allow-other-keys)
-  (if (getfx item field)
-      "checked"
-      ""))
-
-(defmethod print-item-val ((type (eql :key-value)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :item)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-
-(defmethod print-item-val ((type (eql :value-list)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :key-value-list)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :value-string-list)) 
-			   field item &key &allow-other-keys)
-  (let* ((delimiter (dig field :db-type :delimiter))
-	 (val (getsfx (dig field :db-type :type) field item))
-	 (final-val))
-  
-    (when (and val (listp val))
-      
-      (dolist (x val)
-	(setf final-val 
-	      (if final-val
-		  (concatenate 'string final-val delimiter 
-			       (if (equalp (dig field :db-type :type)
-					   :keyword)
-				   (string-downcase (frmt "~S" x))
-				   x))
-		  (if (equalp (dig field :db-type :type)
-			      :keyword)
-		      (string-downcase (frmt "~S" x))
-		      x)))))
-
-    final-val))
-
-(defmethod print-item-val ((type (eql :list-items)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :collection-items))
-			   field item &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :contained-item)) field item
-			   &key &allow-other-keys)
-  (let ((item-val (getfx item field))
-	(accessor (dig field :db-type :accessor)))
-    
-    (when (or (listp item-val) (equalp (type-of item-val) 'item))
-      (when item-val
-	
-	(frmt "~A"
-	      (if (listp accessor)
-		  (apply #'digx item-val accessor)
-		  (getx
-		    item-val		    
-		    (dig field :db-type :accessor))))))))
-
-(defmethod print-item-val ((type (eql :collection-contained-item)) 
-			   field item &key &allow-other-keys)
-  (print-item-val-s* field item))
-
-(defmethod print-item-val ((type (eql :collection)) field item
-			   &key &allow-other-keys)
-  
-  (let ((item-val (getfx item field))
-	(accessor (dig field :db-type :accessor)))
-
-    (when (or (listp item-val) (equalp (type-of item-val) 'item))
-       (when item-val
-	(frmt "~A"
-	      (if (listp accessor)
-		  (apply #'digx item-val accessor)
-		  (getx
-		    item-val		    
-		    (dig field :db-type :accessor))))))))
-
-(defmethod print-item-val ((type (eql :hierarchical)) field item 
-			   &key &allow-other-keys)
-  ;;TODO: Sort this shit out need to loop tree
-  (let ((item-val (getfx item field))
-	(final))    
-    (when item-val
-      (dolist (x item-val)
-	(if final
-	    (setf final (frmt "~A ~A"
-			      final
-			      (getx 
-			       x
-			       (dig field :db-type :accessor))))
-	    (frmt "~A" (getx 
-			x
-			(dig field :db-type :accessor))))))))
-
-(defgeneric render-input-val (type field item &key &allow-other-keys))
-
-(defun render-input-val* (type field item)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "text"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item))
-		  :disabled "disabled"))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "text"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item)))))))
-
-(defmethod render-input-val ((type (eql :symbol)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :keyword)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :string)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :text)) field item
-			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control"
-	   :id name
-	   :name name :cols 50 :rows 10
-	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
-			type
-			field 
-			item))))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control"
-	   :id name
-	   :name name :cols 50 :rows 10
-	   (cl-who:str
-	    (print-item-val 
-	     type
-	     field 
-	     item)))))))
-
-(defun render-image (field item)
-  (let* ((collection (get-perist-collection
-					  (gethash :collection-name
-						   (cache *context*))))
-	(image-path (file-url collection field item)))
-    (with-html-string
-      (:input :type "hidden"
-	      :id (string-downcase
-		   (frmt "args-~A-~A"
-			 (getf field :name)
-			 (item-hash item)))
-	      :value (string-downcase
-		      (frmt "{\"license\":\"~A\", \"collection\":\"~A\", \"datatype\":\"~A\", \"field\":\"~A\"}"
-			    (first (getx (active-user) :selected-licenses))
-			    (name collection)
-			    (item-data-type item)
-			    (getf field :name))))
-      
-      (:input :type "hidden"
-	      :id (string-downcase
-		   (frmt "init-~A-~A" (getf field :name)
-			 (item-hash item)))
-	      :value image-path
-	      :name (string-downcase
-		     (frmt "~A" (getf field :name))))
-      
-      (:input :type "file"
-	      :class "file-upload"
-	      :multiple t
-	      :id (string-downcase
-		   (frmt "~A-~A" (getf field :name)
-			 (item-hash item)))))))
-
-(defun ajax-render-file-upload (&key id from-ajax)
-  (declare (ignore id) (ignore from-ajax))
-  
-  (let* ((data-type (parameter "data-type"))
-	(item (getcx data-type :edit-item))
-	(fields (getcx data-type :fields)))
-
-    (dolist (field fields)
-      (when (equalp (getf field :name) (parameter "field-name"))
-	(return-from ajax-render-file-upload
-	  (render-image field item))))
-    )
-  )
-
-(defmethod render-input-val ((type (eql :image)) field item
-			     &key  &allow-other-keys)
-
-  (with-html-string
-    (:div :class "row"	  
-	  :id (string-downcase
-	       (frmt "file-upload-row-~A" (item-data-type item)))
-	  :name (string-downcase
-		 (frmt "file-upload-row-~A" (item-data-type item)))
-	  (cl-who:str (render-image field item))
-	  )))
-
-(defmethod render-input-val ((type (eql :file)) field item
-			     &key &allow-other-keys)
-  (with-html-string
-    (:div :class "row"
-	  (:div :class "col"
-		(:input :type "file"
-			:onchange (frmt "$(\"#file-~A\").val($(this).val());"
-					(getf field :name)))
-		
-		(:input :type "text" :class "form-control "
-			:name (frmt "file-~A" (getf field :name))
-			:id (frmt "file-~A" (getf field :name))
-			:value (getx item (getf field :name))
-			:readonly t)))))
-
-(defmethod render-input-val ((type (eql :email)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :number)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :integer)) field item
-			     &key &allow-other-keys)
-  (render-input-val* type field item))
-
-(defmethod render-input-val ((type (eql :date)) field item
-			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "date"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item))
-		  :disabled "disabled"))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "date"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item)))))))
-
-(defmethod render-input-val ((type (eql :time)) field item
-			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "time"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item))
-		  :disabled "disabled"))
-	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "time"	     
-		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item)))))))
-
-(defmethod render-input-val ((type (eql :boolean)) field item
-			     &key &allow-other-keys)
-  (let ((name (getf field :name))
-	(print-val (getsfx type field item)))
-    
-    (with-html-string
-      (:div :class "form-check" 
-	    (if (not (digx field :attributes :editable))
-		(cl-who:htm (:div :class "form-check-label"
-				  (:input
-				   :class "form-check-input"
-				   :type "checkbox"
-				   :id name
-				   :name name
-				   :value (getsfx
-					   type
-					   field 
-					   item)
-				   :checked print-val
-				   :aria-label "..."
-				   :disabled "disabled")))
-		(cl-who:htm (:div :class "form-check-label"
-				  (:input
-				   :class "form-check-input"
-				   :type "checkbox"
-				   :id name
-				   :name name
-				   :value (getsfx
-					   type
-					   field 
-					   item)
-				   :checked print-val
-				   :aria-label "..."))))))))
-
-(defmethod render-input-val ((type (eql :script)) field item
-			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control wfx-script"
-	   :id name
-	   :name name :cols 50 :rows 10
-	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
-			type
-			field 
-			item))))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control wfx-script"
-	   :id name
-	   :name name :cols 50 :rows 10
-	   (cl-who:str
-	    (print-item-val 
-	     type
-	     field 
-	     item)))))))
-
-(defmethod render-input-val ((type (eql :value-string-list)) 
-			     field item &key &allow-other-keys)
-  (let* ((name (getf field :name))
-	 (delimiter (dig field :db-type :delimiter)))
-
-    (if (not (digx field :attributes :editable))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control"
-	   :id name
-	   :name name :cols 20 :rows 3
-	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
-			:value-string-list
-			field 
-			item)))
-	  (:span 
-	   (cl-who:str (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-						 "#\Space"
-						 delimiter)))))
-	(with-html-string
-	  (:textarea 
-	   :class "form-control"
-	   :id name
-	   :name name :cols 20 :rows 3
-	   (cl-who:str (print-item-val 
-			:value-string-list
-			field 
-			item)))
-	  (:span (cl-who:str
-		  (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-					    "#\Space"
-					    delimiter))))))))
-
 (defun html-value (value)
   (cond ((symbolp value)
 	 (frmt "~S" value))
@@ -536,6 +27,7 @@
 	 value)
 	(t
 	 (frmt "~S" value))))
+
 
 (defun render-dropdown (name selected list
 			&key  (select-prompt "Select a value")
@@ -604,6 +96,47 @@
 (defmethod render-input-val ((type (eql :item)) field item
 			     &key &allow-other-keys)
   (render-input-val* type field item))
+
+
+(defun render-item-list-auto-complete-x (collection data-type field-name selected
+			&key  select-prompt
+			  value-func
+			  context-state-selected)
+  (let ((selected-value (if selected
+			    (if value-func
+				(funcall value-func selected)
+				selected)
+			    (or (parameter (frmt "~A-drop" field-name))
+				context-state-selected
+				select-prompt))))
+    (with-html-string
+      (:div :class "auto-complete"
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" field-name)
+		    :value (html-value (or selected-value "")))
+	    
+	    (:input :class "form-control auto-complete-text"
+		    :type "text"
+		    :placeholder (or select-prompt "Press enter for list or start typing and then press enter for list...")
+		    :name (frmt "~A-drop" field-name) 
+		    :id (frmt "~A-drop" field-name)
+		    :value (html-value (or selected-value ""))
+		    :onkeydown
+		    ;;fires ajax call on enter (13)
+		    (js-render-event-key 
+		     (frmt "~A-drop" field-name)
+		     13
+		     "cl-wfx:ajax-auto-complete-x"
+		     (frmt "~A-drop-div" field-name)
+		     (js-pair "data-type"
+			      data-type)
+		     (js-pair "field-name"
+			      (frmt "~A" field-name))
+		     (js-pair "collection"
+			      (frmt "~A" collection))
+		     (js-pair "action" "auto-complete")))
+	    
+	    (:div :id (frmt "~A-drop-div" field-name) :class "auto-list")))))
 
 
 (defun render-item-list-auto-complete (data-type field-name selected
@@ -958,7 +491,6 @@
 		  (let ((errors (getcx data-type :validation-errors)))
 		    
 		    (setf (getcx data-type :validation-errors) nil)
-		    (setf (getcx data-type :validation-errors-id) nil)
 		    
 		    (cl-who:htm
 		     (:div :class "row"
@@ -1901,9 +1433,8 @@
 		   (getcx (parameter "data-type") :expand-field-name)))))))
     (when persist-p
       (persist-item
-       (get-collection
-	(first (collection-stores *system*
-				  (gethash :collection-name (cache *context*))))
+       (get-collection	
+	(collection-store (gethash :collection-name (cache *context*)))
 	(gethash :collection-name (cache *context*)))
        (getcx (gethash :data-type (cache *context*)) :root-item)))))
 
@@ -1981,9 +1512,7 @@
     (if (and (parameter "search") (not (empty-p (parameter "search"))))
 	(setf (getcx data-type :search) (parameter "search"))
 	(if (string-equal (parameter "search") "")
-	    (setf (getcx data-type :search) nil)))
-    )
-  )
+	    (setf (getcx data-type :search) nil)))))
 
 (defun set-grid-filter (data-type)
   (when (equalp (parameter "action") "filter")
@@ -1993,20 +1522,15 @@
     (setf (getcx data-type :filter) nil))
 
   (let ((fields (getcx data-type :filter-fields)))
-
     (dolist (field (getcx data-type :fields))
-
 	(when (parameter (frmt "~A-filter" (getf field :name)))
-	  
 	  (pushnew field fields)
-	  
 	  (setf (getcx data-type
 		       (intern (string-upcase
 				(frmt "~A-filter" (getf field :name)))))  
 		(parameter (frmt "~A-filter" (getf field :name))))))
     
       (setf (getcx data-type :filter-fields) fields)))
-
 
 (defun set-type-context (data-type)
   (unless (getcx data-type :data-type)
@@ -2016,21 +1540,15 @@
     (setf (getcx data-type :fields) 
 	  (dig (getcx data-type :data-type) :data-type :fields))))
 
-
-
 (defun set-grid-context (collection-name data-type)
   (unless (gethash :collection-name (cache *context*))
-
     (setf  (gethash :collection-name (cache *context*)) collection-name)
     (setf  (gethash :data-type (cache *context*)) data-type)
     
     (unless (equalp (parameter "action") "save")
-      (setf (getcx data-type :root-item) nil))
+      (setf (getcx data-type :root-item) nil))))
 
-    ))
-
-(defun set-grid-expand ()
-  
+(defun set-grid-expand ()  
   (when (equalp (parameter "action") "expand")
     (setf (getcx (parameter "data-type") :expand-id) (parameter "item-id")))
   
@@ -2040,89 +1558,82 @@
 
 (defun render-grid (collection-name)
   (when (context-access-p (context-spec *context*))
-      (let* ((collection (if (not (gethash :collection-name (cache *context*)))
-			     (find-collection-def *system*   
-						  collection-name)))
-	     (data-type (or (gethash :data-type (cache *context*))
-			    (and collection
-				 (dig collection :collection :data-type)))))   
+    (let* ((collection (if (not (gethash :collection-name (cache *context*)))
+			   (find-collection-def *system*   
+						collection-name)))
+	   (data-type (or (gethash :data-type (cache *context*))
+			  (and collection
+			       (dig collection :collection :data-type)))))   
 
-	(set-grid-context collection-name data-type)
+      (set-grid-context collection-name data-type)
 
-	(set-type-context data-type)
+      (set-type-context data-type)
 
-	(set-type-context (parameter "data-type"))
+      (set-type-context (parameter "data-type"))
 
-	(set-grid-search data-type)
+      (set-grid-search data-type)
 	
-	(set-grid-filter data-type)
+      (set-grid-filter data-type)
 	
-	(set-grid-expand)
+      (set-grid-expand)
 	
-	(let ((page-items (fetch-grid-data data-type)))
-	  
-	  ;;(campaign-shit page-items)
-	  
-	  (with-html-string  
-	    (:div :id (gethash :collection-name (cache *context*))
-		  :class "card"
-		  (:h4 :class "card-header"
-		       (cl-who:str (string-capitalize collection-name))
-		       (:button
-			:class "btn btn-small btn-outline-secondary float-right"
-			:name "filter-grid" 
+      (let ((page-items (fetch-grid-data data-type)))
+	(with-html-string  
+	  (:div :id (gethash :collection-name (cache *context*))
+		:class "card"
+		(:h4 :class "card-header"
+		     (cl-who:str (string-capitalize collection-name))
+		     (:button
+		      :class "btn btn-small btn-outline-secondary float-right"
+		      :name "filter-grid" 
 			
-			:data-toggle "collapse" :href "#collapseFilter" 
-			:aria-expanded "false" :aria-controls="collapseFilter"
-			:aria-pressed "false"
-			(:i :class "fa fa-filter "))
+		      :data-toggle "collapse" :href "#collapseFilter" 
+		      :aria-expanded "false" :aria-controls="collapseFilter"
+		      :aria-pressed "false"
+		      (:i :class "fa fa-filter "))
 		       
 
-		       (:button
-			:class "btn btn-small btn-outline-secondary float-right"
-			:name "export" 
-			:type "submit" 
+		     (:button
+		      :class "btn btn-small btn-outline-secondary float-right"
+		      :name "export" 
+		      :type "submit" 
 			
-			:aria-pressed "false"
-			:onclick 
-			(grid-js-render data-type
-					:action "export")
-			(:i :class "fa fa-download")))
-		  (cl-who:str
-			 (render-grid-header data-type nil))
-		  (:div :class "card-block"
-			:id data-type
-			(cl-who:str
-			 (render-grid-data data-type page-items 0 nil nil)))
+		      :aria-pressed "false"
+		      :onclick 
+		      (grid-js-render data-type
+				      :action "export")
+		      (:i :class "fa fa-download")))
+		(cl-who:str
+		 (render-grid-header data-type nil))
+		(:div :class "card-block"
+		      :id data-type
+		      (cl-who:str
+		       (render-grid-data data-type page-items 0 nil nil)))
 
-		  (:div :class "card-footer"
-			(:div :class "row"
-			      (:div :class "col"
-				    (:button 
-				     :name "expand" :type "submit" 
-				     :class "btn btn-outline-success"
-				     :aria-pressed "false"
-				     :onclick 
-				     (grid-js-render-new data-type)
-				     (cl-who:str "+")))
-			      (:div :class "col-2"
-				    (cl-who:str
-					   (render-select-actions
-					    data-type)))))
+		(:div :class "card-footer"
+		      (:div :class "row"
+			    (:div :class "col"
+				  (:button 
+				   :name "expand" :type "submit" 
+				   :class "btn btn-outline-success"
+				   :aria-pressed "false"
+				   :onclick 
+				   (grid-js-render-new data-type)
+				   (cl-who:str "+")))
+			    (:div :class "col-2"
+				  (cl-who:str
+				   (render-select-actions
+				    data-type)))))
 		  
-		  (:div :class "card-footer"
-			(:div :class "row"	  
-			      (:div :class "col"
-				  
-				    (cl-who:str
-				     (render-grid-paging data-type)))))))))))
+		(:div :class "card-footer"
+		      (:div :class "row"	  
+			    (:div :class "col"
+				  (cl-who:str
+				   (render-grid-paging data-type)))))))))))
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-;;  (break "~A" (hunchentoot:post-parameters*))
-
   (render-grid (getx (context-spec *context*) :name)))
-
 
 (defun get-child (fields parent-item data-type hash)
   (dolist (field fields)
@@ -2135,9 +1646,7 @@
 	    (when (equalp (item-hash item) (ensure-parse-integer hash))
 	      (return-from get-child (list (getf field :name) item))))
 	(return-from get-child (list (getf field :name)
-				     (make-item :data-type data-type)))
-	))))
-
+				     (make-item :data-type data-type)))))))
 
 (defun fetch-grid-root-edit-item (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))   
@@ -2156,7 +1665,7 @@
     (dolist (fieldx fields)
       (when (string-equal (getf fieldx :name) field-name)
 	(setf field fieldx)))
-    
+
     (when field
       (let* ((accessors (dig field :db-type :accessor))
 	     (list (wfx-fetch-context-items		   
@@ -2174,34 +1683,68 @@
 						accessors
 						(list accessors)))
 				     :test #'string-equal))))))
+
 	(with-html-string
 	  (:div
-		;;:style "z-index:1070;position:absolute;top:30px;over-flow:scroll;"
-		:class "auto-complete-menu nav flex-column bg-white  rounded border"
-		;; :aria-labelledby (frmt "~A-drop" name)
-		;;	(break "~A" list)
+	   :class "auto-complete-menu nav flex-column bg-white rounded border"
+	   (setf list (sort (copy-list list) #'string<
+			    :key (lambda (item)
+				   (apply #'digx item
+					  (if (listp accessors)
+					      accessors
+					      (list accessors))))))
+	   (dolist (option list)
+	     (cl-who:htm
+	      (:span :class "auto-complete-item nav-link"
+		     (:input :type "hidden"
+			     :value (frmt "~A" (item-hash option)))
+		     (cl-who:str
+		      (trim-whitespace 
+		       (apply #'digx option
+			      (if (listp accessors)
+				  accessors
+				  (list accessors))))))))))))))
 
-		(setf list (sort (copy-list list) #'string<
-				 :key (lambda (item)
-					(apply #'digx item
-					       (if (listp accessors)
-						   accessors
-						   (list accessors))))))
-		(dolist (option list)
-		  (cl-who:htm
-		   (:span :class "auto-complete-item nav-link"
-			  (:input :type "hidden"
-				  :value (frmt "~A" (item-hash option)))
-			  (cl-who:str
-			   (trim-whitespace 
-			    (apply #'digx option
-				   (if (listp accessors)
-				       accessors
-				       (list accessors))))))))))))))
+(defun ajax-auto-complete-x (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+  (let* (
+	 (field-name (intern (parameter "field-name") :KEYWORD))
+	 (collection (parameter "collection")))
+ 
+    (let* ((accessors (list  field-name))
+	   (list (wfx-fetch-context-items		   
+		    collection
+		    :test (lambda (item)
+			    (or
+			     (string-equal (parameter
+					     (frmt "~A-drop" field-name))
+					    "")
+			     (search (parameter
+				      (frmt "~A-drop" field-name))
+				     (apply #'digx
+					    item
+					    accessors)
+				     :test #'string-equal))))))
+
+	(with-html-string
+	  (:div
+	   :class "auto-complete-menu nav flex-column bg-white rounded border"
+	   (setf list (sort (copy-list list) #'string<
+			    :key (lambda (item)
+				   (apply #'digx item
+					  accessors))))
+	   (dolist (option list)
+	     (cl-who:htm
+	      (:span :class "auto-complete-item nav-link"
+		     (:input :type "hidden"
+			     :value (frmt "~A" (item-hash option)))
+		     (cl-who:str
+		      (trim-whitespace 
+		       (apply #'digx option
+			      accessors)))))))))))
 
 (declaim (optimize (debug 3))
 	 (notinline ajax-grid-edit))
-
 
 (defun set-edit-obects ()
   (let* ((data-type (parameter "data-type"))
@@ -2223,7 +1766,6 @@
     (setf fields (getcx root-type :fields))
      
     (setf root-item (fetch-grid-root-edit-item root-hash))
-
      
     (unless root-item
       (setf root-item (make-item :data-type data-type)))
@@ -2246,9 +1788,7 @@
 				:item (second item)
 				:field-name (first item))
 			  edit-objects)))
-	    (setf (getcx data-type :edit-object) edit-objects)
-
-	    )
+	    (setf (getcx data-type :edit-object) edit-objects))
 	  (setf (getcx data-type :edit-object) edit-objects))
       edit-objects)))
 
@@ -2274,7 +1814,6 @@
      
     (setf root-item (fetch-grid-root-edit-item root-hash))
 
-     
     (unless root-item
       (setf root-item (make-item :data-type data-type)))
 
@@ -2381,16 +1920,138 @@
 	    (delete-file temp-path)
 	    (setf (getx edit-item (getf field :name))
 		  (parameter (string-downcase
-			      (frmt "~A" (getf field :name))))))
+			      (frmt "~A" (getf field :name)))))))))))
+
+(defun find-contained-item (hash list)
+  (dolist (item list)
+    (when (equalp (item-hash item) (ensure-parse-integer hash))
+      (return-from find-contained-item item))))
+
+(defun synq-value (field edit-item parent-item value)
+  (cond ((equalp (complex-type field) :collection)
+	 (setf (getfx edit-item field)
+		   (wfx-fetch-context-item
+		    (dig field :db-type :collection)
+		    :test (lambda (item)
+			    (equalp (item-hash item)
+				    (ensure-parse-integer value))))))
+	((equalp (complex-type field) :collection-contained-item)
+	 (setf (getfx edit-item field)
+	       (find-contained-item
+		value
+		(apply #'digx parent-item
+		       (digx field :db-type :container-accessor)) )))
+	
+	((equalp (complex-type field) :contained-item)
+	 (setf (getfx edit-item field)
+	       (find-contained-item
+		value
+		(apply #'digx parent-item
+		       (digx field :db-type :container-accessor)) )))
+	(t
+	 (setf (getfx edit-item field) value))))
+
+
+(defun validate-value (field field-name edit-item parent-item value)
+  (if (equalp (complex-type field) :item)
+      (cond ((equalp (complex-type field) :collection)
+	     (validate-sfx
+	      (complex-type field)
+	      field 
+	      edit-item 
+	      (parameter field-name)
+	      :items (wfx-fetch-context-items
+		      (dig field :db-type :collection)
+		      :test (lambda (item)
+			      (equalp (item-hash item)
+				      (ensure-parse-integer value))))))
+	    ((equalp (complex-type field) :collection-contained-item)
+	     (validate-sfx (complex-type field)
+			   field 
+			   edit-item 
+			   (parameter field-name)
+			   :items
+			   (apply #'digx parent-item
+				  (digx field :db-type :container-accessor))))
+	    ((equalp (complex-type field) :contained-item)
+	     (validate-sfx (complex-type field)
+			   field 
+			   edit-item 
+			   (parameter field-name)
+			   :items
+			   (apply #'digx parent-item
+				  (digx field :db-type :container-accessor))))
+	    (t
+	     (list t nil)))
+      (list t nil)))
+
+(defun synq-item-values (data-type fields parent-item edit-item)
+  (dolist (field fields)	  
+    (when (and (digx field :attributes :editable)
+	       (getf field :db-type)
+	       (not (find (complex-type field)
+			  (list :collection-items
+				:list-items
+				:hierarchical))))
+	   
+      (let* ((field-name (frmt "~A" (getf field :name)))
+	     (valid (if (equalp (complex-type field) :item)
+			(validate-value field
+					field-name 
+					edit-item
+					parent-item
+					(parameter field-name))
+			(list t nil))))
+	      
+	(unless (first valid)
+	  (pushnew 
+	   (list field-name (second valid))
+	   (getcx data-type :validation-errors)))
+	      
+	(when (first valid)
+	  (synq-value field edit-item parent-item
+		      (parameter field-name)))))	  
+	 
+    (when (getf field :key-p)	   
+      (when (empty-p (parameter (getf field :name)))
+	(pushnew
+	 (frmt "Key values may not be blank. (~A)~%" (getf field :name))
+	 (getcx data-type :validation-errors))))))
+
+(defun grid-append-child (data-type parent-slot parent-item edit-item root-item)
+  (unless (getcx data-type :validation-errors)
+    ;;Append parent-slot only if new	
+    (when parent-slot
+      (let ((exists (find-equalp-item edit-item
+				      (getx parent-item parent-slot))))
+	     
+	(if exists
+	    (setf exists edit-item)		  
+	    (setf (getx parent-item parent-slot)
+		  (append (getx parent-item parent-slot)
+			  (list edit-item))))))	  
 	  
-	  )))))
+    (grid-persist-item data-type edit-item root-item)))
+
+(defun grid-persist-item (data-type edit-item root-item)
+  (unless (getcx data-type :validation-errors)
+    (let ((collection (wfx-get-collection
+		       (gethash :collection-name (cache *context*)))))
+
+      (unless collection
+	(pushnew 
+	 "No default store found check if license is selected."
+	 (getcx data-type :validation-errors)))
+
+      (when collection
+	(setf (item-collection edit-item) collection)
+	(persist-item collection root-item)))))
 
 (defmethod action-handler ((action (eql :save)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 
 	 (root-item)
@@ -2411,101 +2072,19 @@
 	(setf edit-item root-item)))
     
     (setf (getcx data-type :validation-errors) nil)
-    (setf (getcx data-type :validation-errors-id) nil)
-
  
     (when fields
-
       (unless edit-item
 	(setf edit-item (make-item :data-type data-type)))
 
-      (dolist (field fields)
-	  
-	  (when (and (digx field :attributes :editable)
-		     (getf field :db-type)
-		     (not (find (complex-type field)
-				(list :collection-items
-				      :list-items
-				      :hierarchical))))
-	   
-	    (let* ((field-name (frmt "~A" (getf field :name)))
-		  (valid (if (equalp (complex-type field) :item)
-			     (validate-sfx (complex-type field)
-					   field 
-					   edit-item 
-					   (parameter field-name))
-			     (list t nil))))
-	      
-	      (unless (first valid)
-		(pushnew 
-		 (list field-name (second valid))
-		 (getcx data-type :validation-errors)))
-	      
-	      (when (first valid)
-	;;	(break "~A" (getfx edit-item field :parent-item parent-item))
-		(setf (getfx edit-item field :parent-item parent-item)
-		      (parameter field-name)))))
-	  
-	  
+      (synq-item-values data-type fields parent-item edit-item)
 
-	 
-	  (when (getf field :key-p)
-	   
-	    (when (empty-p (parameter (getf field :name)))
-	     ;; (break "~A" (hunchentoot:post-parameters*))
-	      (pushnew
-	       (frmt "Key values may not be blank. (~A)~%" (getf field :name))
-	       (getcx data-type :validation-errors))
-	      )
-	    ))
-
-;;      (break "~A" (hunchentoot::post-parameters*))
-
-      (move-uploaded-file fields edit-item)
-
+      (move-uploaded-file fields edit-item)   
       
+      (grid-append-child data-type parent-slot parent-item
+			 edit-item root-item)
 
-      	;;TODO: is this still needed????
-	;;Doing this to keep edit window open.
-      (when (getcx data-type :validation-errors)
-	(setf (getcx data-type :validation-errors-id)
-	      (item-hash edit-item)))
-      
-	
-      (unless (getcx data-type :validation-errors)
-	;;Append parent-slot only if new
-;;	(break "append")
-	  (when parent-slot
-	    (let ((exists (find-equalp-item edit-item
-					    (getx parent-item parent-slot))))
-	     
-	      (if exists
-		  (setf exists edit-item)		  
-		  (setf (getx parent-item parent-slot)
-			(append (getx parent-item parent-slot)
-				(list edit-item))))))
-
-	  (when (getcx data-type :collection-name)
-	    (setf (item-collection edit-item)
-		  (get-collection
-		   (first (collection-stores
-			   *system*
-			   (getcx data-type :collection-name)))
-		   (getcx data-type :collection-name))))
-	  
-	  (let ((collection (get-perist-collection
-			     (gethash :collection-name (cache *context*)))))
-	    
-	    (unless collection
-	      (pushnew 
-	       "No default store found check if license is selected."
-	       (getcx data-type :validation-errors))
-	    
-	      (setf (getcx data-type :validation-errors-id)
-		    (item-hash edit-item)))
-
-	    (when collection
-	      (persist-item collection root-item)))))))
+      (grid-persist-item data-type edit-item root-item))))
 
 
 (defun store-from-stash (store-name)

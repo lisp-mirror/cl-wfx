@@ -136,34 +136,68 @@
 			       name))))
     collection))
 
+
 (defun collection-stores (system collection)
-  (let ((stores))
-      (dolist (dest (digx (if (stringp collection)
+  "To enable \"auto\" customization, stores adhere to a highrarchy
+where license store items overide, system which overrides
+core items. So stores are fetched in core,system,license order
+so that when items are merged when fetched, later
+items override earlier ones. See merge-store-items."
+  (let ((stores)
+	(destinations (digx (if (stringp collection)
 			      (find-collection-def system collection)
 			      collection) 
-			  :destinations))
+			  :destinations)))
+    (dolist (dest (list :core :system :license))
+      (when (find dest destinations :test #'equalp)
 	(cond ((equalp dest :core)
 	       (push (core-store) stores))
 	      ((equalp dest :system)
 	       (push (system-store) stores))
 	      (t
 	       (dolist (lic (getx (active-user) :selected-licenses))
-		 (push (license-store lic) stores)))))
+		 (push (license-store lic) stores))))))
 
       (remove-if #'not stores)))
 
+(defun wfx-get-collection (collection-name)
+  (get-collection (collection-store collection-name)
+		  collection-name))
+
+(defun collection-store (collection-name)
+  "Selecting the last store from stores list ensure hierarchy of items
+that override others to the correct level."
+    (last (collection-stores *system*
+			     collection-name)))
+
+(defun merge-store-items (items add-items)
+  (if items
+	(let ((merged-items))
+	  (dolist (item items)
+	    (let ((merge-flag nil))
+	      (dolist (itemx add-items)
+		(when (equalp (item-hash item)
+			      (item-hash itemx))
+		  (push itemx merged-items)
+		  (setf merge-flag t)))
+	      (unless merge-flag 
+		(push item merged-items))))
+	  merged-items)
+	add-items))
 
 (defun wfx-fetch-items (collection-name &key test (result-type 'list))
   (let ((items))
     (dolist (store (collection-stores *system* collection-name))
-      (setf items (append items
-			  (fetch-items (get-collection store collection-name)
-				       :test test
-				       :result-type result-type))))
+      (setf items (merge-store-items
+		   items
+		   (fetch-items (get-collection store collection-name)
+				:test test
+				:result-type result-type))))
     items))
 
 (defun wfx-fetch-item (collection-name &key test (result-type 'list))
-  (first (last (wfx-fetch-items collection-name :test test :result-type result-type))))
+  (first (last (wfx-fetch-items collection-name
+				:test test :result-type result-type))))
 
 (defun wfx-fetch-context-items (collection &key test (result-type 'list))
   (let* ((items)

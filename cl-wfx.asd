@@ -40,6 +40,8 @@
 	       (:file "hunchentoot/system" 
 		      :depends-on ("system" "request" "hunchentoot/common"))
 	       (:file "hunchentoot/request" :depends-on ("hunchentoot/system" ))
+	       (:file "hunchentoot/data-type-fields"
+		      :depends-on ("data-type-fields"))
 	       (:file "hunchentoot/grid" 
 		      :depends-on ("hunchentoot/request"))
 	       (:file "hunchentoot/context" 

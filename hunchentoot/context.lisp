@@ -58,13 +58,23 @@
 			      (digx spec :name)
 			      (default-context *system*))))))))
 
+(defun clear-hash-items (hash)
+  (when hash
+    (loop for key being the hash-keys of hash	 
+       do (remhash key hash))))
+
 (defmethod on-success (user)
-  
+
   (when (current-user)
-    ;;    (break "Shit user")
-    ;;(remhash  (sfx-session-id *sfx-session*) (sessions *sfx-system*))
+    (when *session*
+      (clear-hash-items (cache *session*))
+      (clear-hash-items (contexts *session*))
+       (setf (user *session*) nil))
     ;;(hunchentoot:remove-session *session*)
     )
+  
+  (dolist (license-code (getx user :license-codes))
+    (init-license-universe *system* license-code))
   
   ;; (break "~A" (core-collection "active-users"))
   
@@ -72,8 +82,7 @@
 				 :test (lambda (item)				 
 					 (equalp (parameter "email")
 						 (digx item :email))))))
-     (unless active-user
-       
+     (unless active-user      
       (setf active-user (persist-item (core-collection "active-users")
 				      (list :email (digx user :email) 
 					    :selected-licenses nil
@@ -129,8 +138,8 @@
   (wfx-fetch-items "modules"
 		   :test
 		   (lambda (item)
-		     (and (not (string-equal "Core" (digx item :name)))
-			  item))
+			    
+		     (not (string-equal "Core" (digx item :name))))
 		   :result-type 'list))
 
 (defun mod-menu (mod)
