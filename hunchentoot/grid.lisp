@@ -433,7 +433,6 @@
 (defun render-grid-edit (data-type fields item parent-item
 			 parent-spec)
 
-;;  (break "~A" item)
   (setf (getcx data-type :edit-item) item)
   (setf (getcx data-type :parent-spec) parent-item)
   (setf (getcx data-type :parent-spec) parent-spec)
@@ -1930,11 +1929,11 @@
 (defun synq-value (field edit-item parent-item value)
   (cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
-		   (wfx-fetch-context-item
-		    (dig field :db-type :collection)
-		    :test (lambda (item)
-			    (equalp (item-hash item)
-				    (ensure-parse-integer value))))))
+	       (wfx-fetch-context-item
+		(dig field :db-type :collection)
+		:test (lambda (item)
+			(equalp (item-hash item)
+				(ensure-parse-integer value))))))
 	((equalp (complex-type field) :collection-contained-item)
 	 (setf (getfx edit-item field)
 	       (find-contained-item

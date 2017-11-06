@@ -28,7 +28,8 @@
 		     'collection
 		     :name (getf collection-def :name)
 		     :data-type (getf collection-def :data-type)
-		     :bucket-keys (getf collection-def :bucket-keys))))
+		     :bucket-keys (getf collection-def :bucket-keys)
+		     :filter (getf collection-def :filter))))
 		  
 		  (data-type-def
 		   (let ((fields))
@@ -167,8 +168,8 @@ items override earlier ones. See merge-store-items."
 (defun collection-store (collection-name)
   "Selecting the last store from stores list ensure hierarchy of items
 that override others to the correct level."
-    (last (collection-stores *system*
-			     collection-name)))
+  (first (last (collection-stores *system*
+				  collection-name))))
 
 (defun merge-store-items (items add-items)
   (if items
