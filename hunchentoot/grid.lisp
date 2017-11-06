@@ -2017,7 +2017,7 @@
 	 (frmt "Key values may not be blank. (~A)~%" (getf field :name))
 	 (getcx data-type :validation-errors))))))
 
-(defun grid-append-child (data-type parent-slot parent-item edit-item root-item)
+(defun grid-append-child (data-type parent-slot parent-item edit-item)
   (unless (getcx data-type :validation-errors)
     ;;Append parent-slot only if new	
     (when parent-slot
@@ -2028,11 +2028,9 @@
 	    (setf exists edit-item)		  
 	    (setf (getx parent-item parent-slot)
 		  (append (getx parent-item parent-slot)
-			  (list edit-item))))))	  
-	  
-    (grid-persist-item data-type edit-item root-item)))
+			  (list edit-item))))))))
 
-(defun grid-persist-item (data-type edit-item root-item)
+(defun grid-persist-item (data-type root-item)
   (unless (getcx data-type :validation-errors)
     (let ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*)))))
@@ -2043,7 +2041,8 @@
 	 (getcx data-type :validation-errors)))
 
       (when collection
-	(setf (item-collection edit-item) collection)
+	(setf (item-collection root-item) collection)
+
 	(persist-item collection root-item)))))
 
 (defmethod action-handler ((action (eql :save)) 
@@ -2081,9 +2080,9 @@
       (move-uploaded-file fields edit-item)   
       
       (grid-append-child data-type parent-slot parent-item
-			 edit-item root-item)
+			 edit-item)
 
-      (grid-persist-item data-type edit-item root-item))))
+      (grid-persist-item data-type root-item))))
 
 
 (defun store-from-stash (store-name)
