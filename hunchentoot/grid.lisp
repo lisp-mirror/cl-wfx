@@ -506,7 +506,8 @@
 				   (getx (context-spec *context*) :name)
 				   :update)
 			      (cl-who:htm
-			       (:button
+			       ))
+			    (:button
 				:name "save" 				   
 				:type "submit" 
 				:class "btn btn-outline-primary btn-sm"
@@ -516,7 +517,7 @@
 				 (string-downcase
 				  (frmt "grid-edit-~A"  data-type))
 				 :action "save")
-				"Save")))
+				"Save")
 			    (:button
 			     :name "cancel" 				   
 			     :type "submit" 
