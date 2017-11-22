@@ -299,9 +299,9 @@ must be valid email to enable confirmation.")
 (defparameter *user* nil)
 
 (defun add-user (email password &key name licenses contexts
-				  entities super-user-p)
+				  entities super-user-p permissions)
   (let ((user (get-user email))
-	(permissions))
+	(permissionsx))
     
     (when user
       (multiple-value-bind (password salt)
@@ -325,8 +325,8 @@ must be valid email to enable confirmation.")
 	      :values
 	      (list :context-spec
 		    context
-		    :permissions '(:update :delete :search)))
-	     permissions))
+		    :permissions (or permissions '(:update :delete :search))))
+	     permissionsx))
     
     (dolist (code licenses)
       (unless (find code (getx user :license-codes) :test #'equalp)
@@ -340,7 +340,7 @@ must be valid email to enable confirmation.")
       (let ((lic-user (get-license-user code email)))
 
 	(when lic-user
-	  (setf (getx lic-user :permissions) permissions)
+	  (setf (getx lic-user :permissions) permissionsx)
 	  (setf (getx lic-user :accessible-entities) entities)
 	  (persist-item (license-collection code "license-users") lic-user))
 	
@@ -349,7 +349,7 @@ must be valid email to enable confirmation.")
 	   (license-collection code "license-users")
 	   (list
 	    :email email
-	    :permissions permissions
+	    :permissions permissionsx
 	    :accessible-entities entities	   
 	    :status :active)))))
     user))

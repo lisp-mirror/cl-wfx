@@ -885,6 +885,52 @@ myEditor.on('change', updateTextArea);
 	
 	(cl-who:str (render-page t (render-repl)))))))
 
+
+(defun render-new-user ()
+  (with-html-string
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "card"
+		      
+		      (:div :class "card-block"
+			    (:h4 :class "card-title"
+				 "Add New User")
+			    (:form :method "post"
+				   :action ""			       
+				   (:input :type "hidden" :id "contextid" 
+					   :value (context-id *context*))
+				   (:div :class "form-group"
+					 (:label :for "email" "Email")
+					 (:textarea
+					  :class "form-control wfx-script"
+					  
+					  :rows 20
+					  :name "script"
+					  :id "script"
+					  (cl-who:str
+					   (or (parameter "script") ""))))
+				   
+				   (:button :name "action"
+					    :class "btn btn-primary"
+					    :type "submit"
+					    :value "eval-repl"
+					    "run")))
+		      (:div :class "card-footer"
+			    (cl-who:str
+			     (gethash :repl-result (cache *context*)))))))))
+
+(defmethod setup-context-add-user ()
+  (eval
+   `(hunchentoot:define-easy-handler
+	(repl 
+	  :uri ,(frmt "~Acor/new-user" (site-url *system*))  
+	  :allow-other-keys t)
+	nil
+      (with-html-string
+	"<!itemtype html>"
+	
+	(cl-who:str (render-page t (render-repl)))))))
+
 (defparameter *unsecure-upload-dir* "/home/phil/Temp/shit/")
 
 (defun handle-file (post-parameter)

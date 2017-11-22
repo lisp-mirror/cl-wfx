@@ -381,6 +381,7 @@
 (defun render-grid-buttons (data-type item)
   (let ((permissions (getx (context-spec *context*) :permissions)))
     (with-html-string
+;;      (break "~A" permissions)
       (dolist (permission permissions)
 	(cond ((or (equalp permission :view) (equalp permission :update))
 	       (cl-who:htm
@@ -407,10 +408,15 @@
 			
 				 :item item)
 		 
-		 (cl-who:str (if (equalp permission :update)
+		 (cl-who:str (if (user-context-permission-p
+				  (getx (context-spec *context*) :name)
+				  :update)
 				 "Edit"
 				 "View")))))
-	      ((equalp permission :delete)
+	      ((and (equalp permission :delete)
+		    (user-context-permission-p
+		     (getx (context-spec *context*) :name)
+		     :delete))
 	       (cl-who:htm
 		(:button ;;:tabindex -1 ;;when disabled
 		 :name "edit" :type "submit" 
@@ -506,8 +512,7 @@
 				   (getx (context-spec *context*) :name)
 				   :update)
 			      (cl-who:htm
-			       ))
-			    (:button
+			       (:button
 				:name "save" 				   
 				:type "submit" 
 				:class "btn btn-outline-primary btn-sm"
@@ -518,6 +523,8 @@
 				  (frmt "grid-edit-~A"  data-type))
 				 :action "save")
 				"Save")
+			       ))
+			    
 			    (:button
 			     :name "cancel" 				   
 			     :type "submit" 
