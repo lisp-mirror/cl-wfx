@@ -11,6 +11,19 @@
   (setf (data-definitions system)
 	(append (data-definitions system) definitions)))
 
+(defclass extended-collection (collection)
+  ((destinations :initarg :destinations
+		    :accessor destinations
+		    :initform nil)))
+
+(defclass extended-data-type (data-type)
+  ((entity-accessor :initarg :entity-accessor
+		    :accessor entity-accessor
+		    :initform nil)
+   (destinations :initarg :destinations
+		    :accessor destinations
+		    :initform nil)))
+
 (defun init-definitions (universe destination store-name definitions)
   (when definitions
     (dolist (definition definitions)
@@ -21,15 +34,19 @@
 
 	  (let ((data-type-def (getf definition :data-type))
 		(collection-def (getf definition :collection)))
+
+	   
+	    
 	    (cond (collection-def			   
 		   (add-collection 
 		    (get-store universe store-name)
 		    (make-instance 
-		     'collection
+		     'extended-collection
 		     :name (getf collection-def :name)
 		     :data-type (getf collection-def :data-type)
 		     :bucket-keys (getf collection-def :bucket-keys)
-		     :filter (getf collection-def :filter))))
+		     :filter (getf collection-def :filter)
+		     :destinations (getf definition :destinations))))
 		  
 		  (data-type-def
 		   (let ((fields))
@@ -43,15 +60,22 @@
 				       :key-p (getf field :key-p)
 				       :type-def (getf field :type-def)
 				       :attributes (getf field :attributes))))))
+
 		     
+		 
 		     (add-data-type (get-store universe store-name)
 				    (make-instance 
-				     'data-type
+				     'extended-data-type
 				     :name (getf data-type-def :name)
 				     :label (getf data-type-def :label)
 				     :top-level-p
 				     (getf data-type-def :top-level-p)
-				     :fields fields)))))))))))
+				     :fields fields
+				     :destinations
+				     (getf definition :destinations)
+				     :entity-accessor
+				     (getf definition :entity-accessor)
+				     )))))))))))
 
 
 (defmethod init-core-universe ((system system) &key &allow-other-keys)
@@ -189,11 +213,14 @@ that override others to the correct level."
 (defun wfx-fetch-items (collection-name &key test (result-type 'list))
   (let ((items))
     (dolist (store (collection-stores *system* collection-name))
-      (setf items (merge-store-items
-		   items
-		   (fetch-items (get-collection store collection-name)
-				:test test
-				:result-type result-type))))
+      
+      (when (get-collection store collection-name)
+	
+	(setf items (merge-store-items
+		     items
+		     (fetch-items (get-collection store collection-name)
+				  :test test
+				  :result-type result-type)))))
     items))
 
 (defun wfx-fetch-item (collection-name &key test (result-type 'list))

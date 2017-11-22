@@ -382,7 +382,7 @@
   (let ((permissions (getx (context-spec *context*) :permissions)))
     (with-html-string
       (dolist (permission permissions)
-	(cond ((equalp permission :update)
+	(cond ((or (equalp permission :view) (equalp permission :update))
 	       (cl-who:htm
 		
 		(:button ;;:tabindex -1 ;;when disabled
@@ -407,7 +407,9 @@
 			
 				 :item item)
 		 
-		 "Edit")))
+		 (cl-who:str (if (equalp permission :update)
+				 "Edit"
+				 "View")))))
 	      ((equalp permission :delete)
 	       (cl-who:htm
 		(:button ;;:tabindex -1 ;;when disabled
@@ -497,20 +499,24 @@
 				 (cl-who:str
 				  (frmt "Errors ~S"
 					errors)))))))
-		
+	
 		(:div :class "row"
 		      (:div :class "col"
-			    (:button
-			     :name "save" 				   
-			     :type "submit" 
-			     :class "btn btn-outline-primary btn-sm"
-			     :onclick 
-			     (grid-js-render-form-values			 
-			      data-type
-			      (string-downcase
-			       (frmt "grid-edit-~A"  data-type))
-			      :action "save")
-			     "Save")
+			    (when (user-context-permission-p
+				   (getx (context-spec *context*) :name)
+				   :update)
+			      (cl-who:htm
+			       (:button
+				:name "save" 				   
+				:type "submit" 
+				:class "btn btn-outline-primary btn-sm"
+				:onclick 
+				(grid-js-render-form-values			 
+				 data-type
+				 (string-downcase
+				  (frmt "grid-edit-~A"  data-type))
+				 :action "save")
+				"Save")))
 			    (:button
 			     :name "cancel" 				   
 			     :type "submit" 
@@ -689,9 +695,12 @@
       (when (string-equal (digx script :script :name) "Select Action List")
 	(setf action-list (eval (digx script :script :code)))))
 
-    (setf action-list (append action-list
-			      (list (list :action-name "Delete Selected"
-					  :handler-script "Delete Selected"))))
+    (when (user-context-permission-p
+	   (getx (context-spec *context*) :name)
+	   :delete)
+      (setf action-list (append action-list
+				(list (list :action-name "Delete Selected"
+					    :handler-script "Delete Selected")))))
     (when action-list 
       (with-html-string
 	;;TODO: float right fucks up dropdown menu positioning
@@ -792,7 +801,10 @@
 			(or active-page 1)))))
 
 (defun render-sub-new-button (sub data-spec)
-  (with-html-string
+  (when (user-context-permission-p
+	 (getx (context-spec *context*) :name)
+	 :update)
+    (with-html-string
       (:div
        :class "card-footer bg-white"
        (:div :class "row"	  
@@ -818,7 +830,7 @@
 		       (grid-js-render
 			data-spec
 			:action "select-from" )
-		       (cl-who:str "Select From")))))))))
+		       (cl-who:str "Select From"))))))))))
 
 (defun render-item-row (subs data-type item fields)
   (with-html-string
@@ -869,7 +881,7 @@
 				   
     (let ((*rendering-shit* t))
 
-				     
+     
       (with-html-string
        (:div
 	:id (frmt "select-from-~A"
@@ -895,11 +907,23 @@
 	  "btn btn-outline-success float-right"
 	  :aria-pressed "false"
 	  :onclick
-	  (grid-js-render-form-values
-	   sub-data-spec
+	  (js-render-form-values 
+	   "cl-wfx:ajax-grid"
+	   (gethash :collection-name (cache *context*))
 	   (frmt "select-from-~A"
 		 sub-data-spec)
-	   :action "add-selection")
+	   (js-pair "data-type"
+		    (frmt "~A" sub-data-spec))
+	   
+	   (js-pair "action" "add-selection")
+	   (js-pair "add-selection-field" (frmt "~A" (dig sub :name)))
+	   
+	   (js-pair "pages"
+		    (or (parameter "pages") 50))
+	   (js-pair "page"
+		    (or (getcx data-type :active-page) 1)))
+	  
+	 
 	  (cl-who:str "Add Selection"))))))))
 
 (defun render-expand (data-type item subs sub-level sub-level-p parent-item)
@@ -1411,6 +1435,7 @@
 			   &key &allow-other-keys)
 
   (let ((persist-p))
+   
     (dolist (param (hunchentoot:post-parameters*))
       
       (when (equalp (first param) "grid-selection")
@@ -1429,7 +1454,8 @@
 		       (ensure-parse-integer
 			(second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
-		   (getcx (parameter "data-type") :expand-field-name)))))))
+		   (intern (string-upcase (parameter "add-selection-field"))
+			   :keyword)))))))
     (when persist-p
       (persist-item
        (get-collection	
@@ -2149,6 +2175,7 @@
 	  (persist-item (item-collection root-item) root-item)))
 
     (unless (and edit-item parent-slot)
+
       (setf (cl-naive-store::item-deleted-p root-item) t)
       (persist-item (item-collection root-item) root-item)
       (cl-naive-store::remove-item root-item))))

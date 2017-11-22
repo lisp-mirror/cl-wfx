@@ -137,8 +137,7 @@
 (defun user-mods ()
   (wfx-fetch-items "modules"
 		   :test
-		   (lambda (item)
-			    
+		   (lambda (item)			    
 		     (not (string-equal "Core" (digx item :name))))
 		   :result-type 'list))
 
@@ -276,11 +275,20 @@
 			   &key &allow-other-keys)
 
   (setf (getf (item-values (active-user)) :selected-licenses) nil)
+  (setf (getx (active-user) :selected-entities) nil)
+
+  
+  
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
       (pushnew (cdr parameter)
 	       (getx (active-user) :selected-licenses)
 	       :test #'string-equal)
+
+      (init-definitions (universe *system*)
+		    :license (cdr parameter)
+		    (data-definitions *system*))
+      
       (persist-item (core-collection "active-users") (active-user))
       )))
 
@@ -288,20 +296,22 @@
   (let ((access-p))
 
     (when (and (active-user) (digx (active-user) :selected-licenses))
-      
-      (dolist (lic (digx (active-user)
+     ;; (break "~A" (current-user))
+      (cond ((getx (current-user) :super-user-p)
+	     (setf access-p t))
+	    (t (dolist (lic (digx (active-user)
 			 :selected-licenses))
-
-	(dolist (permission
-		  (getx (license-user lic)
-			:permissions))
-	  
-	  (when (or (getx (current-user) :super-user-p)
-		    (equalp context
-			    (digx permission
-				  :context-spec)))
-	    
-	    (setf access-p t)))))
+		 (when (license-user lic)
+		   (dolist (permission
+			     (getx (license-user lic)
+				   :permissions))
+		     
+		     (when (equalp context
+				   (digx permission
+					 :context-spec))
+		       
+		       (setf access-p t)))))))
+      )
     access-p))
 
 (defun render-user-admin-menu ()

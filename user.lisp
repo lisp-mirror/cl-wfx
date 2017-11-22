@@ -120,7 +120,7 @@
       (:name :super-user-p
 	     :label "Is Super User"
 	     :db-type :boolean
-	     :attributes nil
+	     :attributes (:display t :editable t)
 	     :documentation "If t none of the permission security applies to the user.")
       (:name :status
 	     :label "Status"
@@ -412,3 +412,15 @@ must be valid email to enable confirmation.")
 
 (defmethod match-entities ((user item) entities)
   (intersection (getx user :accessible-entities) entities))
+
+(defun user-context-permission-p (context permission)
+  (let ((permission-p))
+    (if (getx (current-user) :super-user-p)
+	(setf permission-p t)
+	(dolist (permissionx (getx (active-user) :permissions))
+	  (when (equalp (getx permission :context-spec) context)
+	    (setf permission-p
+		  (find permission
+			(getx (getx permissionx :context-spec) :permissions)
+			:test #'equalp))))))
+  )

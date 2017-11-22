@@ -85,13 +85,44 @@
 	      (return-from get-entity entity))))))))
 
 (defun match-entity (item)
-  (if (or (equalp (item-data-type item) "entity") (exists-p item :entity))
-      (if (active-user)
-	  (or (not (getx item :entity))
-	      (find (item-hash (getx item :entity))
-		    (getx (active-user) :selected-entities)
-		    :test #'equalp)))
-      t))
+
+  (let ((data-type-def (get-data-type (item-store item)
+					(item-data-type item))))
+      
+    (cond ((not (getx (active-user) :selected-entities))
+	   
+	   (when  (getx (current-user) :super-user-p)
+	     item))
+	  ((equalp (item-data-type item) "entity")
+	  
+	   (find (item-hash item)
+		 (getx (active-user) :selected-entities)
+		 :test #'equalp)
+	   )
+	  ((and (slot-exists-p data-type-def 'entity-accessor)
+		(and data-type-def (entity-accessor data-type-def)))
+	   (let ((entity (apply 'digx item (entity-accessor data-type-def))))
+	     (if entity
+		 (find (item-hash entity) 
+		       (getx (active-user) :selected-entities)
+		       :test #'equalp)
+		 (when  (getx (current-user) :super-user-p)
+		   item)
+		 ))
+	   )
+	  ((exists-p item :entity)
+
+	   (if (getx item :entity)
+	       (find (item-hash (getx item :entity))
+		     (getx (active-user) :selected-entities)
+		     :test #'equalp)
+	       (when  (getx (current-user) :super-user-p)
+		 item))
+	  )
+	  (t
+	   item)
+	  )
+      ))
 
 (defmethod match-context-entities ((item item))
   (match-entity item))
