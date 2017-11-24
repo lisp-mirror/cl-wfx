@@ -413,14 +413,25 @@ must be valid email to enable confirmation.")
 (defmethod match-entities ((user item) entities)
   (intersection (getx user :accessible-entities) entities))
 
+
+
 (defun user-context-permission-p (context permission)
-  (let ((permission-p))
+  (let ((permission-p)
+	(lic-user (get-license-user
+		   (first (getx (active-user) :selected-licenses))
+		   (getx (active-user) :email))))
+   
     (if (getx (current-user) :super-user-p)
 	(setf permission-p t)
-	(dolist (permissionx (getx (active-user) :permissions))
-	  (when (equalp (getx permission :context-spec) context)
-	    (setf permission-p
-		  (find permission
-			(getx (getx permissionx :context-spec) :permissions)
-			:test #'equalp))))))
+	
+	(dolist (permissionx (getx lic-user :permissions))
+	
+	  (when (equalp (getx (getx permissionx :context-spec) :name) context)
+	  
+	    (unless permission-p
+	      (setf permission-p
+		    (find permission
+			  (getx (getx permissionx :context-spec) :permissions)
+			  :test #'equalp))))))
+    permission-p)
   )
