@@ -427,11 +427,11 @@ must be valid email to enable confirmation.")
 	(dolist (permissionx (getx lic-user :permissions))
 	
 	  (when (equalp (getx (getx permissionx :context-spec) :name) context)
-	  
+	
 	    (unless permission-p
 	      (setf permission-p
 		    (find permission
-			  (getx (getx permissionx :context-spec) :permissions)
+			  (getx permissionx :permissions)
 			  :test #'equalp))))))
     permission-p)
   )
