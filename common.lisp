@@ -47,6 +47,17 @@ Dont set manually use with-system macro.")
 (defun frmt (control-string &rest args)
   (apply #'format nil control-string args))
 
+(defun format-money-for-export (value &key (include-comma nil))
+  (typecase value
+    (null "")
+    ((or ratio float)
+     (multiple-value-bind (quot rem) (truncate value)
+       (format nil "~@?~0,4f"
+               (if include-comma "~:d" "~d")
+               quot (abs rem))))
+    (t
+     (princ-to-string value))))
+
 ;;STRING MANIPULATION
 (defun trim-whitespace (string)
   (string-trim
