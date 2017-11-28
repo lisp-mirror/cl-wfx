@@ -5,9 +5,17 @@
   (with-html-string
       (:div :class "row"
 	    (:div :class "card col-5"
-		  (:img :class "card-image-top"
-			:src  (frmt "~Acor/web/images/logo.png"
-				    (site-url *system*)))		  
+		  (:div :class "Row"
+			(:div :class "col"
+			      (:img :class "card-image-top"
+				    :style "width:200px;"
+				    :src  (frmt "~Acor/web/images/logo.png"
+						(site-url *system*))))
+			(:div :class "col"
+			      (:div :class "row"
+				    (:div :class "col" (:h1 (:strong "UTILITY MAGE"))))
+			      (:div :class "row"
+				    (:div :class "col" (:h3 "Powering You")))))
 		  (:div :class "card-block"
 			(:h4 :class "card-title"
 			     "Login")
