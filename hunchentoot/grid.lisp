@@ -1905,7 +1905,7 @@
 	
 	(let ((server-path
 	       (string-downcase
-		(frmt "~A/files/~A/~A/~A/"
+		(frmt "~A/files/~A/~A/"
 		      (if (location collection)
 			  (location collection)
 			  (string-downcase
@@ -1914,7 +1914,8 @@
 				 (name collection))))
 		      (parameter "data-type")
 		      (getf field :name)
-		      hash)))
+		     ;; hash
+		      )))
 	      (temp-path  (merge-pathnames				 
 			   (replace-all
 			    (parameter (string-downcase
@@ -2162,7 +2163,7 @@
 		     (gethash :collection-name (cache *context*))))
 		    (server-path
 		      (string-downcase
-		       (frmt "~A/files/~A/~A/~A/"
+		       (frmt "~A/files/~A/~A/"
 			     (if (location collection)
 				 (location collection)
 				 (string-downcase
@@ -2171,7 +2172,8 @@
 					(name collection))))
 			     (parameter "data-type")
 			     "**";;(getf field :name)
-			     (parameter "item-id"))))
+			    ;; (parameter "item-id")
+			     )))
 		     (files (directory server-path)))
 
 		(dolist (file files)

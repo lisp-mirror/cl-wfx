@@ -102,11 +102,7 @@
   (setf (gethash :login-error (cache *context*))
 	"User name or password incorrect."))
 
-(defun validate-user (email password)
-  (let ((user (get-user email)))
-    (unless (and user (check-password user password))      
-      (setf user nil))
-    user))
+
 
 (defmethod action-handler ((action (eql :login)) 
 			   (context context) 

@@ -38,7 +38,7 @@
 
 (defun file-server-path (collection field item)
   (string-downcase
-   (frmt "~A/files/~A/~A/~A/~A"
+   (frmt "~A/files/~A/~A/~A"
 	 (if (and (item-collection item)
 		  (location (item-collection item)))
 	     (location (item-collection item))
@@ -50,18 +50,18 @@
 		    (name collection))))
 	 (item-data-type item)
 	 (getf field :name)
-	 (item-hash item)
+	;; (item-hash item)
 	 (getx item (getf field :name)))))
 
 (defun file-url (collection field item)
   (string-downcase
-     (frmt "~A~A/~A/~A/~A/~A/~A"
+     (frmt "~A~A/~A/files/~A/~A/~A"
 	   (site-url *system*)
 	   (first (getx (active-user) :selected-licenses))
 	   (name collection)
 	   (item-data-type item)
 	   (getf field :name)
-	   (item-hash item)
+	  ;; (item-hash item)
 	   (getx item (getf field :name)))))
 
 (defmethod print-item-val ((type (eql :image)) field item
