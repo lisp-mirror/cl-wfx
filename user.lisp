@@ -283,7 +283,7 @@ must be valid email to enable confirmation.")
     (setf (values (getx user :password) (getx user :salt))
           (make-password new-password))))
 
-(defun get-user (email) 
+(defun get-user (email)
   (fetch-item
    (core-collection "users")
    :test (lambda (item)
@@ -291,7 +291,7 @@ must be valid email to enable confirmation.")
 
 (defun get-license-user (license-code email) 
   (fetch-item
-   (license-collection license-code "license-users")
+   (license-collection license-code "license-users" )
    :test (lambda (item)
 	   (string-equal email (getx item :email)))))
 
@@ -435,3 +435,10 @@ must be valid email to enable confirmation.")
 			  :test #'equalp))))))
     permission-p)
   )
+
+(defun validate-user (email password)
+  (let ((user (get-user email)))
+    
+    (unless (and user (check-password user password))      
+      (setf user nil))
+    user))

@@ -99,6 +99,7 @@
 	(search ".svg" script-name)
 	(search "get-meters" script-name)
 	(search "set-reading" script-name)
+	(search "get-user" script-name)
 	(search "set-image" script-name)
 	(search "file-upload" script-name)
 	))
