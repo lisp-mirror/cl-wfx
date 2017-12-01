@@ -108,6 +108,7 @@
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
   (with-debugging
 
+    
     (let ((*request* (make-instance 'hunch-request :request-object request))
 	  (*system* acceptor)
 	  (dont (dont-process request)))
