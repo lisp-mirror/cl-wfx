@@ -959,10 +959,11 @@ myEditor.on('change', updateTextArea);
     ))
 
 
+
 (defmethod setup-file-upload ()
   (eval
    `(hunchentoot:define-easy-handler
-	(repl 
+	(file-upload 
 	  :uri ,(frmt "~Acor/file-upload" (site-url *system*))  
 	  :allow-other-keys t)
 	nil
