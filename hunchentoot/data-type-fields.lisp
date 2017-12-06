@@ -50,9 +50,10 @@
 		    (name collection))))
 	 (item-data-type item)
 	 (getf field :name)
-	;; (item-hash item)
-	 (replace-all (getx item (getf field :name))
-		      "_" "-"))))
+	 ;; (item-hash item)
+	 (if (not (empty-p (getx item (getf field :name))))
+	     (replace-all (getx item (getf field :name))
+			  "_" "-")))))
 
 (defun file-url (collection field item)
   (string-downcase
@@ -62,9 +63,10 @@
 	   (name collection)
 	   (item-data-type item)
 	   (getf field :name)
-	  ;; (item-hash item)
-	   (replace-all (getx item (getf field :name))
-			"_" "-"))))
+	   ;; (item-hash item)
+	   (if (not (empty-p (getx item (getf field :name))))
+	       (replace-all (getx item (getf field :name))
+			    "_" "-")))))
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
