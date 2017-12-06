@@ -1,6 +1,5 @@
 (in-package :cl-wfx)
 
-
 (defun render-login ()
   (with-html-string
       (:div :class "row"
@@ -959,6 +958,21 @@ myEditor.on('change', updateTextArea);
 		       :overwrite t)))
     ))
 
+
+(defmethod setup-file-upload ()
+  (eval
+   `(hunchentoot:define-easy-handler
+	(repl 
+	  :uri ,(frmt "~Acor/file-upload" (site-url *system*))  
+	  :allow-other-keys t)
+	nil
+      (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
+			      (hunchentoot:get-parameter "datatype"))
+		     (handle-file (hunchentoot:post-parameter "file_data")
+				  )))))
+      "{}")))
+
+#|
 (hunchentoot:define-easy-handler (upload-file :uri "/cor/file-upload") ()
  ;; (break "~A~%~A"  (hunchentoot:post-parameters*)	 (hunchentoot:get-parameters*))
   (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
@@ -968,3 +982,4 @@ myEditor.on('change', updateTextArea);
   
   "{}")
 
+|#

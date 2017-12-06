@@ -51,7 +51,8 @@
 	 (item-data-type item)
 	 (getf field :name)
 	;; (item-hash item)
-	 (getx item (getf field :name)))))
+	 (replace-all (getx item (getf field :name))
+		      "_" "-"))))
 
 (defun file-url (collection field item)
   (string-downcase
@@ -62,7 +63,8 @@
 	   (item-data-type item)
 	   (getf field :name)
 	  ;; (item-hash item)
-	   (getx item (getf field :name)))))
+	   (replace-all (getx item (getf field :name))
+			"_" "-"))))
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
@@ -74,7 +76,7 @@
       
       (if (getx item (getf field :name))
 	  (let ((image-url (file-url collection field item)))
-;;	    (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
+	   ;; (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
 	    (push (hunchentoot::create-static-file-dispatcher-and-handler
 		   image-url
 		   server-path)
