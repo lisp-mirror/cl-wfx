@@ -217,6 +217,7 @@
       (setup-context sys-mod spec *system*))
 
     (setup-context-repl)
+    (setup-file-upload)
     (setup-context-login sys-mod
 			 (get-context-spec (core-store ) "Login") *system*))
   (call-next-method))

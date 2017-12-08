@@ -2077,8 +2077,7 @@
 
       (when collection
 	(setf (item-collection root-item) collection)
-
-	(persist-item collection root-item)))))
+	(persist-item collection root-item :allow-key-change-p t)))))
 
 (defmethod action-handler ((action (eql :save)) 
 			   (context context) 
@@ -2116,7 +2115,7 @@
       
       (grid-append-child data-type parent-slot parent-item
 			 edit-item)
-
+      
       (grid-persist-item data-type root-item))))
 
 
