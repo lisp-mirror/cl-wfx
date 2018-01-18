@@ -37,13 +37,14 @@
 			    (if key-func
 				(funcall key-func selected)
 				selected)
-			    (or (parameter (frmt "~A-drop" name))
+			    (or (parameter (frmt "~A" name))
 				select-prompt))))
+    ;;(break "~A" (hunchentoot::post-parameters*))
     (with-html-string
       (:div :class "bt-group dropdown"
 	     (:input :type "hidden" :class "selected-value" 
 		     :name (frmt "~A" name)
-		     :value (html-value (or selected-value "")))
+		     :value (html-value (or (parameter (frmt "~A" name)) "")))
 	     (:button :class "btn btn-secondary dropdown-toggle"
 		      :type "button"
 		      :data-toggle "dropdown"
@@ -113,7 +114,7 @@
       (:div :class "auto-complete"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" field-name)
-		    :value (html-value (or selected-value "")))
+		    :value (html-value (or (parameter (frmt "~A" field-name)) "")))
 	    
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
@@ -380,6 +381,8 @@
 
 (defun render-grid-buttons (data-type item)
   (let ((permissions (getx (context-spec *context*) :permissions)))
+
+ 
     (with-html-string
 ;;      (break "~A" permissions)
       (dolist (permission permissions)
@@ -407,7 +410,7 @@
 				 :action "edit"
 			
 				 :item item)
-		 
+	
 		 (cl-who:str (if (user-context-permission-p
 				  (getx (context-spec *context*) :name)
 				  :update)

@@ -84,9 +84,18 @@
 		   server-path)
 		  hunchentoot::*dispatch-table*)
 	    (cl-who:htm
-	     (:img
-	      :style "width:128px;height:128px;"
-	      :src image-url)))
+	     (:a :data-toggle "modal"
+		 :data-target (string-downcase (frmt "#~A-modal" (getf field :name)))
+		 (:img
+		  :style "width:128px;height:128px;"
+		  :src image-url))
+	     (:div :class "modal fade"
+		   :tab-index -1
+		   :id (string-downcase (frmt "~A-modal" (getf field :name)))
+		   (:div :class "modal-dialog modal-dialog-centered "
+			 (:img
+				      :style "max-width:120%;"
+				      :src image-url)))))
 	(cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
 
 (defmethod print-item-val ((type (eql :email)) field item
