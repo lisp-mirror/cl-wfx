@@ -44,7 +44,9 @@
       (:div :class "bt-group dropdown"
 	     (:input :type "hidden" :class "selected-value" 
 		     :name (frmt "~A" name)
-		     :value (html-value (or (parameter (frmt "~A" name)) "")))
+		     :value (html-value (or (parameter (frmt "~A" name))
+					    selected-value
+					    "")))
 	     (:button :class "btn btn-secondary dropdown-toggle"
 		      :type "button"
 		      :data-toggle "dropdown"
@@ -110,11 +112,15 @@
 			    (or (parameter (frmt "~A-drop" field-name))
 				context-state-selected
 				select-prompt))))
+    (break "~A" selected-value)
     (with-html-string
       (:div :class "auto-complete"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" field-name)
-		    :value (html-value (or (parameter (frmt "~A" field-name)) "")))
+		    :value (html-value (or
+					(parameter (frmt "~A" field-name))
+					selected-value
+					"")))
 	    
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
@@ -148,14 +154,20 @@
 			    (if value-func
 				(funcall value-func selected)
 				selected)
-			    (or (parameter (frmt "~A-drop" field-name))
+			    (or (parameter (frmt "~A" field-name))
 				context-state-selected
 				select-prompt))))
+
     (with-html-string
       (:div :class "auto-complete"
 	    (:input :type "hidden" :class "selected-value" 
 		    :name (frmt "~A" field-name)
-		    :value (html-value (or selected-value "")))
+		    :value (html-value (or
+					(parameter (frmt "~A" field-name))
+					(if (equalp (type-of selected) 'item)
+					    (item-hash selected)
+					    selected-value)
+					"")))
 	    
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
@@ -186,7 +198,7 @@
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
-   
+
     (with-html-string
       (cl-who:str (render-item-list-auto-complete
 		   data-type name selected
@@ -1990,6 +2002,9 @@
 
 
 (defun validate-value (field field-name edit-item parent-item value)
+
+  
+  
   (if (equalp (complex-type field) :item)
       (cond ((equalp (complex-type field) :collection)
 	     (validate-sfx
@@ -2039,6 +2054,7 @@
 					parent-item
 					(parameter field-name))
 			(list t nil))))
+	
 	      
 	(unless (first valid)
 	  (pushnew 
@@ -2046,6 +2062,7 @@
 	   (getcx data-type :validation-errors)))
 	      
 	(when (first valid)
+	  
 	  (synq-value field edit-item parent-item
 		      (parameter field-name)))))	  
 	 
