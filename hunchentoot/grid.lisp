@@ -1916,7 +1916,9 @@
     
     (dolist (field fields)
 
-      (when (equalp (complex-type field) :image)
+      (when (or
+	     (equalp (complex-type field) :image)
+	     (equalp (complex-type field) :file))
 	
 	(let ((server-path
 	       (string-downcase
@@ -2104,6 +2106,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
+  (break "~A" (hunchentoot:post-parameters*))
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 
 	 (root-item)

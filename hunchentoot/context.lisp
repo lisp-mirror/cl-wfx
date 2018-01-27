@@ -931,6 +931,7 @@ myEditor.on('change', updateTextArea);
 (defun handle-file (post-parameter)
   ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
 
+  (break "???")
   (when (and post-parameter (listp post-parameter))
     ;; (break "You got here with: ~A." post-parameter)
     (destructuring-bind (path filename content-type)
@@ -964,13 +965,13 @@ myEditor.on('change', updateTextArea);
   (eval
    `(hunchentoot:define-easy-handler
 	(file-upload 
-	  :uri ,(frmt "~Acor/file-upload" (site-url *system*))  
-	  :allow-other-keys t)
-	nil
+	 :uri ,(frmt "~Acor/file-upload" (site-url *system*))  
+	 :allow-other-keys t)
+	nil      
       (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
-			      (hunchentoot:get-parameter "datatype"))
-		     (handle-file (hunchentoot:post-parameter "file_data")
-				  )))))
+				 (hunchentoot:get-parameter "datatype"))
+			(handle-file (hunchentoot:post-parameter "file_data")
+				     )))))
       "{}")))
 
 #|

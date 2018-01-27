@@ -71,14 +71,14 @@
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
   (let* ((collection (get-perist-collection
-					  (gethash :collection-name
-						   (cache *context*))))
+		      (gethash :collection-name
+			       (cache *context*))))
 	 (server-path (file-server-path collection field item)))
     (with-html-string
       
       (if (getx item (getf field :name))
 	  (let ((image-url (file-url collection field item)))
-	   ;; (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
+	    ;; (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
 	    (push (hunchentoot::create-static-file-dispatcher-and-handler
 		   image-url
 		   server-path)
@@ -94,9 +94,9 @@
 		   :id (string-downcase (frmt "~A-modal" (getf field :name)))
 		   (:div :class "modal-dialog modal-dialog-centered "
 			 (:img
-				      :style "max-width:120%;"
-				      :src image-url)))))
-	(cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
+			  :style "max-width:120%;"
+			  :src image-url)))))
+	  (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
 
 (defmethod print-item-val ((type (eql :email)) field item
 			   &key &allow-other-keys)
@@ -104,7 +104,24 @@
 
 (defmethod print-item-val ((type (eql :file)) field item
 			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+  (let* ((collection (get-perist-collection
+		      (gethash :collection-name
+			       (cache *context*))))
+	 (server-path (file-server-path collection field item)))
+    (with-html-string
+      
+      (if (getx item (getf field :name))
+	  (let ((file-url (file-url collection field item)))
+	  
+	    (push (hunchentoot::create-static-file-dispatcher-and-handler
+		   file-url
+		   server-path)
+		  hunchentoot::*dispatch-table*)
+	    (cl-who:htm
+	     (:a :href file-url
+		(cl-who:str file-url))
+	    ))
+	  ))))
 
 (defmethod print-item-val ((type (eql :number)) field item
 			   &key &allow-other-keys)
@@ -353,18 +370,32 @@
 
 (defmethod render-input-val ((type (eql :file)) field item
 			     &key &allow-other-keys)
+
   (with-html-string
+    (:div :class "row"	  
+	  :id (string-downcase
+	       (frmt "file-upload-row-~A" (item-data-type item)))
+	  :name (string-downcase
+		 (frmt "file-upload-row-~A" (item-data-type item)))
+	  (cl-who:str (render-image field item))
+	  ))
+  #|
+(with-html-string
     (:div :class "row"
 	  (:div :class "col"
-		(:input :type "file"
+		(:input
+		 :class "file-upload"
+		 :type "file"
 			:onchange (frmt "$(\"#file-~A\").val($(this).val());"
 					(getf field :name)))
 		
 		(:input :type "text" :class "form-control "
-			:name (frmt "file-~A" (getf field :name))
+			:name (getf field :name)
 			:id (frmt "file-~A" (getf field :name))
 			:value (getx item (getf field :name))
-			:readonly t)))))
+			:readonly t))))
+  |#
+  )
 
 (defmethod render-input-val ((type (eql :email)) field item
 			     &key &allow-other-keys)
