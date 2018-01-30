@@ -126,11 +126,18 @@
 	  (cl-smtp:send-email (getx mail-account :host)
 			      (or from (getx mail-account :email))
 			      (list to)
-			      subject
-			      message
-			      :html-message (if (stringp html-message)
+			      (ppcre:regex-replace-all
+			       #\Newline subject
+			       (coerce '(#\Return #\Newline) 'string))
+			      (ppcre:regex-replace-all
+			       #\Newline message
+			       (coerce '(#\Return #\Newline) 'string))
+			      
+			      :html-message (ppcre:regex-replace-all
+			       #\Newline (if (stringp html-message)
 						html-message
 						(eval html-message))
+			       (coerce '(#\Return #\Newline) 'string))
 			      :port (getx mail-account :port)
 			      :ssl (getx mail-account :ssl)
 			      :reply-to (or from (getx mail-account :email))
