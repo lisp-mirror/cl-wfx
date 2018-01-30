@@ -2106,7 +2106,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (break "~A" (hunchentoot:post-parameters*))
+
   (let* ((data-type (parameter "data-type"))
 	 (fields (getcx data-type :fields))	 
 	 (root-item)
