@@ -931,7 +931,7 @@ myEditor.on('change', updateTextArea);
 (defun handle-file (post-parameter)
   ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
 
-  (break "???")
+ ;; (break "???")
   (when (and post-parameter (listp post-parameter))
     ;; (break "You got here with: ~A." post-parameter)
     (destructuring-bind (path filename content-type)
@@ -943,19 +943,21 @@ myEditor.on('change', updateTextArea);
         (setf filename (ppcre:regex-replace ".*\\\\" filename "")))
      
       ;;(break "~A" path)
-      (let ((server-path (frmt "~A/~A/~A/files/tmp/~A/~A/"
-			       (location (universe *system*))
-			       (parameter "license")
-			       (parameter "collection")
-			       (parameter "datatype")
-			       (parameter "field"))))
+      (let ((server-path (string-downcase
+			  (frmt "~A/~A/~A/files/tmp/~A/~A/"
+				(location (universe *system*))
+				(parameter "license")
+				(parameter "collection")
+				(parameter "datatype")
+				(parameter "field")))))
 
 	(ensure-directories-exist server-path)
 
 
 	(fad:copy-file path
-		       (merge-pathnames (replace-all filename "_" "-")
-					server-path)
+		       (merge-pathnames (string-downcase
+					 (replace-all filename "_" "-"))
+					  server-path)
 		       :overwrite t)))
     ))
 
