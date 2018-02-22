@@ -55,7 +55,7 @@
     (if (find (parameter "action") 
 	      (list "save" "delete" "login" "logout"
 		    "assign-campaign" "select-action" "grid-select-action"
-		    "add-selection" "eval-repl") 
+		    "add-selection" "eval-repl" "set-password") 
 	      :test #'string-equal)
 	(action-handler (intern (string-upcase (parameter "action")) :keyword)
 			context
@@ -102,6 +102,7 @@
 	(search "get-user" script-name)
 	(search "set-image" script-name)
 	(search "file-upload" script-name)
+	
 	))
   )
 
@@ -129,7 +130,7 @@
 	    ;;	 (break "~A" *context*)
 	    (when *context*
 
-	      ;;	   (break "~A"		  (hunchentoot:post-parameters*))
+	      	   ;;(break "~A"		  (hunchentoot:post-parameters*))
 	   
 	      (system-request acceptor *request*))	 
 	 

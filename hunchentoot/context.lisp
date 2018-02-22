@@ -761,6 +761,10 @@ myEditor.on('change', updateTextArea);
 				      :html 
 				      ,(digx context-spec :report))))))))
 
+
+(defgeneric setup-context-login (module context-spec system
+				 &key &allow-other-keys))
+
 (defmethod setup-context-login ((module item) (context-spec item)
 				(system hunch-system)
 				&key &allow-other-keys)  
@@ -868,11 +872,13 @@ myEditor.on('change', updateTextArea);
       (setf (gethash :repl-result (cache *context*))	   
 	    (or (first result) (second result)) ))))
 
-(defmethod setup-context-repl ()
+(defgeneric setup-context-repl (system &key &allow-other-keys))
+
+(defmethod setup-context-repl ((system hunch-system)  &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler
 	(repl 
-	  :uri ,(frmt "~Acor/repl" (site-url *system*))  
+	  :uri ,(frmt "~Acor/repl" (site-url system))  
 	  :allow-other-keys t)
 	nil
       (with-html-string
@@ -881,7 +887,7 @@ myEditor.on('change', updateTextArea);
 	(cl-who:str (render-page t (render-repl)))))))
 
 
-(defun render-new-user ()
+(defun render-set-password ()
   (with-html-string
     (:div :class "row"
 	  (:div :class "col"
@@ -895,36 +901,59 @@ myEditor.on('change', updateTextArea);
 				   (:input :type "hidden" :id "contextid" 
 					   :value (context-id *context*))
 				   (:div :class "form-group"
-					 (:label :for "email" "Email")
-					 (:textarea
-					  :class "form-control wfx-script"
-					  
-					  :rows 20
-					  :name "script"
-					  :id "script"
-					  (cl-who:str
-					   (or (parameter "script") ""))))
+				     (:label :for "email" "Email")
+				     (:input :type "email" 
+					     :class "form-control"
+					     :name "email"
+					     :id "email"
+					     :value (or (parameter "email") "")))
+				   
+			       (:div :class "form-group"
+				     (:label :for "password" "Password")
+				     (:input :type "password" 
+					     :class "form-control"
+					     :name "password"
+					     :id "password"
+					     :placeholder "Password"
+					     :value ""))
 				   
 				   (:button :name "action"
 					    :class "btn btn-primary"
 					    :type "submit"
-					    :value "eval-repl"
-					    "run")))
-		      (:div :class "card-footer"
-			    (cl-who:str
-			     (gethash :repl-result (cache *context*)))))))))
+					    :value "set-password"
+					    "Set Password"))
+			    (:div :class "card-footer"
+				  (cl-who:str
+				   (gethash :user-not-found-error
+					    (cache *context*)))))
+		      )))))
 
-(defmethod setup-context-add-user ()
+(defmethod action-handler ((action (eql :set-password)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (when (and (parameter "email") (parameter "password"))
+    (let ((user (get-user (parameter "email"))))
+      (if user
+          (and (change-user user (parameter "password"))
+	       (setf (gethash :user-not-found-error (cache *context*))
+		     "Password Set!"))
+          (setf (gethash :user-not-found-error (cache *context*))
+		"User not found!")))))
+
+(defgeneric setup-context-set-password (system &key &allow-other-keys))
+
+(defmethod setup-context-set-password ((system hunch-system)  &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler
-	(repl 
-	  :uri ,(frmt "~Acor/new-user" (site-url *system*))  
+	(setup-password
+	  :uri ,(frmt "~Acor/set-password" (site-url *system*))  
 	  :allow-other-keys t)
 	nil
       (with-html-string
-	"<!itemtype html>"
-	
-	(cl-who:str (render-page t (render-repl)))))))
+	"<!itemtype html>"	
+	(cl-who:str (render-page t (render-set-password)))))))
 
 (defparameter *unsecure-upload-dir* "/home/phil/Temp/shit/")
 
@@ -962,18 +991,19 @@ myEditor.on('change', updateTextArea);
     ))
 
 
+(defgeneric setup-file-upload (system &key &allow-other-keys))
 
-(defmethod setup-file-upload ()
+(defmethod setup-file-upload ((system hunch-system)  &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler
 	(file-upload 
-	 :uri ,(frmt "~Acor/file-upload" (site-url *system*))  
+	 :uri ,(frmt "~Acor/file-upload" (site-url system))  
 	 :allow-other-keys t)
 	nil      
-      (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
+      (when (and (boundp 'hunchentoot:*request*)
 				 (hunchentoot:get-parameter "datatype"))
 			(handle-file (hunchentoot:post-parameter "file_data")
-				     )))))
+				     ))
       "{}")))
 
 #|

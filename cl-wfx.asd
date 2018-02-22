@@ -33,7 +33,7 @@
 	       (:file "context-spec" :depends-on ("data" "script"))
 	       (:file "module" :depends-on ("system" "context-spec"))
 	       (:file "request" :depends-on ("context" "context-spec" "module"))
-	       (:file "system-load" :depends-on ("request" ))
+	       
 	       (:file "data-type-fields" :depends-on ("system" "context-spec"))
 	       (:file "hunchentoot/common" :depends-on ("request"))
 	       (:file "hunchentoot/ajax")
@@ -47,6 +47,7 @@
 	       (:file "hunchentoot/context" 
 		      :depends-on ("hunchentoot/grid"))
 	       (:file "report" :depends-on ("script" "hunchentoot/context"))
+	       (:file "system-load" :depends-on ("request" "hunchentoot/context"))
 	       ))
 
 #|

@@ -21,6 +21,12 @@
 		    :permissions nil
 		    :for-everyone t)))
   
+  (unless (get-context-spec (core-store) "Set Password")
+    (persist-item (core-collection "context-specs")
+		  '(:name "set-password"
+		    :permissions nil
+		    :for-everyone t)))
+  
   (unless (get-context-spec (core-store ) "Data Types")
     (persist-item (core-collection "context-specs")    
 		  '(:name "Data Types"
@@ -124,8 +130,9 @@
    (list :name name
 	 :context-spec context-spec)))
 
-(defgeneric setup-context-login (module context-spec system
-				 &key &allow-other-keys))
+
+
+
 
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
@@ -178,6 +185,14 @@
 					:data-type "menu-item"
 					:values
 					(list
+					 :name "Set Password"
+					 :context-spec 
+					 (get-context-spec (core-store )
+							   "Set Password")))
+				  (make-item
+					:data-type "menu-item"
+					:values
+					(list
 					 :name "Logout"
 					 :context-spec 
 					 (get-context-spec (core-store ) "Login")
@@ -216,11 +231,15 @@
     (dolist (spec (digx sys-mod :contexts))
       (setup-context sys-mod spec *system*))
 
-    (setup-context-repl)
-    (setup-file-upload)
+    
+    (setup-context-repl *system*)
+    (setup-context-set-password *system*)
+    (setup-file-upload *system*)
+    
     (setup-context-login sys-mod
 			 (get-context-spec (core-store ) "Login") *system*))
   (call-next-method))
+
 
 
 
