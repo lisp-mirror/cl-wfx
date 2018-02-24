@@ -10,6 +10,27 @@
 html {
   font-size: 14px;
 }
+
+
+.grid-table-stuff table {
+    border-collapse: collapse;
+    /*table-layout:fixed;*/
+    width: 100% !important;
+    min-width: 600px;
+}
+
+.grid-table-stuff th, td {
+    border: 1px solid lightgrey;
+    word-break: keep-all;
+
+}
+
+.grid-card-header {
+    height:10px;
+
+
+}
+
 /*
 h1 {
     font-size: 200%;

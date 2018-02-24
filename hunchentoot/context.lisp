@@ -604,9 +604,9 @@
 		     :id "exNavbarLeft"
 		     
 		     (cl-who:str (render-left-user-menu)))
-			 
-		    (:div  :class "col" :id "grid-table"
-			   (cl-who:str body))
+
+		    (:div :class "col"
+		     (cl-who:str body))
 		    (:div
 		     :class "collapse col-md-2 hidden-print " 
 		     :id "exNavbarRight" :style "background-color:#FFFFFF"
