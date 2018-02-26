@@ -401,15 +401,16 @@
 	(cond ((or (equalp permission :view) (equalp permission :update))
 	       (cl-who:htm
 		
-		(:button ;;:tabindex -1 ;;when disabled
-		 :name "edit" :type "submit" 
+		(:i ;;:tabindex -1 ;;when disabled
+		 :name "edit" ;;:type "submit"
+	;;	 :style "color:green;height:100%;"
 		 :class
-		 (if (and (parameter "item-id")
-			  (string-equal 
-			   (parameter "item-id") 
-			   (frmt "~A" (item-hash item))))
-		     "btn btn-outline-primary btn-sm active"
-		     "btn btn-outline-primary btn-sm")
+		 (if (user-context-permission-p
+				  (getx (context-spec *context*) :name)
+				  :update)
+
+		     "fa fa-edit fa-lg text-primary"
+		     "fa fa-file-o fa-lg text-primary")
 		 :aria-pressed 
 		 (if (and (parameter "item-id")
 			  (string-equal 
@@ -423,38 +424,23 @@
 						     :item item)
 				(item-hash item)
 				(item-hash item)
-				(item-hash item)
-			)
-	
-		 (cl-who:str (if (user-context-permission-p
-				  (getx (context-spec *context*) :name)
-				  :update)
-				 "Edit"
-				 "View")))))
+				(item-hash item)))))
 	      ((and (equalp permission :delete)
 		    (user-context-permission-p
 		     (getx (context-spec *context*) :name)
 		     :delete))
 	       (cl-who:htm
-		(:button ;;:tabindex -1 ;;when disabled
-		 :name "edit" :type "submit" 
-		 :class (if (and (parameter "item-id")
-				 (string-equal 
-				  (parameter "item-id") 
-				  (frmt "~A" (item-hash item))))
-			    "btn btn-outline-primary btn-sm active"
-			    "btn btn-outline-primary btn-sm")
-		 :aria-pressed (if (and (parameter "item-id")
-					(string-equal 
-					 (parameter "item-id") 
-					 (frmt "~A" (item-hash item))))
-				   "true"
-				   "false")
+		(:i ;;:tabindex -1 ;;when disabled
+		 :name "edit" ;;:type "submit"
+	
+		 :class "fa fa-remove fa-lg text-danger"
+	
 		 :onclick 
 		 (grid-js-render-delete data-type
 
 				 :item item)
-		 "Delete"))))))))
+	
+		 ))))))))
 
 
 (defun render-edit-buttons (data-type)
@@ -462,7 +448,7 @@
     (:button
 	   :name "cancel" 				   
 	   :type "submit" 
-	   :class "btn btn-outline-primary btn-sm float-right"
+	   :class "btn btn-danger btn-sm float-right"
 	   :onclick (frmt "~A;toggle_display(\"ajax-edit-row-~A\");"
 			  (grid-js-render data-type
 					  :action "cancel")
@@ -475,7 +461,7 @@
 	     (:button
 	      :name "save" 				   
 	      :type "submit" 
-	      :class "btn btn-outline-primary btn-sm float-right"
+	      :class "btn btn-success btn-sm float-right"
 	      :onclick 
 	      (grid-js-render-form-values			 
 	       data-type
@@ -501,7 +487,7 @@
     (with-html-string
       
       (:tbody :id (frmt "ajax-edit-~A" (item-hash item))	
-       (:tr :class "bg-secondary"
+       (:tr :class "bg-info"
 
 	(if sub-fields
 	    (cl-who:htm
@@ -678,7 +664,7 @@
 
 (defun render-header-row (data-type fields sub-p subs)
   (with-html-string
-    (:tr
+    (:tr :class "bg-light"
      
      (if subs
 	 (cl-who:htm (:th :style "width:25px;"))
@@ -702,12 +688,9 @@
 	    
        )
      (cl-who:htm
-	(:th :width "150px;"
+	(:th :width "50px;"
 	 (:div :class :row
-	  (:div :class "col"
-		(cl-who:str
-		 
-		 (render-grid-sizing data-type)))     
+	       
 	  (:div :class "col form-check-label"
 		(:input
 		 :class "float-right"
@@ -872,7 +855,7 @@
 			:hierarchical))
 	(cl-who:htm
 	 (:button
-	  :name "new" :type "submit" 
+	  :name "select-from" :type "submit" 
 	  :class "btn btn-sm btn-outline-success float-right"
 	  :aria-pressed "false"
 	  :onclick 
@@ -883,7 +866,7 @@
 	 ))
       (:button
        :name "new" :type "submit" 
-       :class "btn btn-sm btn-outline-success float-right"
+       :class "btn btn-sm btn-outline-success"
        :aria-pressed "false"
        :onclick 
        (grid-js-render-new
@@ -909,8 +892,35 @@
 		    (complex-type field)
 		    field item)))
 	  (cl-who:htm
-	   (:td :class "text-left"
-		(cl-who:str val)))))
+	   (:td :class (cond
+			 ((or (equalp (simple-type field) :integer)
+			      (equalp (simple-type field) :number))
+			  "text-right")
+			 (t
+			  "text-left"))
+		
+		
+		(cond
+
+		  ((empty-p val)
+		   (cl-who:str val))
+		  ((equalp (complex-type field) :text)
+		       (cl-who:htm
+			(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:12px;"
+			      (cl-who:str val)
+			      )))
+		  ((and (or (equalp (complex-type field) :string)
+			    (equalp (complex-type field) :list)
+			    (equalp (complex-type field) :collection))
+			(or (> (length val) 15)
+			    (> (length val) (length (getf field :label)))))
+		  
+		   (cl-who:htm
+			(:div :style "resize: vertical; text-overflow: ellipsis;;overflow: hidden;height:12px;"
+			      (cl-who:str val)
+			      )))
+		      (t
+		       (cl-who:str val)))))))
 
       (:td
        (:div :class "btn-group float-right"
@@ -1014,31 +1024,29 @@
 	     :class "col"
 	     (:div :class "card"
 		   :style "border-left-style: dotted;border-width:2px; border-left-color:#48C9B0;"
-		   (:div :class "card-header" 
-			(:div :class "row" 
-			      (:div :class "col"
-				    (:h5 (cl-who:str
+		   (:h5 :class "card-header"
+				     (cl-who:str
 					  (frmt "~A" (string-capitalize
-						      (getf sub :name))))))
-			      (:div :class "col2"
-				    
-				    (cl-who:str
-				     (render-sub-new-button
-				      sub
-				      sub-data-spec)))))
+						      (getf sub :name))))
+				     (cl-who:str
+				      (render-sub-new-button
+				       sub
+				       sub-data-spec)))
 
 		   (:div :class "card-block"
 			 (:div  :class "row"
 				(:div :class "col"
 				      (:table :class "grid-table-stuff"
 					      :style "width:100%;"
+
+					      (:tbody
+					       :style "display:none"
+					       :id (frmt "ajax-edit-nil" ))
 					      (:tbody
 					       (cl-who:str
 						(render-grid-header
 						 sub-data-spec
-						 t))
-					       
-					       )
+						 t)))
 					      (cl-who:str
 					       (render-grid-data
 							    sub-data-spec
@@ -1151,7 +1159,8 @@
 
 (defun render-grid-sizing (data-type)
   (with-html-string
-    (:input :type "text" :name "pages" :class "float-right" 
+    (:input :type "text" :name "pages"
+	    :class "float-right form-control-sm"
 	    :size 2
 	    :id "pages"
 	    :value (or  (parameter "pages")
@@ -1657,6 +1666,19 @@
 
 		(:h4 :class "card-header"
 		     (cl-who:str (string-capitalize collection-name))
+		     
+		     (:button
+		      :class "btn btn-sm btn-outline-success"
+		      :name "new"
+		      :type "submit" 
+		      :aria-pressed "false"
+		      :onclick 
+		      (grid-js-render-new data-type)
+		      (cl-who:str "+"))
+
+		     (cl-who:str
+		      (render-grid-sizing data-type))
+		     
 		     (:button
 		      :class "btn btn-small btn-outline-secondary float-right"
 		      :name "filter-grid" 
@@ -1666,7 +1688,8 @@
 		      :aria-pressed "false"
 		      (:i :class "fa fa-filter "))
 		       
-
+		     
+		     
 		     (:button
 		      :class "btn btn-small btn-outline-secondary float-right"
 		      :name "export" 
@@ -1676,7 +1699,9 @@
 		      :onclick 
 		      (grid-js-render data-type
 				      :action "export")
-		      (:i :class "fa fa-download")))
+		      (:i :class "fa fa-download"))
+		     
+		     )
 	
 		(:div :class "card-block"		    
 		      :id data-type
@@ -1684,6 +1709,7 @@
 			    (:div :class "col"
 				  (:table :class "grid-table-stuff"
 					  :style "width:100%;"
+					  
 					  (:tbody
 					   (cl-who:str
 					    (render-grid-header data-type nil)))
@@ -1694,12 +1720,12 @@
 		      (:div :class "row"
 			    (:div :class "col"
 				  (:button 
-				   :name "expand" :type "submit" 
+				   :name "new" :type "submit" 
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
 				   (grid-js-render-new data-type)
-				   (cl-who:str ">")))
+				   (cl-who:str "+")))
 			    (:div :class "col-2"
 				  (cl-who:str
 				   (render-select-actions
