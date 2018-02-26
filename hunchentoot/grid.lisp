@@ -657,7 +657,7 @@
 			   (render-grid-col-filter 
 			    data-type name))))))))
 	   (:th
-	    (cl-who:str (render-grid-search data-type)))
+	    )
 	    
 	    
 	   ))))
@@ -1183,23 +1183,23 @@
 (defun render-grid-search (data-type)
   (with-html-string
     (:input :type "text"
-	    :class "w-100"
-	    :name "search" 	   
-	    :id "search"
-	    :value (or (parameter "search")
-		       (getcx 
-			data-type :search)
-		       "")
-	    :onkeydown
-	    ;;fires ajax call on enter (13)
-	    (js-render-event-key 
-	     "search"
-	     13
-	     "cl-wfx:ajax-grid"
-	     (gethash :collection-name (cache *context*))
-	     (js-pair "data-type"
-		      (frmt "~A" data-type))
-	     (js-pair "action" "grid-search")))))
+	     :class "form-control-sm float-right"
+	     :name "search" 	   
+	     :id "search"
+	     :value (or (parameter "search")
+			(getcx 
+			 data-type :search)
+			"")
+	     :onkeydown
+	     ;;fires ajax call on enter (13)
+	     (js-render-event-key 
+	      "search"
+	      13
+	      "cl-wfx:ajax-grid"
+	      (gethash :collection-name (cache *context*))
+	      (js-pair "data-type"
+		       (frmt "~A" data-type))
+	      (js-pair "action" "grid-search")))))
 
 
 
@@ -1676,6 +1676,8 @@
 		      (grid-js-render-new data-type)
 		      (cl-who:str "+"))
 
+		     
+		     
 		     (cl-who:str
 		      (render-grid-sizing data-type))
 		     
@@ -1700,6 +1702,8 @@
 		      (grid-js-render data-type
 				      :action "export")
 		      (:i :class "fa fa-download"))
+		     (cl-who:str
+		      (render-grid-search data-type))
 		     
 		     )
 	
