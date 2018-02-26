@@ -498,19 +498,13 @@
 	    (cl-who:htm
 	     (:td )))
 	
-	(dolist (field (get-data-fields header-fields))
-	  
-	  (let ((val (print-item-val 
-		      (complex-type field)
-		      field item)))
-	    (cl-who:htm
-	     (:td :class "text-left"
-		  (cl-who:str val)))))
-	(:td (cl-who:str (render-edit-buttons data-type))))
+	(dolist (field (get-data-fields header-fields))	  
+	  (cl-who:str (render-table-cell field item)))
+	
+	(:td :style "width:50px;"
+	 (cl-who:str (render-edit-buttons data-type))))
        
        (:tr 
-
-	    
 	(:td :colspan (if sub-fields
 			  (+ (length header-fields) 2)
 			  (+ (length header-fields) 1)
@@ -883,6 +877,53 @@
        (cl-who:str "+")))
     ))
 
+(defun render-table-cell (field item)
+  
+  (let ((val (print-item-val 
+		    (complex-type field)
+		    field item)))
+    (with-html-string
+      (cl-who:htm
+       (:td :class (cond
+		     ((or (equalp (simple-type field) :integer)
+			  (equalp (simple-type field) :number))
+		      "text-right")
+		     (t
+		      "text-left"))
+
+	    
+	    (cond
+
+	      ((empty-p val)
+	       (cl-who:str val))
+	      ((equalp (complex-type field) :script)
+	       (cl-who:htm
+		(:textarea :readonly "readonly" :style "width:100%;"
+			   (cl-who:str val))))
+	      
+	      ((equalp (complex-type field) :text)
+	       (cl-who:htm
+		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:12px;"
+		      (cl-who:str val)
+		      )))
+	      ((and (or (equalp (complex-type field) :string)
+			(equalp (complex-type field) :list)
+			(equalp (complex-type field) :collection))
+		    (or (> (length val) 15)
+			(and
+			 (> (length val) 15)
+			 (> (length val) (length (getf field :label))))))
+	       
+	       (cl-who:htm
+		(:div :style "resize: vertical; text-overflow: ellipsis;;overflow: hidden;height:12px;"
+		      (cl-who:str val)
+		      )))
+	      (t
+	       (cl-who:htm
+		(:div
+		 :style "display:table-cell;height:25px;vertical-align:middle;"
+		 (cl-who:str val))))))))))
+
 (defun render-item-row (subs data-type item fields)
   (with-html-string
     (:tbody :style "display:table-row-group;"
@@ -896,42 +937,8 @@
 
 	     
       (dolist (field (get-data-fields fields))
-	       
-	(let ((val (print-item-val 
-		    (complex-type field)
-		    field item)))
-	  (cl-who:htm
-	   (:td :class (cond
-			 ((or (equalp (simple-type field) :integer)
-			      (equalp (simple-type field) :number))
-			  "text-right")
-			 (t
-			  "text-left"))
-		
-		
-		(cond
-
-		  ((empty-p val)
-		   (cl-who:str val))
-		  ((equalp (complex-type field) :text)
-		       (cl-who:htm
-			(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:12px;"
-			      (cl-who:str val)
-			      )))
-		  ((and (or (equalp (complex-type field) :string)
-			    (equalp (complex-type field) :list)
-			    (equalp (complex-type field) :collection))
-			(or (> (length val) 15)
-			    (and
-			     (> (length val) 15)
-			     (> (length val) (length (getf field :label))))))
-		  
-		   (cl-who:htm
-			(:div :style "resize: vertical; text-overflow: ellipsis;;overflow: hidden;height:12px;"
-			      (cl-who:str val)
-			      )))
-		      (t
-		       (cl-who:str val)))))))
+	 (cl-who:str (render-table-cell field item))      
+	)
 
       (:td :style "width:50px;"
 	   (:div :class "btn-group float-right"
