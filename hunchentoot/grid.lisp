@@ -18,6 +18,11 @@
     (when (equalp (getf field :name) :entity)
       (return-from entity-type-p t))))
 
+(defun top-level-p (data-type)
+  (when data-type
+    (when (getcx data-type :data-type)
+	(dig (getcx data-type :data-type) :data-type :top-level-p))))
+
 (defun html-value (value)
   (cond ((symbolp value)
 	 (frmt "~S" value))
@@ -691,16 +696,20 @@
 	(:th :width "50px;"
 	 (:div :class :row
 	       
-	  (:div :class "col form-check-label"
-		(:input
-		 :class "float-right"
-		 :type "checkbox"
-		 :id "grid-select-all"
-		 :name "grid-select-all"
-		 :onclick "gridSelectAll();"
-		 :value "All"
-		 :checked (parameter "grid-select-all"))
-		"Select All")
+	       (:div :class "col form-check-label"
+		     (when (top-level-p data-type)
+		       (when (not (and (top-level-p data-type) subs))
+		
+			 (cl-who:htm
+			  (:input
+			   :class "float-right"
+			   :type "checkbox"
+			   :id "grid-select-all"
+			   :name "grid-select-all"
+			   :onclick "gridSelectAll();"
+			   :value "All"
+			   :checked (parameter "grid-select-all"))
+			  "Select All"))))
 	  )
 	 )
 
@@ -913,7 +922,9 @@
 			    (equalp (complex-type field) :list)
 			    (equalp (complex-type field) :collection))
 			(or (> (length val) 15)
-			    (> (length val) (length (getf field :label)))))
+			    (and
+			     (> (length val) 15)
+			     (> (length val) (length (getf field :label))))))
 		  
 		   (cl-who:htm
 			(:div :style "resize: vertical; text-overflow: ellipsis;;overflow: hidden;height:12px;"
@@ -922,13 +933,16 @@
 		      (t
 		       (cl-who:str val)))))))
 
-      (:td
-       (:div :class "btn-group float-right"
-	     (unless *rendering-shit*
+      (:td :style "width:50px;"
+	   (:div :class "btn-group float-right"
+		 
+	     (when (not *rendering-shit*)
 	       (cl-who:str			      
 		(render-grid-buttons data-type item )))
-	     (cl-who:str
-	      (render-select-button item))))))))
+	     
+	     (when (top-level-p data-type)	       
+	       (cl-who:str
+		(render-select-button item)))))))))
 
 (defun render-select-from-grid (data-type sub sub-data-spec parent-item)
   (when (and (equalp (parameter "action")
