@@ -1689,6 +1689,7 @@
 	(with-html-string  
 	  (:div
 	   :class "card"
+	   :style "box-shadow: 0px 5px 10px;"
 
 	   :id (gethash :collection-name (cache *context*))
 

@@ -444,6 +444,7 @@
 (defun render-left-user-menu ()
   (with-html-string
     (:ul :class "nav navpills flex-column"
+	 :style "box-shadow: 0px 5px 10px;"
 	  (dolist (mod (user-mods))
 	   
 	    (dolist (menu (digx mod :menu))
@@ -455,7 +456,7 @@
 	      
 	      (cl-who:htm
 	       (:div :id "data-menu" :class "expand"
-		     (:ul :class "nav flex-column ml-3"
+		     (:ul :class "nav flex-column ml"
 			  (dolist (item (data-menu (digx menu :menu-items)))
 			    (cl-who:str (render-menu-item mod item))))))
 	      (cl-who:htm
@@ -464,7 +465,7 @@
 		   :href "#report-menu"
 		   (:strong "Reports"))
 	       (:div :id "report-menu" :class "collapse"
-		     (:ul :class "nav flex-column ml-3"			 
+		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (report-menu (digx menu :menu-items)))
 			    (cl-who:str (render-menu-item mod item))))))
 	      (cl-who:htm
@@ -473,7 +474,7 @@
 		   :href "#other-menu"
 		   (:strong "Other"))
 	       (:div :id "other-menu" :class "collapse"
-		     (:ul :class "nav flex-column ml-3"			 
+		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (other-menu (digx menu :menu-items)))
 		 (cl-who:str (render-menu-item mod item)))))
 	       
@@ -582,6 +583,7 @@
   (with-html-string
 
     (:div :class "nav navpills flex-column"
+	  :style "box-shadow: 0px 5px 10px;"
 	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
 	      :data-toggle "collapse"
 	      :href "#license-context"
@@ -594,9 +596,8 @@
 		(:form
 		 :id "license-selection"
 
-		 (:div :class "row"
-		       (:div :class "col nav-item  bg-light font-weight-bold"
-			     "Accessible Licenses"))
+		 (:div :class "col nav-item  bg-light font-weight-bold"
+			     "Accessible Licenses")
 		 (:div :class "row"
 		       (:div :class "col"
 			     (cl-who:str (render-license-dropdown
@@ -606,9 +607,8 @@
 		 (:div :class "row" :id "entities-selection"
 		       (:div :class "col"
 
-			     (:div :class "row "
-				   (:div :class "col bg-light font-weight-bold"
-					  "Accessible Entities"))
+			     (:div :class "col bg-light font-weight-bold"
+					  "Accessible Entities")
 					
 			     (let ((license-code
 				    (car (getf (item-values (active-user))
@@ -799,10 +799,10 @@
 		     :id "exNavbarLeft"
 		     (:br)
 		     (cl-who:str (render-left-user-menu)))
-
+		    
 		    (:div :class "col"
-			  (:br)
-			  (cl-who:str body))
+			 (:br)
+			 (cl-who:str body))
 		    (:div
 		     :class "collapse col-md-2 hidden-print " 
 		     :id "exNavbarRight" :style "background-color:#FFFFFF"
