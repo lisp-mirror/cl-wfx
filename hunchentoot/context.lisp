@@ -169,40 +169,41 @@
 
 (defun render-entity-check (entity level accessible-entities)
   (with-html-string
-      (:div :class "row"
-	    (:div :class "form-check"
-		  
-		  (:div :class "form-check-label"
-			(dotimes (i level)
-			  (cl-who:htm "&nbsp;"))
-			
-			(if (find entity accessible-entities)
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "form-check"
+		      
+		      (:div :class "form-check-label"
+			    (dotimes (i level)
+			      (cl-who:htm "&nbsp;"))
 			    
-			    (if (find (item-hash entity)
-				      (digx (active-user)
-					    :selected-entities)
-				      :test #'equalp)
+			    (if (find entity accessible-entities)
+				
+				(if (find (item-hash entity)
+					  (digx (active-user)
+						:selected-entities)
+					  :test #'equalp)
+				    (cl-who:htm
+				     (:input :class "form-check-input"
+					     :type "checkbox" 
+					     :name "tree-entity-id" 
+					     :value (item-hash entity)
+					     :checked ""))
+				    (cl-who:htm
+				     (:input :class "form-check-input"
+					     :type "checkbox" 
+					     :name "tree-entity-id"
+					     :value (item-hash entity))))
 				(cl-who:htm
-				 (:input :class "form-check-input"
-					 :type "checkbox" 
-					 :name "tree-entity-id" 
-					 :value (item-hash entity)
-					 :checked ""))
-				(cl-who:htm
-				 (:input :class "form-check-input"
-					 :type "checkbox" 
-					 :name "tree-entity-id"
-					 :value (item-hash entity))))
-			    (cl-who:htm
-			     (:input :class "form-check-input" :type "checkbox" 
-				     :disabled "")))
-			(cl-who:str (getx entity :name)))))
-      
+				 (:input :class "form-check-input" :type "checkbox" 
+					 :disabled "")))
+			    (cl-who:str (getx entity :name))))))
+    
     (if (digx entity :children)
-	(dolist (entity (digx entity :children))
-	  (cl-who:str (render-entity-check entity 
-					   (+ level 1) 
-					   accessible-entities))))))
+		    (dolist (entity (digx entity :children))
+		      (cl-who:str (render-entity-check entity 
+						       (+ level 1) 
+						       accessible-entities))))))
 
 (defun render-entity-tree (license-code accessible-entities )
   (with-html-string
@@ -214,15 +215,17 @@
        (when (digx entity :root-p)
 	 
 	   (cl-who:str (render-entity-check entity 0 accessible-entities))))
-  
-       (:button
-	:name "set-entities" 
-	:type "submit" 
-	:formmethod "post"
-	:class "btn btn-outline-success"
-	:aria-pressed "false"
-	:value "set-entities"
-	"Set Entities"))))
+
+     (:div :class "row"
+	   (:div :class "col"
+		 (:button
+		  :name "set-entities" 
+		  :type "submit" 
+		  :formmethod "post"
+		  :class "btn btn-outline-success"
+		  :aria-pressed "false"
+		  :value "set-entities"
+		  "Set Entities"))))))
 
 (defmethod action-handler ((action (eql :set-entities)) 
 			   (context context) 
@@ -264,28 +267,7 @@
 			 
 			 (cl-who:str code))))))))
 
-(defmethod action-handler ((action (eql :set-licenses)) 
-			   (context context) 
-			   (request hunch-request)
-			   &key &allow-other-keys)
 
-  (setf (getf (item-values (active-user)) :selected-licenses) nil)
-  (setf (getx (active-user) :selected-entities) nil)
-
-  
-  
-  (dolist (parameter (hunchentoot:post-parameters*))
-    (when (equalp (car parameter) "license-id")
-      (pushnew (cdr parameter)
-	       (getx (active-user) :selected-licenses)
-	       :test #'string-equal)
-
-      (init-definitions (universe *system*)
-		    :license (cdr parameter)
-		    (data-definitions *system*))
-      
-      (persist-item (core-collection "active-users") (active-user))
-      )))
 
 (defun context-access-p (context)
   (let ((access-p))
@@ -312,7 +294,15 @@
 (defun render-user-admin-menu ()
   (with-html-string
     (:div :class "nav-item dropdown"	  
-	  (:a :class "nav-link dropdown-toggle" 
+	  (:a :class
+	      (concatenate
+	       'string
+	       "nav-link dropdown-toggle font-weight-bold "
+	       (theme-element-attribute
+		(theme *system*)
+		:nav-toggler-right
+		:text-color-class)			     )
+	      
 	      :href ""
 	      :id "userDropdown" 
 	      :data-toggle "dropdown" 
@@ -333,7 +323,7 @@
 				 "Core" 
 				 (digx item :name))))))
 		  
-		 ; (break "sys-mod ~A" (digx sys-mod :menu))
+					; (break "sys-mod ~A" (digx sys-mod :menu))
 		  (dolist (menu (digx sys-mod :menu))
 		    (when (equalp (digx menu :name) "System")
 		      
@@ -375,7 +365,16 @@
 
 (defun render-entity-display ()
   (with-html-string
-    (:span :class "navbar-text mr-auto"	   
+    (:span :class
+
+	   (concatenate
+	    'string
+	    "navbar-text mr-auto font-weight-bold "
+	    (theme-element-attribute
+	     (theme *system*)
+	     :nav-toggler-left
+	     :text-color-class)			     )
+	   	   
 	   (cl-who:str
 	    (frmt
 	     "Entities: ~A"
@@ -434,69 +433,230 @@
 
 (defun render-menu-item (mod item)
   (with-html-string
-   (:a :class "nav-item nav-link bg-light"
-       :href (context-url
-	      (digx item :context-spec)
-	      mod)
-       (cl-who:str (digx item :name)))))
+    (:li :class "nav-item"
+	 (:a :class "nav-link bg-light text-dark border border-secondary rounded "
+	     :style "text-overflow: ellipsis;overflow: hidden;"
+	  :href (context-url
+		 (digx item :context-spec)
+		 mod)
+	  (cl-who:str (digx item :name))))))
 
 (defun render-left-user-menu ()
   (with-html-string
-    (:nav :class "nav flex-column"
+    (:ul :class "nav navpills flex-column"
 	  (dolist (mod (user-mods))
 	   
 	    (dolist (menu (digx mod :menu))
 	      (cl-who:htm
-	       (:span :class "nav-item "
-		      (:strong "Data")))
-	      (dolist (item (data-menu (digx menu :menu-items)))
-		(cl-who:str (render-menu-item mod item)))
+	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
+		   :data-toggle "collapse"
+		   :href "#data-menu"
+		   (:strong "Data")))
+	      
 	      (cl-who:htm
-	       (:span :class "nav-item"
-		      (:strong "Reports")))
-	      (dolist (item (report-menu (digx menu :menu-items)))
-		(cl-who:str (render-menu-item mod item)))
+	       (:div :id "data-menu" :class "expand"
+		     (:ul :class "nav flex-column ml-3"
+			  (dolist (item (data-menu (digx menu :menu-items)))
+			    (cl-who:str (render-menu-item mod item))))))
 	      (cl-who:htm
-	       (:span :class "nav-item"
-		      (:strong "Other")))
-	      (dolist (item (other-menu (digx menu :menu-items)))
-		(cl-who:str (render-menu-item mod item)))
+	       (:a :class "nav-link  bg-secondary text-light border border-light rounded"
+		   :data-toggle "collapse"
+		   :href "#report-menu"
+		   (:strong "Reports"))
+	       (:div :id "report-menu" :class "collapse"
+		     (:ul :class "nav flex-column ml-3"			 
+			  (dolist (item (report-menu (digx menu :menu-items)))
+			    (cl-who:str (render-menu-item mod item))))))
+	      (cl-who:htm
+	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
+		   :data-toggle "collapse"
+		   :href "#other-menu"
+		   (:strong "Other"))
+	       (:div :id "other-menu" :class "collapse"
+		     (:ul :class "nav flex-column ml-3"			 
+			  (dolist (item (other-menu (digx menu :menu-items)))
+		 (cl-who:str (render-menu-item mod item)))))
+	       
+	       )
 	      )
 	    ))
     ))
 
+(defun render-license-dropdown (list &key (select-prompt "Select a License"))
+  (let ((selected-value (or (parameter "license-select")
+			    (car (getx (active-user) :selected-licenses))
+			    select-prompt)))
+    ;;(break "~A" (hunchentoot::post-parameters*))
+    (with-html-string
+      (:div :class "bt-group dropdown w-100"
+	   
+	     (:input :type "hidden" :class "selected-value" 
+		     :name "license-selected"
+		     :value (or selected-value
+				""))
+	     (:button :class "btn dropdown-toggle w-100"
+		      :type "button"
+		      :data-toggle "dropdown"
+		      :aria-haspopup "true" :aria-expanded "false"
+		      (cl-who:str (or selected-value "")))
+	     
+	     (:div :class "dropdown-menu w-100" ;;:aria-labelledby "license-select"
+		   (dolist (option list)
+		     (cl-who:htm
+		      (:span :class "dropdown-item"
+			     :onclick (js-render-form-values
+				       "cl-wfx:ajax-license-select"
+				       "entities-selection"
+				       "license-selection"
+				       (js-pair "action"
+						"license-select-action")
+				       (js-pair "select-action-value"
+						option))
+			     
+			     (:input :id "select-action"
+				     :type "hidden"
+				     :value option)
+			     (cl-who:str option)))))))))
+
+(defun ajax-license-select (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+
+  (unless (equalp (parameter "license-selected") "Select a License")
+    ;;Set license for session
+    (setf (getf (item-values (active-user)) :selected-licenses) nil)
+    (setf (getx (active-user) :selected-entities) nil)
+    
+    (setf (getx (active-user) :selected-licenses)
+	  (list (parameter "select-action-value")))
+
+    (init-definitions (universe *system*)
+		      :license (parameter "select-action-value")
+		      (data-definitions *system*))
+    
+    (persist-item (core-collection "active-users") (active-user))
+
+    ;;(break "??")
+    ;;Render Entities for selected license
+    )
+  (with-html-string
+    (:div :class "col"
+	  (:div :class "row bg-light"
+		(:div :class "col bg-light font-weight-bold"
+		      "Accessible Entities"))
+	  (dolist (license-code (digx (active-user) 
+				      :selected-licenses))
+	    (when (license-user license-code)
+
+	      (cl-who:str
+	       
+	       (render-entity-tree 
+		license-code
+		(getx (license-user license-code)
+		      :accessible-entities))))))
+      ))
+
+(defmethod action-handler ((action (eql :set-licenses)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (setf (getf (item-values (active-user)) :selected-licenses) nil)
+  (setf (getx (active-user) :selected-entities) nil)
+
+  
+  
+  (dolist (parameter (hunchentoot:post-parameters*))
+    (when (equalp (car parameter) "license-id")
+      (pushnew (cdr parameter)
+	       (getx (active-user) :selected-licenses)
+	       :test #'string-equal)
+
+      (init-definitions (universe *system*)
+		    :license (cdr parameter)
+		    (data-definitions *system*))
+      
+      (persist-item (core-collection "active-users") (active-user))
+      )))
+
 (defun render-right-menu ()
   (with-html-string
 
-    (:form
-      (:div :class "row bg-faded"
-	    "Accessible License Codes")
-      (cl-who:str (render-licence-codes))				 
-      
-      (:button
-       :name "set-licenses" 
-       :type "submit" 
-       :formmethod "post"
-       :class "btn btn-outline-success"
-       :aria-pressed "false"
-       :value "set-licenses"
-       "Set Licenses"))
+    (:div :class "nav navpills flex-column"
+	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
+	      :data-toggle "collapse"
+	      :href "#license-context"
+	      (:strong "License Context"))
+	  
+	  (:div
+	   :id "license-context"
+	   (:ul :class "nav flex-column"
+		     
+		(:form
+		 :id "license-selection"
+
+		 (:div :class "row"
+		       (:div :class "col nav-item  bg-light font-weight-bold"
+			     "Accessible Licenses"))
+		 (:div :class "row"
+		       (:div :class "col"
+			     (cl-who:str (render-license-dropdown
+					  (digx (current-user)
+						:license-codes) ))))
+			    
+		 (:div :class "row" :id "entities-selection"
+		       (:div :class "col"
+
+			     (:div :class "row "
+				   (:div :class "col bg-light font-weight-bold"
+					  "Accessible Entities"))
+					
+			     (let ((license-code
+				    (car (getf (item-values (active-user))
+					       :selected-licenses))))
+			       (when license-code
+				 (when (getf (item-values (active-user)) :selected-entities)
+				   (cl-who:str (render-entity-tree 
+						license-code
+						(getx (license-user license-code)
+						      :accessible-entities))))))))
+
+			    
+			    
+			    
+		 )))
+
+	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
+	      :data-toggle "collapse"
+	      :href "#debug-info"
+	      (:strong "Debug Info"))
+	  
+	  (:div :id "debug-info" :class "collapse"
+		(:ul :class "nav flex-column"
+		     (:div
+		      (cl-who:str (hunchentoot:post-parameters*)))))
+	  
+	  )
      
-     (:div :class "row bg-faded"
-	   "Accessible Entities")
-     (:div :class "row"
-	   (dolist (license-code (digx (active-user) 
-				       :selected-licenses))
-	     (when (license-user license-code)
-	       (cl-who:str
-		(render-entity-tree 
-		 license-code
-		 (getx (license-user license-code)
-		       :accessible-entities))))))
+    
     ))
 
+(defun theme-element (theme element)
+  (dig theme element))
+
+(defun theme-element-attribute (theme element attribute)
+  (dig theme element attribute))
+
+(defun theme-style (theme element)
+  (let ((style-string ""))
+    (dolist (style (dig theme element :style))
+      (setf style-string
+       (concatenate 'string style-string
+		    (frmt "~A: ~A;" (first style) (second style)))))
+
+    style-string))
+
 (defun render-page (menu-p body)
-  
+
   (with-html-string
       (:html
        (:head
@@ -551,7 +711,9 @@
 ")
        
        
-       (:body 
+       (:body;; :style
+	   ;;   (frmt "background-image: url(~Acor/web/images/grid-bulb-alt.png);background-size: cover;opacity: 0.9;filter:alpha(opacity=90);;"		    (site-url *system*))
+
 	(:input :type "hidden" :id "contextid" :value (context-id *context*))
 
 	(if (not menu-p)	 
@@ -561,12 +723,32 @@
 	    (cl-who:htm
 	     (unless (active-user)
 	       (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
+	     
 	     (:nav 
 	      :class "navbar sticky-top hidden-print justify-content-between bg-white"
+	      :style
+	      (if (theme-element
+		     (theme *system*) :main-nav-bg-image)
+		(frmt "background-image: url(~Acor/web/images/~A);background-size: cover;box-shadow: 0px 5px 10px;"
+		      (site-url *system*)
+		      (theme-element
+		       (theme *system*) :main-nav-bg-image))
+		"box-shadow: 0px 5px 10px;")
 
+	      
 	      (if (current-user)
 		  (cl-who:htm 
-		   (:button :class "navbar-toggler navbar-toggler-left"
+		   (:button :class
+			    (concatenate
+			     'string
+			     "navbar-toggler navbar-toggler-left "
+			     (theme-element-attribute
+			      (theme *system*)
+			      :nav-toggler-left
+			      :text-color-class)
+			     )
+
+			    
 			    :type "button btn-small"
 			    :data-toggle "collapse"
 			    :data-target "#exNavbarLeft"
@@ -576,8 +758,12 @@
 			    "&#9776;")))
 	      
 	      (:a :class "navbar-brand" :href "#" 
-		  (:img :src (frmt "~Acor/web/images/logo-small.png"
-				   (site-url *system*)))
+		  (:img
+		   :style (theme-style (theme *system*) :main-nav-logo)
+		   :src (frmt "~Acor/web/images/~A"
+			      (site-url *system*)
+			      (theme-element-attribute
+			       (theme *system*) :main-nav-logo :src)))
 		  (name *system*))
 
 	      (cl-who:str (render-entity-display))
@@ -586,7 +772,16 @@
 	      
 	      (if (current-user)
 		  (cl-who:htm
-		   (:button :class "navbar-toggler navbar-toggler-right"
+		   (:button :class
+			    
+			    (concatenate
+			     'string
+			     "navbar-toggler navbar-toggler-right "
+			     (theme-element-attribute
+			      (theme *system*)
+			      :nav-toggler-right
+			      :text-color-class)
+			     )
 			    :type "button"
 			    :data-toggle "collapse"
 			    :data-target "#exNavbarRight"
@@ -597,19 +792,21 @@
 	     
 	     (:div
 	      :class "container-fluid"
-		   
+	      
 	      (:div :class "row"
 		    (:div
 		     :class "collapse col-md-2 col-md-auto show hidden-print"
 		     :id "exNavbarLeft"
-		     
+		     (:br)
 		     (cl-who:str (render-left-user-menu)))
 
 		    (:div :class "col"
-		     (cl-who:str body))
+			  (:br)
+			  (cl-who:str body))
 		    (:div
 		     :class "collapse col-md-2 hidden-print " 
 		     :id "exNavbarRight" :style "background-color:#FFFFFF"
+		     (:br)
 		     (cl-who:str (render-right-menu)))))))
 
 

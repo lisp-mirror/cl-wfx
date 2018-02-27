@@ -112,7 +112,8 @@
     
     (let ((*request* (make-instance 'hunch-request :request-object request))
 	  (*system* acceptor)
-	  (dont (dont-process request)))
+	  (dont (dont-process request))
+	  (*current-theme* (theme acceptor)))
       
       (hunchentoot:start-session)
 

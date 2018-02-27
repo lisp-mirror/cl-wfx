@@ -26,7 +26,10 @@ because hunchentoot does not have vhosts by default.")
 	      :initform "/images")
    (default-context :initarg :default-context
 	      :accessor default-context
-	      :initform nil)))
+	      :initform nil)
+   (theme :initarg :theme
+	  :accessor theme
+	  :initform nil)))
 
 (defmacro define-ajax (system name lambda-list &body body)
    `(ht-simple-ajax:defun-ajax ,name ,lambda-list ((ajax-processor ,system))
@@ -71,8 +74,7 @@ because hunchentoot does not have vhosts by default.")
     
     ;;TODO: Theming ... (theme site)..(theme system)
     
-    
-    (let ((*current-theme* nil))
+    (let ((*current-theme* (theme system)))
       (declare (special *current-theme*))
       (apply fn args))))
 
@@ -111,13 +113,7 @@ because hunchentoot does not have vhosts by default.")
 	 (file-dispatcher-web
 	  (hunchentoot:create-folder-dispatcher-and-handler
 	   (frmt "~Acor/web/" (site-url system)) 
-	   (web-folder system)))
-	 
-	 
-	 )
-    
-    
-   
+	   (web-folder system))))
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
     (pushnew image-processor hunchentoot:*dispatch-table*)
