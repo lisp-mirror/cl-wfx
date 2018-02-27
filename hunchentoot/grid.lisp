@@ -406,16 +406,14 @@
 	(cond ((or (equalp permission :view) (equalp permission :update))
 	       (cl-who:htm
 		
-		(:i ;;:tabindex -1 ;;when disabled
-		 :name "edit" ;;:type "submit"
-	;;	 :style "color:green;height:100%;"
+		(:i :name "edit" 
 		 :class
 		 (if (user-context-permission-p
 				  (getx (context-spec *context*) :name)
 				  :update)
 
-		     "fa fa-edit fa-lg text-primary"
-		     "fa fa-file-o fa-lg text-primary")
+		     "fa fa-edit fa-2x text-primary"
+		     "fa fa-file-o fa-2x text-primary")
 		 :aria-pressed 
 		 (if (and (parameter "item-id")
 			  (string-equal 
@@ -438,7 +436,7 @@
 		(:i ;;:tabindex -1 ;;when disabled
 		 :name "edit" ;;:type "submit"
 	
-		 :class "fa fa-remove fa-lg text-danger"
+		 :class "fa fa-remove fa-2x text-danger"
 	
 		 :onclick 
 		 (grid-js-render-delete data-type
@@ -450,30 +448,27 @@
 
 (defun render-edit-buttons (data-type)
   (with-html-string
-    (:button
-	   :name "cancel" 				   
-	   :type "submit" 
-	   :class "btn btn-danger btn-sm float-right"
-	   :onclick (frmt "~A;toggle_display(\"ajax-edit-row-~A\");"
-			  (grid-js-render data-type
-					  :action "cancel")
-			  (item-hash (getcx data-type :edit-item)))
-	   "Cancel")
-	  (when (user-context-permission-p
-		 (getx (context-spec *context*) :name)
-		 :update)
-	    (cl-who:htm
-	     (:button
-	      :name "save" 				   
-	      :type "submit" 
-	      :class "btn btn-success btn-sm float-right"
-	      :onclick 
-	      (grid-js-render-form-values			 
-	       data-type
-	       (string-downcase
-		(frmt "grid-edit-~A"  data-type))
-	       :action "save")
-	      "Save")))))
+    (when (user-context-permission-p
+	   (getx (context-spec *context*) :name)
+	   :update)
+      (cl-who:htm
+       (:i :name "save" 				   	 
+	   :class "fa fa-floppy-o fa-2x text-success"
+	  ;; :style "color: #90EE90;"
+	   :onclick 
+	   (grid-js-render-form-values			 
+	    data-type
+	    (string-downcase
+	     (frmt "grid-edit-~A"  data-type))
+	    :action "save"))))
+    (:i :name "cancel" 				   
+     
+	:class "fa fa-eject fa-2x text-dark"
+	:onclick (frmt "~A;toggle_display(\"ajax-edit-row-~A\");"
+		       (grid-js-render data-type
+				       :action "cancel")
+		       (item-hash (getcx data-type :edit-item))))
+    ))
 
 
 
@@ -492,7 +487,7 @@
     (with-html-string
       
       (:tbody :id (frmt "ajax-edit-~A" (item-hash item))	
-       (:tr :class "bg-info"
+       (:tr :class "bg-light"
 
 	(if sub-fields
 	    (cl-who:htm
@@ -509,68 +504,72 @@
 			  (+ (length header-fields) 2)
 			  (+ (length header-fields) 1)
 			  )		 
-		 (:div :class "card"
-		       :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;"
-		       :id (string-downcase (frmt "grid-edit-~A"  data-type))
+	     (:div :class "card"
+		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;"
+		   :id (string-downcase (frmt "grid-edit-~A"  data-type))
 		       
 		       
-		       (:div
-			:class "card-block"
+		   (:div
+		    :class "card-block"
 			
-			(:div :class "row" 
-			      :id (frmt "~A" data-type)
-			      (:div :class "col" 
+		    (:div :class "row" 
+			  :id (frmt "~A" data-type)
+			  (:div :class "col" 
 				    
-				    (dolist (field fields)
-				      (let* ((name (getf field :name))
-					     (label (getf field :label)))
+				(dolist (field fields)
+				  (let* ((name (getf field :name))
+					 (label (getf field :label)))
 					
-					(when (and (digx field :attributes :display) 
-						   (not (find (complex-type field)
-							      (list :collection-items
-								    :list-items
-								    :hierarchical))))
+				    (when (and (digx field :attributes :display) 
+					       (not (find (complex-type field)
+							  (list :collection-items
+								:list-items
+								:hierarchical))))
 					  
-					  (cl-who:htm
-					   (:div :class (if (digx field :attributes :editable)
-							    "form-group row"
-							    "form-group row disabled")
-						 (:label :for name 
-							 :class "col-sm-2 col-form-label" 
-							 (cl-who:str
-							  (if label
-							      label
-							      (string-capitalize 
-							       (substitute 
-								#\Space  
-								(character "-")  
-								(format nil "~A" name) 
-								:test #'equalp)))))
-						 (:div :class "col"
-						       (or
-							;; (cl-who:str (parameter name))
-							(cl-who:str
-							 (render-input-val 
-							  (complex-type field) 
-							  field item
-							  :parent-item
-							  parent-item
-							  :data-type data-type))))))))))
-			      ))
-		       (when (getcx data-type :validation-errors)
-			 (let ((errors (getcx data-type :validation-errors)))
+				      (cl-who:htm
+				       (:div
+					:class
+					(if (digx field
+						  :attributes :editable)
+					    "form-group row"
+					    "form-group row disabled")
+					(:label
+					 :for name 
+					 :class "col-sm-2 col-form-label font-weight-bold"
+					 :style "font-size:13px;"
+					 (cl-who:str
+					  (if label
+					      label
+					      (string-capitalize 
+					       (substitute 
+						#\Space  
+						(character "-")  
+						(format nil "~A" name) 
+						:test #'equalp)))))
+					(:div :class "col"
+					      (or
+					       (cl-who:str
+						(render-input-val 
+						 (complex-type field) 
+						 field item
+						 :parent-item
+						 parent-item
+						 :data-type data-type))))))))))
+			  ))
+		   (when (getcx data-type :validation-errors)
+		     (let ((errors (getcx data-type :validation-errors)))
 			   
-			   (setf (getcx data-type :validation-errors) nil)
+		       (setf (getcx data-type :validation-errors) nil)
 			   
-			   (cl-who:htm
-			    (:div :class "card-footer"
-				  (:div :class "row"
-					(:div :clas "col"
-					      (cl-who:str
-					       (frmt "Errors ~S"
-						     errors))))))))
+		       (cl-who:htm
+			(:div :class "card-footer"
+			      (:div :class "row"
+				    (:div :clas "col"
+					  (cl-who:str
+					   (frmt "Errors ~S"
+						 errors))))))))
 		       
-		       ))))
+		   ))))
       
       )))
 
@@ -664,7 +663,7 @@
 (defun render-header-row (data-type fields sub-p subs)
   (with-html-string
     (:tr :class "bg-light"
-     
+     :style "box-shadow: 0px 2px 2px;"
      (if subs
 	 (cl-who:htm (:th :style "width:25px;"))
 	 )

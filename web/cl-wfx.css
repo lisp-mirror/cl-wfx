@@ -8,7 +8,7 @@
 */
 
 html {
-  font-size: 14px;
+     font-size: 14px;
 }
 
 
@@ -26,7 +26,7 @@ html {
 }
 
 .grid-card-header {
-    height:10px;
+    height:12px;
 
 
 }
@@ -162,4 +162,8 @@ select {
 
 .report table,tr,td,span {
     font-size: 12px;
+}
+
+.report label {
+    font-size: 14px;
 }
