@@ -479,7 +479,8 @@
   (setf (getcx data-type :edit-item) item)
   (setf (getcx data-type :parent-spec) parent-item)
   (setf (getcx data-type :parent-spec) parent-spec)
-  (setf (getcx (parameter "data-type") :item-id) (item-hash item))
+  (setf (getcx (parameter "data-type") :item-id)
+	(item-hash item))
 
 
   (let ((header-fields (get-header-fields fields))
@@ -821,10 +822,13 @@
     (sort (copy-list items) #'string-lessp :key #'sort-val)))
 
 
-(defun grid-js-render-new (data-type)
+(defun grid-js-render-new (data-type top-level)
   (let ((active-page (getcx data-type :active-page))
 	(items))
 
+    (if top-level
+	(setf *item-hierarchy* nil))
+    
     (dolist (hierarchy-item *item-hierarchy*)
       (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
@@ -871,8 +875,7 @@
        :class "btn btn-sm btn-outline-success"
        :aria-pressed "false"
        :onclick 
-       (grid-js-render-new
-	data-spec)
+       (grid-js-render-new data-spec nil)
        (cl-who:str "+")))
     ))
 
@@ -1701,7 +1704,7 @@
 		      :type "submit" 
 		      :aria-pressed "false"
 		      :onclick 
-		      (grid-js-render-new data-type)
+		      (grid-js-render-new data-type t)
 		      (cl-who:str "+"))
 
 		     
@@ -1756,7 +1759,7 @@
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
-				   (grid-js-render-new data-type)
+				   (grid-js-render-new data-type t)
 				   (cl-who:str "+")))
 			    (:div :class "col-2"
 				  (cl-who:str
@@ -1939,6 +1942,7 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
+
    
     (setf (getcx data-type :edit-object) nil)
     
@@ -1962,7 +1966,7 @@
       (if (> (length hierarchy) 1)
 	  (let ((item)
 		(item-type root-type))
-
+	    
 	    (dolist (child (cdr hierarchy))
 	      (setf item (get-child (getcx item-type :fields)
 				    (or (if item (second item)) root-item)
@@ -1981,6 +1985,7 @@
 			      root-item root-type))
 	  (progn
 	    (setf (getcx data-type :edit-object) edit-objects)
+	    
 	    (render-grid-edit root-type fields root-item nil nil))))))
 
 

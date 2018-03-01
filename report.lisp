@@ -270,7 +270,7 @@
 						report-name)))))
 ;;    (break "~A" report-name)
     (cl-wfx::with-html-string
-      (:div
+      (:div :id "report-body"
        (when report
 	 (cl-who:str 
 	  (eval (getx report :code))))))))
