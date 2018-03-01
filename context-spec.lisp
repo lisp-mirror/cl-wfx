@@ -42,6 +42,11 @@
 	     :key-p nil
 	     :db-type :string
 	     :attributes (:display t :editable t))
+      (:name :report
+	     :label "Report"
+	     :key-p nil
+	     :db-type :string
+	     :attributes (:display t :editable t))
       (:name :collection
 	     :label "Collection"
 	     :key-p nil
