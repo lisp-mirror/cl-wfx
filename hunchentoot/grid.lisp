@@ -476,9 +476,14 @@
 (defun render-grid-edit (data-type fields item parent-item
 			 parent-spec)
 
-  (setf (getcx data-type :edit-item) item)
+  
   (setf (getcx data-type :parent-spec) parent-item)
   (setf (getcx data-type :parent-spec) parent-spec)
+  
+  (unless item
+    (setf item (make-item :data-type data-type)))
+  
+  (setf (getcx data-type :edit-item) item)
   (setf (getcx (parameter "data-type") :item-id)
 	(item-hash item))
 
@@ -1143,7 +1148,8 @@
 
 		(cl-who:str
 		 (render-grid-edit data-type fields
-				   (getcx data-type :edit-item)
+				   (make-item :data-type data-type)
+				   
 				   parent-item parent-spec)))))))
 
 (defun render-grid-data (data-type page-items sub-level
