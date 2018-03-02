@@ -1509,8 +1509,21 @@
 			 data-type :page-count)))
     
     (with-html
+      
       (:nav
        (:ul :class "pagination justify-content-end"
+
+	    (:li :class "page-item"
+		 (:span :class "font-weight-bold"
+		  (cl-who:str
+			 (frmt "Showing ~A of ~A"
+			       (if (> (getcx data-type :data-count)
+				      (or (parameter "pages") 50))
+				   (or (parameter "pages") 50)
+				   (getcx data-type :data-count))
+			       (getcx data-type :data-count)
+			       )))
+		 (:span "&nbsp"))
 	    
 	    (:li :class "page-item"
 		 (:button ;;:tabindex -1 ;;when disabled
@@ -1576,7 +1589,9 @@
 					 (if (< active-page real-page-count)
 					     (+ active-page 1)))
 				(js-pair "action" "page-next"))
-		     "Next")))))))))
+		     "Next"))))))
+
+      )))
 
 
 (defmethod action-handler ((action (eql :add-selection)) 
