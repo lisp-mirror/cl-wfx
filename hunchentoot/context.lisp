@@ -1079,7 +1079,7 @@ myEditor.on('change', updateTextArea);
 (defmethod setup-context-repl ((system hunch-system)  &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler
-	(repl 
+	(,(intern (frmt "repl-~A" (name system))) 
 	  :uri ,(frmt "~Acor/repl" (site-url system))  
 	  :allow-other-keys t)
 	nil
@@ -1196,9 +1196,10 @@ myEditor.on('change', updateTextArea);
 (defgeneric setup-file-upload (system &key &allow-other-keys))
 
 (defmethod setup-file-upload ((system hunch-system)  &key &allow-other-keys)
+
   (eval
    `(hunchentoot:define-easy-handler
-	(file-upload 
+	(,(intern (frmt "file-upload-~A" (name system))) 
 	 :uri ,(frmt "~Acor/file-upload" (site-url system))  
 	 :allow-other-keys t)
 	nil      
