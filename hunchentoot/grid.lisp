@@ -2081,6 +2081,7 @@
 	    (push (getf item-values (getf field :name)) keys))))
     (reverse keys)))
 
+
 (defun move-uploaded-file (fields edit-item)
   (let ((hash (item-hash edit-item))
 	(collection (get-perist-collection
@@ -2099,7 +2100,7 @@
 	     (equalp (complex-type field) :image)
 	     (equalp (complex-type field) :file))
 	
-	(let ((server-path
+	(let* ((server-path
 	       (string-downcase
 		(frmt "~A/files/~A/~A/"
 		      (if (location collection)
@@ -2112,12 +2113,19 @@
 		      (getf field :name)
 		     ;; hash
 		      )))
+	       (file-name (replace-all-shit
+			   (parameter (string-downcase
+				       (frmt "~A" (getf field :name))))
+			   '(("_" "-")
+			     ("(" "-")
+			     (")" "-")
+			     ("'" "-")
+			     ("\"" "-")
+			     (" " "-"))
+			   )
+		 )
 	      (temp-path  (merge-pathnames				 
-			   (replace-all
-			    (parameter (string-downcase
-					(frmt "~A" (getf field :name))))
-			    "_"
-			    "-")
+			   file-name
 			   (string-downcase
 			    (frmt "~A/files/tmp/~A/~A/"
 				  (if (location collection)
@@ -2133,6 +2141,7 @@
 	  (ensure-directories-exist server-path)
 
 	  (unless (probe-file temp-path)
+	   
 	    (setf (getx edit-item (getf field :name))
 		  (getx edit-item (getf field :name)))
 	    )
@@ -2140,11 +2149,7 @@
 	  (when (probe-file temp-path)
 	    (fad:copy-file
 	     temp-path
-	     (merge-pathnames (replace-all
-			       (parameter (string-downcase
-					   (frmt "~A" (getf field :name))))
-			       "_"
-			       "-")
+	     (merge-pathnames file-name
 			      server-path)
 	     :overwrite t)
 	    (delete-file temp-path)
@@ -2178,7 +2183,7 @@
 		value
 		(apply #'digx parent-item
 		       (digx field :db-type :container-accessor)) )))
-	(t
+	(t	
 	 (setf (getfx edit-item field) value))))
 
 
@@ -2226,14 +2231,17 @@
 			  (list :collection-items
 				:list-items
 				:hierarchical))))
-	   
+
+      
       (let* ((field-name (frmt "~A" (getf field :name)))
 	     (valid (if (equalp (complex-type field) :item)
 			(validate-value field
 					field-name 
 					edit-item
 					parent-item
-					(parameter field-name))
+					(or
+					 (parameter (string-downcase field-name))
+					 (parameter field-name)))
 			(list t nil))))
 	
 	      
@@ -2245,7 +2253,8 @@
 	(when (first valid)
 	  
 	  (synq-value field edit-item parent-item
-		      (parameter field-name)))))	  
+		      (or (parameter (string-downcase field-name))
+			  (parameter field-name))))))	  
 	 
     (when (getf field :key-p)	   
       (when (empty-p (parameter (getf field :name)))
@@ -2314,7 +2323,9 @@
 
       (synq-item-values data-type fields parent-item edit-item)
 
+
       (move-uploaded-file fields edit-item)   
+
       
       (grid-append-child data-type parent-slot parent-item
 			 edit-item)

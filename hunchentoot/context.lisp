@@ -1186,9 +1186,19 @@ myEditor.on('change', updateTextArea);
 
 
 	(fad:copy-file path
-		       (merge-pathnames (string-downcase
-					 (replace-all filename "_" "-"))
-					  server-path)
+		       (merge-pathnames
+
+			(string-downcase
+			 (replace-all-shit
+			  filename
+			  '(("_" "-")
+			    ("(" "-")
+			    (")" "-")
+			    ("'" "-")
+			    ("\"" "-")
+			    (" " "-"))
+			  ))
+			server-path)
 		       :overwrite t)))
     ))
 

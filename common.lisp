@@ -86,6 +86,14 @@ is replaced with replacement."
        when pos do (write-string replacement out)
        while pos))))
 
+(defun replace-all-shit (string value-pairs)
+  (let ((new-val string))
+    (dolist (value-pair value-pairs)
+      (setf new-val (replace-all new-val
+				 (first value-pair)
+				 (second value-pair))))
+    new-val))
+
 #|
 (defun plural-name (name)
   (setf name (frmt "~A" name))

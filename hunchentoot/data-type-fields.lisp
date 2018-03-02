@@ -52,8 +52,13 @@
 	 (getf field :name)
 	 ;; (item-hash item)
 	 (if (not (empty-p (getx item (getf field :name))))
-	     (replace-all (getx item (getf field :name))
-			  "_" "-")))))
+	     (replace-all-shit (getx item (getf field :name))
+			  '(("_" "-")
+				   ("(" "-")
+				   (")" "-")
+				   ("'" "-")
+				   ("\"" "-")
+				   (" " "-")))))))
 
 (defun file-url (collection field item)
   (string-downcase
@@ -65,8 +70,13 @@
 	   (getf field :name)
 	   ;; (item-hash item)
 	   (if (not (empty-p (getx item (getf field :name))))
-	       (replace-all (getx item (getf field :name))
-			    "_" "-")))))
+	       (replace-all-shit (getx item (getf field :name))
+				 '(("_" "-")
+				   ("(" "-")
+				   (")" "-")
+				   ("'" "-")
+				   ("\"" "-")
+				   (" " "-")))))))
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
