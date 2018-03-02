@@ -1,5 +1,7 @@
 (in-package :cl-wfx)
 
+(defparameter *limit-columns* 7)
+
 (defparameter *item-hierarchy* nil)
 
 (defun complex-type (field)
@@ -602,6 +604,12 @@
 		      (frmt "~A" data-type))
 	     (js-pair "action" "grid-col-filter")))))
 
+
+(defun limit-fields (fields)
+  (if (> (length fields) 7)
+      (subseq fields 0 7)
+      fields))
+
 (defun rough-half-list (list &optional (half-if-length 2))
   (when list
     (let ((length (length list)))
@@ -674,9 +682,8 @@
 	 (cl-who:htm (:th :style "width:25px;"))
 	 )
      
-     (dolist (half (rough-half-list (get-header-fields fields) 7))
-       (dolist (field half)
-		      
+     (dolist (field (limit-fields (get-header-fields fields)))
+	;;	 (break "field ~A " field)     
 	 (let* ((name (getf field :name))
 		(label (getf field :label)))
 			
@@ -689,8 +696,6 @@
 			    (substitute #\Space  (character "-")  
 					(format nil "~A" name) 
 					:test #'equalp)))))))))
-	    
-       )
      (cl-who:htm
 	(:th :width "50px;"
 	 (:div :class :row
@@ -950,7 +955,7 @@
 	     (render-expand-buttons subs data-type item)))))
 
 	     
-      (dolist (field (get-data-fields fields))
+      (dolist (field (limit-fields (get-data-fields fields)))
 		 (cl-who:str (render-table-cell field item))      
 	)
 
@@ -965,6 +970,8 @@
 	       (cl-who:str
 		(render-select-button item)))))))))
 
+
+
 (defun render-select-item-row (data-type items fields)
   (with-html-string
       (:tbody :style "display:table-row-group;"
@@ -975,7 +982,8 @@
 		 (:tr
 		  (:td)
 	
-		  (dolist (field fields)
+		  (dolist (field (limit-fields fields))
+		    
 		    (cl-who:str (render-table-cell field item)))
 
 		  (:td :style "width:50px;"
