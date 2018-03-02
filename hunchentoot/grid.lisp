@@ -501,7 +501,7 @@
 	    (cl-who:htm
 	     (:td )))
 	
-	(dolist (field (get-data-fields header-fields))	  
+	(dolist (field (limit-fields (get-data-fields header-fields)))	  
 	  (cl-who:str (render-table-cell field item)))
 	
 	(:td :style "width:50px;"
@@ -509,8 +509,8 @@
        
        (:tr 
 	(:td :colspan (if sub-fields
-			  (+ (length header-fields) 2)
-			  (+ (length header-fields) 1)
+			  (+ (length (limit-fields header-fields)) 2)
+			  (+ (length (limit-fields header-fields)) 1)
 			  )		 
 	     (:div :class "card"
 		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;"
@@ -1010,7 +1010,7 @@
 		:id (frmt "ajax-select-from-group-~A"
 			  (dig sub :db-type :data-type))
 		(:tr
-		 (:td :colspan (+ (length fields) 2)
+		 (:td :colspan (+ (length (limit-fields fields)) 2)
 		      (:span :class "font-weight-bold"
 		       (cl-who:str
 			  (frmt "Select ~A to add..."
@@ -1056,7 +1056,7 @@
 		      )))
 	(:tbody :style "display:table-row-group;"
 		(:tr
-		 (:td :colspan (+ (length fields) 2)
+		 (:td :colspan (+ (length (limit-fields fields)) 2)
 		      (:table
 		       (cl-who:str (render-select-item-row
 				    (dig sub :db-type :data-type)
@@ -1186,8 +1186,12 @@
 		    (cl-who:htm
 		     (:tr
 		      (:td :colspan (if subs
-					(+ (length header-fields) 2)
-					(+ (length header-fields) 1))
+					(+ (length
+					    (limit-fields header-fields))
+					   2)
+					(+ (length
+					    (limit-fields header-fields))
+					   1))
 			   
 			   (cl-who:str (render-expand data-type item subs
 						      sub-level sub-level-p
@@ -2062,6 +2066,9 @@
 				:field-name (first item))
 			  edit-objects)))
 	    (setf (getcx data-type :edit-object) edit-objects)
+
+	 
+	    
 	    (render-grid-edit item-type
 			      (getcx item-type :fields)
 			      (second item)
