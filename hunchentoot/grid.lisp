@@ -951,7 +951,7 @@
 
 	     
       (dolist (field (get-data-fields fields))
-	 (cl-who:str (render-table-cell field item))      
+		 (cl-who:str (render-table-cell field item))      
 	)
 
       (:td :style "width:50px;"
@@ -965,6 +965,25 @@
 	       (cl-who:str
 		(render-select-button item)))))))))
 
+(defun render-select-item-row (data-type items fields)
+  (with-html-string
+      (:tbody :style "display:table-row-group;"
+	      :id (frmt "select-from-~A"
+			data-type)
+	      (dolist (item items)
+		(cl-who:htm
+		 (:tr
+		  (:td)
+	
+		  (dolist (field fields)
+		    (cl-who:str (render-table-cell field item)))
+
+		  (:td :style "width:50px;"
+		       (:div :class "btn-group float-right"
+			     (when (top-level-p data-type)	       
+			       (cl-who:str
+				(render-select-button item)))))))))))
+
 (defun render-select-from-grid (data-type sub sub-data-spec parent-item)
   (when (and (equalp (parameter "action")
 		     "select-from")
@@ -972,52 +991,73 @@
 	      (parameter "data-type")
 	      (frmt "~A" sub-data-spec)))
 				   
-    (let ((*rendering-shit* t))
+    (let ((*rendering-shit* t)
+	  (fields (get-data-fields
+		   (getcx (dig sub :db-type :data-type) :fields))))
 
-     
+      
+      
       (with-html-string
-       (:div
-	:id (frmt "select-from-~A"
-		  sub-data-spec)
-	:class "card-block"
-	(:h6 :class "card-title text-muted"
-	     (cl-who:str
-	      (frmt "Select ~A to add..."
-		    (dig sub :db-type
-			 :collection))))
-	(cl-who:str
-	 (render-grid-data sub-data-spec
-			   (wfx-fetch-context-items
-			    (dig sub :db-type :collection)
-			    :test (filter-function data-type))
-	  -1 parent-item data-type))
+	(:tbody :style "display:table-row-group;"
+		:id (frmt "ajax-select-from-group-~A"
+			  (dig sub :db-type :data-type))
+		(:tr
+		 (:td :colspan (+ (length fields) 2)
+		      (:span :class "font-weight-bold"
+		       (cl-who:str
+			  (frmt "Select ~A to add..."
+				(dig sub :db-type
+				     :collection))))
 
-	(:div
-	 :class "card-footer"
-	 (:button
-	  :name "select" :type "submit" 
-	  :class
-	  "btn btn-outline-success float-right"
-	  :aria-pressed "false"
-	  :onclick
-	  (js-render-form-values 
-	   "cl-wfx:ajax-grid"
-	   (gethash :collection-name (cache *context*))
-	   (frmt "select-from-~A"
-		 sub-data-spec)
-	   (js-pair "data-type"
-		    (frmt "~A" sub-data-spec))
-	   
-	   (js-pair "action" "add-selection")
-	   (js-pair "add-selection-field" (frmt "~A" (dig sub :name)))
-	   
-	   (js-pair "pages"
-		    (or (parameter "pages") 50))
-	   (js-pair "page"
-		    (or (getcx data-type :active-page) 1)))
-	  
-	 
-	  (cl-who:str "Add Selection"))))))))
+		      (:i :name "cancel" 				   
+			  :class "fa fa-eject fa-2x text-dark float-right"
+			  :onclick
+			  (frmt "~A;toggle_display(\"ajax-select-from-group-~A\");"
+				(grid-js-render data-type
+						:action "cancel")
+				(dig sub :db-type :data-type)))
+		      (:span :class "float-right"
+		       "&nbsp")
+		      (:button
+			  :name "select" :type "submit" 
+			  :class
+			  "btn btn-outline-success float-right"
+			  :aria-pressed "false"
+			  :onclick
+			  (js-render-form-values 
+			   "cl-wfx:ajax-grid"
+			   (gethash :collection-name (cache *context*))
+			   (frmt "select-from-~A"
+				 sub-data-spec)
+			   (js-pair "data-type"
+				    (frmt "~A" sub-data-spec))
+		       
+			   (js-pair "action" "add-selection")
+			   (js-pair "add-selection-field"
+				    (frmt "~A" (dig sub :name)))
+		       
+			   (js-pair "pages"
+				    (or (parameter "pages") 50))
+			   (js-pair "page"
+				    (or (getcx data-type :active-page) 1)))
+			  (cl-who:str "Add Selection"))
+
+		      
+		      
+		      
+		      )))
+	(:tbody :style "display:table-row-group;"
+		(:tr
+		 (:td :colspan (+ (length fields) 2)
+		      (:table
+		       (cl-who:str (render-select-item-row
+				    (dig sub :db-type :data-type)
+				    (wfx-fetch-context-items
+				     (dig sub :db-type :collection)
+				     :test (filter-function (dig sub :db-type :data-type)))
+				    fields))))))
+	
+	))))
 
 (defun render-expand (data-type item subs sub-level sub-level-p
 		      parent-item parent-spec)

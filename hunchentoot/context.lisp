@@ -5,8 +5,13 @@
       (:div :class "row"
 	    (:div :class "card col-5"
 		  (:img :class "card-image-top"
-			:src  (frmt "~Acor/web/images/logo-login.png"
-				    (site-url *system*)))		  
+			:src  (frmt "~Acor/web/images/~A"
+				    (site-url *system*)
+				    (if (theme-element
+					 (theme *system*) :login-image)
+					(theme-element
+					 (theme *system*) :login-image)
+					"logo-login.png")))	 
 		  (:div :class "card-block"
 			(:h4 :class "card-title"
 			     "Login")
