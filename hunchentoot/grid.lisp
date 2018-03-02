@@ -2390,7 +2390,7 @@
 		     (files (directory server-path)))
 
 		(dolist (file files)
-		  (cl-fad:delete-directory-and-files file))
+		  (delete-file file))
 
 		)))
 	  
