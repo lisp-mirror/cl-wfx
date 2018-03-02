@@ -2376,23 +2376,31 @@
 		     (gethash :collection-name (cache *context*))))
 		    (server-path
 		      (string-downcase
-		       (frmt "~A/files/~A/~A/"
+		       (frmt "~A/files/~A/"
 			     (if (location collection)
 				 (location collection)
 				 (string-downcase
 				  (frmt "~A~A"
 					(location (store collection))
 					(name collection))))
-			     (parameter "data-type")
-			     "**";;(getf field :name)
-			    ;; (parameter "item-id")
-			     )))
-		     (files (directory server-path)))
-
-		(dolist (file files)
-		  (delete-file file))
-
-		)))
+			     (parameter "data-type")))))
+		
+		(dolist (field (getcx (parameter "data-type") :fields))
+	
+		  (when (or (equalp (simple-type field) :image)
+			    (equalp (simple-type field) :file))
+		  
+		    (delete-file (string-downcase
+				  (frmt "~A~A/~A" server-path
+					(getf field :name)
+					(replace-all-shit
+					 (getx edit-item (getf field :name))
+					 '(("_" "-")
+					   ("(" "-")
+					   (")" "-")
+					   ("'" "-")
+					   ("\"" "-")
+					   (" " "-")))))))))))
 	  
 	  (setf (getx parent-item parent-slot) clean-list)
 	  
