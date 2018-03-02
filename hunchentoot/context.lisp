@@ -3,7 +3,7 @@
 (defun render-login ()
   (with-html-string
       (:div :class "row"
-	    (:div :class "card col-5"
+	    (:div :class "card col-6"
 		  (:img :class "card-image-top"
 			:src  (frmt "~Acor/web/images/~A"
 				    (site-url *system*)
