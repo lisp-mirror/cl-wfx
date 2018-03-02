@@ -1518,7 +1518,8 @@
 		  (cl-who:str
 			 (frmt "Showing ~A of ~A"
 			       (if (> (getcx data-type :data-count)
-				      (or (parameter "pages") 50))
+				      (cl-wfx::parse-integer
+				       (or (parameter "pages") "50")))
 				   (or (parameter "pages") 50)
 				   (getcx data-type :data-count))
 			       (getcx data-type :data-count)
@@ -2381,12 +2382,13 @@
 		  (cl-fad:delete-directory-and-files file))
 
 		)))
+	  
 	  (setf (getx parent-item parent-slot) clean-list)
-
+	  
 	  (persist-item (item-collection root-item) root-item)))
 
     (unless (and edit-item parent-slot)
-
+     
       (setf (cl-naive-store::item-deleted-p root-item) t)
       (persist-item (item-collection root-item) root-item)
       (cl-naive-store::remove-item root-item))))
