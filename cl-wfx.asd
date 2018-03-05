@@ -24,6 +24,8 @@
 	       (:file "data" :depends-on ("system"))
 	       (:file "script" :depends-on ("system" "data"))
 	       
+	       (:file "named-list" :depends-on ("data"))
+
 	       (:file "mailer" :depends-on ("data"))
 	       
 	       (:file "user" :depends-on ("system" "data"))
