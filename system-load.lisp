@@ -60,6 +60,7 @@
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "entities")))
+  
   (unless (get-context-spec (core-store) "Users")
     (persist-item (core-collection "context-specs")
 		  '(:name "Users"
@@ -74,12 +75,12 @@
 		    :for-everyone t 
 		    :collection "license-users")))
   
-  (unless (get-context-spec (core-store) "Allsorts")
+  (unless (get-context-spec (core-store) "Named Lists")
     (persist-item (core-collection "context-specs")
-		  '(:name "Allsorts"
+		  '(:name "Named Lists"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "allsorts")))
+		    :collection "named-lists")))
   
   (unless (get-context-spec (core-store) "Scripts")
     (persist-item (core-collection "context-specs")
@@ -149,6 +150,7 @@
 			      (get-context-spec (core-store ) "Modules")
 			      (get-context-spec (core-store ) "Licenses")
 			      (get-context-spec (core-store ) "Entities")
+			      (get-context-spec (core-store ) "Named Lists")
 			      (get-context-spec (core-store ) "Users")
 			      (get-context-spec (core-store ) "License Users")
 			      (get-context-spec (core-store ) "Scripts")

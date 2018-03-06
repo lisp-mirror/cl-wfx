@@ -82,8 +82,11 @@
 
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
+;;  (break "? ~A" (eval (dig field :db-type :values-script)))
   (let* ((name (getf field :name))
-	 (list (dig field :db-type :values))
+	 (list (or (and (dig field :db-type :values-script)
+			(eval (dig field :db-type :values-script)))
+		   (dig field :db-type :values)))
 	 (selected (find (getfx item field) list :test #'equalp)))
 
     (with-html-string
