@@ -259,13 +259,13 @@ function toggle_display(id) {
     var x = document.getElementById(id);
 
     //    alert(x.style.display);
-    
-    if (x.style.display === "none") {
-        x.style.display = "block";
-    } else {
-        x.style.display = "none";
-    };
-
+    if (x) {
+	if (x.style.display == "none") {
+            x.style.display = "block";
+	} else {
+            x.style.display = "none";
+	};
+     }
     
 }
 
@@ -274,11 +274,12 @@ function toggle_tbody(id) {
     var x = document.getElementById(id);
 
     //    alert(x.style.display);
-    
-    if (x.style.display === "none") {
-        x.style.display = "table-row-group";
-    } else {
-        x.style.display = "none";
+    if (x) {
+	if (x.style.display == "none") {
+            x.style.display = "table-row-group";
+	} else {
+            x.style.display = "none";
+	};
     };
 
     

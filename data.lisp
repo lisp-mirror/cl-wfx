@@ -80,7 +80,7 @@
 
 (defmethod init-core-universe ((system system) &key &allow-other-keys)
   (unless *core-store-definitions*
-    (warn (frmt "" "init-core ~A" *core-store-definitions*)))
+    (warn (frmt "init-core ~A" *core-store-definitions*)))
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name "core"))
@@ -154,46 +154,48 @@
 	(when (and col (string-equal (dig col :name) name))
 	  (return-from find-type-def def))))))
 
-(defun get-perist-collection (name)
-  (let* ((store (last (collection-stores *system* name)))
-	(collection (if store (get-collection
-			       (first store)
-			       name))))
-    collection))
+
 
 
 (defun collection-stores (system collection)
-  "To enable \"auto\" customization, stores adhere to a highrarchy
+  "To enable \"auto\" customization, stores adhere to a hieghrarchy
 where license store items overide, system which overrides
 core items. So stores are fetched in core,system,license order
 so that when items are merged when fetched, later
 items override earlier ones. See merge-store-items."
-  (let ((stores)
-	(destinations (digx (if (stringp collection)
-			      (find-collection-def system collection)
-			      collection) 
-			  :destinations)))
+  (let ((core-store)
+	(system-store)
+	(license-store)
+	(destinations
+	 (if (stringp collection)
+	     (digx  (find-collection-def system collection) :destinations)
+	     (destinations collection))
+	 ))
     (dolist (dest (list :core :system :license))
       (when (find dest destinations :test #'equalp)
 	(cond ((equalp dest :core)
-	       (push (core-store) stores))
+	       (setf core-store (core-store)))
 	      ((equalp dest :system)
-	       (push (system-store) stores))
+	       (setf system-store (system-store)))
 	      (t
-	       (dolist (lic (getx (active-user) :selected-licenses))
-		 (push (license-store lic) stores))))))
+	       (if (active-user)
+		   (dolist (lic (getx (active-user) :selected-licenses))
+		     (setf license-store (license-store lic))))))))
 
-      (remove-if #'not stores)))
+      (remove-if #'not (list core-store system-store license-store))))
 
-(defun wfx-get-collection (collection-name)
-  (get-collection (collection-store collection-name)
-		  collection-name))
 
 (defun collection-store (collection-name)
   "Selecting the last store from stores list ensure hierarchy of items
 that override others to the correct level."
+
   (first (last (collection-stores *system*
 				  collection-name))))
+
+(defun wfx-get-collection (collection-name)
+  "Selects the collection from the correct store in the hierarchy of stores."
+  (get-collection (collection-store collection-name)
+		  collection-name))
 
 (defun merge-store-items (items add-items)
   (if items
@@ -210,22 +212,42 @@ that override others to the correct level."
 	  merged-items)
 	add-items))
 
-(defun wfx-fetch-items (collection-name &key test (result-type 'list))
-  (let ((items))
-    (dolist (store (collection-stores *system* collection-name))
-      
+(defun wfx-fetch-items (collection &key test (result-type 'list))
+  (let ((items)
+	(collection-name (if (stringp collection)
+			     collection
+			     (name collection)
+			     ;;(digx collection :collection :name)
+			     )))
+    
+   
+    (dolist (store (collection-stores *system* collection-name))      
       (when (get-collection store collection-name)
-	
-	(setf items (merge-store-items
+	(setf items (append-items
 		     items
 		     (fetch-items (get-collection store collection-name)
 				  :test test
 				  :result-type result-type)))))
     items))
 
-(defun wfx-fetch-item (collection-name &key test (result-type 'list))
-  (first (last (wfx-fetch-items collection-name
-				:test test :result-type result-type))))
+(defun wfx-fetch-item (collection &key test (result-type 'list))
+  (first (last (wfx-fetch-items
+		collection
+		:test test :result-type result-type))))
+
+
+(defun append-items (items more-items)
+  (let ((merged-items items))
+    
+    (dolist (item (remove-if #'not items))
+      (dolist (more-item (remove-if #'not more-items))
+	(when (equalp (item-hash item)
+		      (item-hash more-item))
+	  
+	  (setf merged-items (remove item merged-items)))))
+    (append merged-items more-items)))
+
+;;TODO: do something to force correct order of stores searched instead of relying on order of stores!!!
 
 (defun wfx-fetch-context-items (collection &key test (result-type 'list))
   (let* ((items)
@@ -233,14 +255,15 @@ that override others to the correct level."
 			     collection
 			     (digx collection :collection :name)))
 	(stores (collection-stores *system* collection-name)))
-        
+
     (dolist (store stores)
       (let ((collection (get-collection
 				  store 
 				  collection-name)))
+
 	(when collection
 	  (setf items
-		(append items
+		(append-items items
 			(fetch-items 
 			 collection
 			 :test (lambda (item)
@@ -266,7 +289,7 @@ that override others to the correct level."
 
 	(when collection  
 	  (setf items
-		(append
+		(append-items
 		 items
 		 (list (fetch-item 
 			collection

@@ -94,6 +94,18 @@ is replaced with replacement."
 				 (second value-pair))))
     new-val))
 
+(defun sanitize-file-name (name)
+  (when name
+    (string-downcase
+     (replace-all-shit name
+		       '(("_" "-")
+			 ("(" "-")
+			 (")" "-")
+			 ("'" "-")
+			 ("\"" "-")
+			 ("," "-")
+			 (" " "-"))))))
+
 #|
 (defun plural-name (name)
   (setf name (frmt "~A" name))

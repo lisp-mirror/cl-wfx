@@ -167,3 +167,7 @@ select {
 .report label {
     font-size: 14px;
 }
+
+input:invalid {
+  border: 2px dashed red;
+}

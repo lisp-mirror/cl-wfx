@@ -51,14 +51,8 @@
 	 (item-data-type item)
 	 (getf field :name)
 	 ;; (item-hash item)
-	 (if (not (empty-p (getx item (getf field :name))))
-	     (replace-all-shit (getx item (getf field :name))
-			  '(("_" "-")
-				   ("(" "-")
-				   (")" "-")
-				   ("'" "-")
-				   ("\"" "-")
-				   (" " "-")))))))
+	 (if (not (empty-p (getx item (getf field :name))))	     		
+	     (sanitize-file-name (getx item (getf field :name)))))))
 
 (defun file-url (collection field item)
   (string-downcase
@@ -70,17 +64,11 @@
 	   (getf field :name)
 	   ;; (item-hash item)
 	   (if (not (empty-p (getx item (getf field :name))))
-	       (replace-all-shit (getx item (getf field :name))
-				 '(("_" "-")
-				   ("(" "-")
-				   (")" "-")
-				   ("'" "-")
-				   ("\"" "-")
-				   (" " "-")))))))
+	       (sanitize-file-name (getx item (getf field :name)))))))
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key &allow-other-keys)
-  (let* ((collection (get-perist-collection
+  (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
 	 (server-path (file-server-path collection field item)))
@@ -114,7 +102,7 @@
 
 (defmethod print-item-val ((type (eql :file)) field item
 			   &key &allow-other-keys)
-  (let* ((collection (get-perist-collection
+  (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
 	 (server-path (file-server-path collection field item)))
@@ -265,7 +253,7 @@
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
-		  :type "text"	     
+		  :type "text"		  
 		  :value
 		  (cl-who:str (print-item-val 
 			       type
@@ -276,7 +264,9 @@
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
-		  :type "text"	     
+		  :type "text"
+		  :required (if (getf field :key-p)
+				"required")
 		  :value
 		  (cl-who:str (print-item-val 
 			       type
@@ -314,6 +304,8 @@
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
 	   (cl-who:str
 	    (print-item-val 
 	     type
@@ -321,7 +313,7 @@
 	     item)))))))
 
 (defun render-image (field item)
-  (let* ((collection (get-perist-collection
+  (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
 	 (image-path (file-url collection field item)))
@@ -351,7 +343,9 @@
 	      :multiple t
 	      :id (string-downcase
 		   (frmt "~A-~A" (getf field :name)
-			 (item-hash item)))))))
+			 (item-hash item)))
+	      :required (if (getf field :key-p)
+			    "required")))))
 
 (defun ajax-render-file-upload (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
@@ -439,7 +433,9 @@
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
-		  :type "date"	     
+		  :type "date"
+		  :required (if (getf field :key-p)
+				"required")
 		  :value
 		  (cl-who:str (print-item-val 
 			       type
@@ -465,7 +461,9 @@
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
-		  :type "time"	     
+		  :type "time"
+		  :required (if (getf field :key-p)
+				"required")
 		  :value
 		  (cl-who:str (print-item-val 
 			       type
@@ -499,6 +497,8 @@
 				   :type "checkbox"
 				   :id name
 				   :name name
+				   :required (if (getf field :key-p)
+						 "required")
 				   :value (getsfx
 					   type
 					   field 
@@ -526,6 +526,8 @@
 	   :class "form-control wfx-script"
 	   :id name
 	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
 	   (cl-who:str
 	    (print-item-val 
 	     type
@@ -557,6 +559,8 @@
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
+	   :required (if (getf field :key-p)
+			 "required")
 	   (cl-who:str (print-item-val 
 			:value-string-list
 			field 

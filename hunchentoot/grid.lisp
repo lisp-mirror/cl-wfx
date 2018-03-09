@@ -2,7 +2,7 @@
 
 (defparameter *limit-columns* 7)
 
-(defparameter *item-hierarchy* nil)
+
 
 (defun complex-type (field)
   (if (listp (getf field :db-type))
@@ -20,10 +20,10 @@
     (when (equalp (getf field :name) :entity)
       (return-from entity-type-p t))))
 
-(defun top-level-p (data-type)
+(defun check-top-level-p (data-type)
   (when data-type
     (when (getcx data-type :data-type)
-	(dig (getcx data-type :data-type) :data-type :top-level-p))))
+      (dig (getcx data-type :data-type) :data-type :top-level-p))))
 
 (defun html-value (value)
   (cond ((symbolp value)
@@ -35,9 +35,8 @@
 	(t
 	 (frmt "~S" value))))
 
-
 (defun render-dropdown (name selected list
-			&key  (select-prompt "Select a value")
+			&key (select-prompt "Select a value")
 			  key-func value-func
 			  select-onclick-func)
   (let ((selected-value (if selected
@@ -49,40 +48,40 @@
 
     (with-html-string
       (:div :class "bt-group dropdown"
-	     (:input :type "hidden" :class "selected-value" 
-		     :name (frmt "~A" name)
-		     :value (html-value (or (parameter (frmt "~A" name))
-					    selected-value
-					    "")))
-	     (:button :class "btn btn-secondary dropdown-toggle"
-		      :type "button"
-		      :data-toggle "dropdown"
-		      :aria-haspopup "true" :aria-expanded "false"
-		      (cl-who:str (html-value (or selected-value ""))))
+	    (:input :type "hidden" :class "selected-value" 
+		    :name (frmt "~A" name)
+		    :value (html-value (or (parameter (frmt "~A" name))
+					   selected-value
+					   "")))
+	    (:button :class "btn btn-secondary dropdown-toggle"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (cl-who:str (html-value (or selected-value ""))))
 	     
-	     (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
-		   (dolist (option list)
-		     (cl-who:htm
-		      (:span :class "dropdown-item"
-			     :onclick (if select-onclick-func
-					  (funcall
-					   select-onclick-func option))
+	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
+		  (dolist (option list)
+		    (cl-who:htm
+		     (:span :class "dropdown-item"
+			    :onclick (if select-onclick-func
+					 (funcall
+					  select-onclick-func option))
 			     
-			     (:input :id "select-action"
-				     :type "hidden"
-				     :value (html-value
-					     (if key-func
-						 (funcall key-func option)
-						 option)))
-			     (cl-who:str
-			      (html-value
-			       (if value-func
-				   (funcall value-func option)
-				   option)))))))))))
+			    (:input :id "select-action"
+				    :type "hidden"
+				    :value (html-value
+					    (if key-func
+						(funcall key-func option)
+						option)))
+			    (cl-who:str
+			     (html-value
+			      (if value-func
+				  (funcall value-func option)
+				  option)))))))))))
 
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
-;;  (break "? ~A" (eval (dig field :db-type :values-script)))
+
   (let* ((name (getf field :name))
 	 (list (or (and (dig field :db-type :values-script)
 			(eval (dig field :db-type :values-script)))
@@ -157,9 +156,10 @@
 
 
 (defun render-item-list-auto-complete (data-type field-name selected
-			&key  select-prompt
-			  value-func
-			  context-state-selected)
+				       &key  select-prompt
+					 value-func
+					 context-state-selected
+					 required-p)
   (let ((selected-value (if selected
 			    (if value-func
 				(funcall value-func selected)
@@ -185,6 +185,9 @@
 		    :name (frmt "~A-drop" field-name) 
 		    :id (frmt "~A-drop" field-name)
 		    :value (html-value (or selected-value ""))
+		    :required (if required-p
+				  "required")
+		    
 		    :onkeydown
 		    ;;fires ajax call on enter (13)
 		    (js-render-event-key 
@@ -210,6 +213,7 @@
 	 (accessors (dig field :db-type :accessor)))
 
     (with-html-string
+
       (cl-who:str (render-item-list-auto-complete
 		   data-type name selected
 		   :value-func (lambda (item)
@@ -220,7 +224,8 @@
 					    (list accessors))))
 		   :context-state-selected (getcx 
 					    (dig field :db-type :data-type)
-					    (frmt "~A-drop" name)))))))
+					    (frmt "~A-drop" name))
+		   :required-p (getf field :key-p))))))
 
 (defmethod render-input-val ((type (eql :contained-item)) field item 
 			     &key parent-item &allow-other-keys)
@@ -252,7 +257,19 @@
 				   &key action action-script
 				     action-data item-id )
   (let ((active-page (getcx 
-		      data-type :active-page)))
+		      data-type :active-page))
+	(items))
+
+    
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
+    
+      (setf items (pushnew 
+		   (list (getf hierarchy-item :data-type)
+			 (item-hash (getf hierarchy-item :item)))
+		   items)))
+
+    
+    
     (js-render-form-values 
      "cl-wfx:ajax-grid"
      (gethash :collection-name (cache *context*))
@@ -267,6 +284,8 @@
      
      (js-pair "item-id" (frmt "~A" (or item-id (getcx data-type :item-id)
 				       "")))
+     (js-pair "item-hierarchy"
+			(hierarchy-string items))
      (js-pair "pages"
 	      (or (parameter "pages") 50))
      (js-pair "page"
@@ -339,15 +358,15 @@
   (let ((active-page (getcx data-type :active-page))
 	(items))
 
-    (dolist (hierarchy-item *item-hierarchy*)
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
       (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
 			 (item-hash (getf hierarchy-item :item)))
 		   items)))
 
-    (setf items (reverse items))
     (setf items (pushnew (list data-type (item-hash item))
-		      items))
+				  items))
+    
     (js-render "cl-wfx:ajax-grid"
 	       (gethash :collection-name (cache *context*))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -356,7 +375,7 @@
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
 	       (js-pair "item-hierarchy"
-			(hierarchy-string (reverse items)))
+			(hierarchy-string items))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -365,7 +384,7 @@
 
 
 (defun hierarchy-string (items)
-  (setf items (remove-duplicates items :test #'equalp))
+  (setf items (reverse (remove-duplicates items :test #'equalp)))
   (let ((hierarchy ""))
     (dolist (item items)
       (setf hierarchy  (concatenate 'string hierarchy " " (frmt "~A" item))))
@@ -375,18 +394,18 @@
   (let ((active-page (getcx data-type :active-page))
 	(items))
 
-    (dolist (hierarchy-item *item-hierarchy*)
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
       (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
 			 (item-hash (getf hierarchy-item :item)))
 		   items)))
 
    
-    (setf items (reverse items))
+    
     (setf items (pushnew (list data-type (item-hash item))
 			 items))
-    (setf items (remove-duplicates items :test #'equalp))
-    
+
+
     (js-render "cl-wfx:ajax-grid-edit"
 	       (frmt "ajax-edit-~A" (item-hash item))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -395,7 +414,7 @@
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
 	       (js-pair "item-hierarchy"
-			(hierarchy-string (reverse items)))
+			(hierarchy-string items))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -444,10 +463,12 @@
 	
 		 :class "fa fa-remove fa-2x text-danger"
 	
-		 :onclick 
-		 (grid-js-render-delete data-type
+		 :onclick (frmt "if(confirm(\"Are you sure you want to delete?\")){ 
+    ~A
+}"
+				(grid-js-render-delete data-type
 
-				 :item item)
+						       :item item))
 	
 		 ))))))))
 
@@ -461,12 +482,16 @@
        (:i :name "save" 				   	 
 	   :class "fa fa-floppy-o fa-2x text-success"
 	  ;; :style "color: #90EE90;"
-	   :onclick 
-	   (grid-js-render-form-values			 
-	    data-type
-	    (string-downcase
-	     (frmt "grid-edit-~A"  data-type))
-	    :action "save"))))
+	   :onclick
+	   (frmt "if(document.getElementById(\"grid-edit-~A\").checkValidity()) {
+        ~A
+    }else console.log(\"invalid form\");"
+		 data-type
+		 (grid-js-render-form-values			 
+		  data-type
+		  (string-downcase
+		   (frmt "grid-edit-~A"  data-type))
+		  :action "save")))))
     (:i :name "cancel" 				   
      
 	:class "fa fa-eject fa-2x text-dark"
@@ -506,6 +531,15 @@
 	
 	(dolist (field (limit-fields (get-data-fields header-fields)))	  
 	  (cl-who:str (render-table-cell field item)))
+
+
+	(setf (gethash :item-hierarchy (cache *context*))
+	      (append
+	       (gethash :item-hierarchy (cache *context*))
+	       (list (list :data-type data-type
+			   :item item))
+		 ))
+
 	
 	(:td :style "width:50px;"
 	 (cl-who:str (render-edit-buttons data-type))))
@@ -515,7 +549,7 @@
 			  (+ (length (limit-fields header-fields)) 2)
 			  (+ (length (limit-fields header-fields)) 1)
 			  )		 
-	     (:div :class "card"
+	     (:form :class "card"
 		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;"
 		   :id (string-downcase (frmt "grid-edit-~A"  data-type))
 		       
@@ -643,7 +677,7 @@
 	(pushnew field header-fields)))
     (reverse header-fields)))
 
-(defun render-filter-row (data-type fields sub-p subs)
+(defun render-filter-row (data-type fields)
   (let* ((search-term (or (parameter "search") 
 			  (getcx 
 			   data-type :search)))
@@ -677,7 +711,7 @@
 	    
 	   ))))
 
-(defun render-header-row (data-type fields sub-p subs)
+(defun render-header-row (data-type fields subs)
   (with-html-string
     (:tr :class "bg-light"
      :style "box-shadow: 0px 2px 2px;"
@@ -704,8 +738,8 @@
 	 (:div :class :row
 	       
 	       (:div :class "col form-check-label"
-		     (when (top-level-p data-type)
-		       (when (not (and (top-level-p data-type) subs))
+		     (when (check-top-level-p data-type)
+		       (when (not (and (check-top-level-p data-type) subs))
 		
 			 (cl-who:htm
 			  (:input
@@ -734,9 +768,9 @@
     (with-html-string
       (unless sub-p
 	(cl-who:str
-	       (render-filter-row data-type fields sub-p subs)))
+	       (render-filter-row data-type fields)))
       
-      (cl-who:str (render-header-row data-type fields sub-p subs)))))
+      (cl-who:str (render-header-row data-type fields subs)))))
 
 (defun get-data-fields (fields)
   (let ((data-fields))
@@ -746,7 +780,6 @@
 			    (list :collection-items :list-items :hierarchical))))
 	(pushnew field data-fields)))
     (reverse data-fields)))
-
 
 
 (defun render-select-actions (data-type)  
@@ -838,16 +871,13 @@
 (defun grid-js-render-new (data-type top-level)
   (let ((active-page (getcx data-type :active-page))
 	(items))
-
-    (if top-level
-	(setf *item-hierarchy* nil))
     
-    (dolist (hierarchy-item *item-hierarchy*)
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
       (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
 			 (item-hash (getf hierarchy-item :item)))
 		   items)))
-    (setf items (reverse items))
+    
     (setf items (pushnew (list data-type 0)
 		      items))
     (js-render "cl-wfx:ajax-grid-edit"
@@ -857,7 +887,7 @@
 	       (js-pair "action" "new")
 	       
 	       (js-pair "item-hierarchy"
-			(hierarchy-string (reverse items)))
+			(hierarchy-string items))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -969,7 +999,7 @@
 	       (cl-who:str			      
 		(render-grid-buttons data-type item )))
 	     
-	     (when (top-level-p data-type)	       
+	     (when (check-top-level-p data-type)	       
 	       (cl-who:str
 		(render-select-button item)))))))))
 
@@ -991,11 +1021,11 @@
 
 		  (:td :style "width:50px;"
 		       (:div :class "btn-group float-right"
-			     (when (top-level-p data-type)	       
+			     (when (check-top-level-p data-type)	       
 			       (cl-who:str
 				(render-select-button item)))))))))))
 
-(defun render-select-from-grid (data-type sub sub-data-spec parent-item)
+(defun render-select-from-grid (data-type sub sub-data-spec)
   (when (and (equalp (parameter "action")
 		     "select-from")
 	     (string-equal
@@ -1071,13 +1101,14 @@
 	))))
 
 (defun render-expand (data-type item subs sub-level sub-level-p
-		      parent-item parent-spec)
+		      parent-item)
   (when (equalp (ensure-parse-integer
 		 (getcx data-type :expand-id)) 
 		(item-hash item))
 
     (unless sub-level-p
-      (setf (getcx data-type :root-item) item))
+      (setf (gethash :item-hierarchy (cache *context*)) nil)
+      (setf (getcx data-type :root-item) (list item)))
 
  
     (with-html-string
@@ -1103,14 +1134,17 @@
 	  
 	  (setf (getcx sub-data-spec :active-item) item)
 
-	  (setf *item-hierarchy* (push
-				    (list :data-type data-type
-					  :item item)
-				    *item-hierarchy*))
+	  
+	  (setf (gethash :item-hierarchy (cache *context*))
+		(append
+		 (gethash :item-hierarchy (cache *context*))
+		 (list (list :data-type data-type
+			     :item item))
+		 ))
 	  
 	  
-
-	  (when parent-item (frmt "fuck nut ~A" *item-hierarchy*))
+;;	  (break "poes ~A" (gethash :item-hierarchy (cache *context*)))
+	  ;;(when parent-item (frmt "fuck nut ~A" *item-hierarchy*))
 	  
 	  (cl-who:htm
 	   (:div
@@ -1156,14 +1190,14 @@
 		   (cl-who:str
 		    (render-select-from-grid
 		     data-type sub
-		     sub-data-spec parent-item))
+		     sub-data-spec))
 		   
 		   )))))))))
 
 
 
 (defun render-row-goodies (subs sub-level-p sub-level data-type
-			   item fields parent-item parent-spec)
+			   item fields parent-item)
   
 
   
@@ -1198,7 +1232,7 @@
 			   
 			   (cl-who:str (render-expand data-type item subs
 						      sub-level sub-level-p
-						      parent-item parent-spec)))))))))))
+						      parent-item)))))))))))
 
 
 (defun render-new-edit (data-type fields parent-item parent-spec)
@@ -1252,7 +1286,7 @@
 	   (render-row-goodies subs sub-level-p
 			       sub-level data-type
 			       item fields
-			       parent-item parent-spec)))
+			       parent-item)))
 		    
 	(cl-who:str (render-new-edit data-type fields
 				     parent-item parent-spec))
@@ -1631,8 +1665,7 @@
 			   :keyword)))))))
     (when persist-p
       (persist-item
-       (get-collection	
-	(collection-store (gethash :collection-name (cache *context*)))
+       (wfx-get-collection	
 	(gethash :collection-name (cache *context*)))
        (getcx (gethash :data-type (cache *context*)) :root-item)))))
 
@@ -1875,8 +1908,11 @@
 	(dolist (item (getx parent-item (getf field :name)))
 	    (when (equalp (item-hash item) (ensure-parse-integer hash))
 	      (return-from get-child (list (getf field :name) item))))
+
 	(return-from get-child (list (getf field :name)
-				     (make-item :data-type data-type)))))))
+				     (make-item :data-type
+						(string-downcase
+						 (frmt "~A" data-type)))))))))
 
 (defun fetch-grid-root-edit-item (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))   
@@ -1976,15 +2012,16 @@
 (declaim (optimize (debug 3))
 	 (notinline ajax-grid-edit))
 
-(defun set-edit-obects ()
-  (let* ((data-type (parameter "data-type"))
+(defun set-edit-objects ()
+  (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields )
 	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
 	 (root-type)
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
-   
+
+
     (setf (getcx data-type :edit-object) nil)
     
     (setf root-type (if  hierarchy
@@ -2024,7 +2061,7 @@
 
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  (let* ((data-type (parameter "data-type"))
+  (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields )
 	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
 	 (root-type)
@@ -2094,7 +2131,7 @@
 
 (defun move-uploaded-file (fields edit-item)
   (let ((hash (item-hash edit-item))
-	(collection (get-perist-collection
+	(collection (wfx-get-collection
 		     (gethash :collection-name (cache *context*)))))
 
     (unless hash
@@ -2123,17 +2160,9 @@
 		      (getf field :name)
 		     ;; hash
 		      )))
-	       (file-name (replace-all-shit
+	       (file-name (sanitize-file-name
 			   (parameter (string-downcase
-				       (frmt "~A" (getf field :name))))
-			   '(("_" "-")
-			     ("(" "-")
-			     (")" "-")
-			     ("'" "-")
-			     ("\"" "-")
-			     (" " "-"))
-			   )
-		 )
+				       (frmt "~A" (getf field :name))))))
 	      (temp-path  (merge-pathnames				 
 			   file-name
 			   (string-downcase
@@ -2289,7 +2318,7 @@
   (unless (getcx data-type :validation-errors)
     (let ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*)))))
-
+      
       (unless collection
 	(pushnew 
 	 "No default store found check if license is selected."
@@ -2297,7 +2326,77 @@
 
       (when collection
 	(setf (item-collection root-item) collection)
+
+	
+
+	(setf (item-store root-item) (store collection))
 	(persist-item collection root-item :allow-key-change-p t)))))
+
+(defun prepare-edit-objects ()
+  (let* ((data-type (string-downcase (parameter "data-type")))
+	(edit-objects (reverse (set-edit-objects)))
+	(collection (wfx-get-collection
+		     (gethash :collection-name (cache *context*))))
+	
+	(root-item)
+	(parent-item)
+	(edit-item)
+	(parent-slot))
+
+      
+    (when edit-objects      
+      (setf root-item (getf (first edit-objects) :item))
+
+      ;;Create new item if saving item higher up in the store
+      ;;hierarchy
+      (when (item-store root-item)
+	(unless (equalp (store collection)
+			(item-store root-item))
+	  (setf root-item (make-item :data-type (item-data-type root-item)
+				     :collection collection
+				     :values (item-values root-item)
+				     :changes (item-changes root-item)))
+	  (setf (getf (first edit-objects) :item) root-item)))
+
+      
+      (when (> (length edit-objects) 1)
+	(setf edit-item (getf (first (last edit-objects)) :item))
+	(setf parent-slot (getf (first (last edit-objects)) :field-name))
+	(setf parent-item
+	      (getf (nth (- (length edit-objects) 2) edit-objects) :item)))
+      
+      ;;Create new item if saving item higher up in the store
+      ;;hierarchy
+      (when (and edit-item (item-store edit-item))
+	(unless (equalp (store collection)
+			(item-store edit-item))
+	  (break "~A~% ~A" collection edit-item)
+	  (setf edit-item (make-item :data-type data-type
+				     :collection (wfx-get-collection
+						  (name (item-collection
+							 edit-item)))
+				     :values (item-values edit-item)
+				     :changes (item-changes edit-item)))
+	  (setf (getf (first (last edit-objects)) :item) edit-item)
+
+	  (let ((clean-list (getx parent-item parent-slot)))
+	    
+	    (dolist (item clean-list)
+	      (when (equalp (item-hash item)
+			    (ensure-parse-integer (parameter "item-id")))
+		
+		(setf clean-list (remove item clean-list))
+		(setf clean-list (pushnew edit-item clean-list))))
+	    (setf (getx parent-item parent-slot) clean-list))))
+
+      
+      (unless (> (length edit-objects) 1)
+	(setf edit-item root-item)))
+
+
+    
+    
+    (values root-item parent-slot parent-item edit-item)))
 
 (defmethod action-handler ((action (eql :save)) 
 			   (context context) 
@@ -2305,86 +2404,49 @@
 			   &key &allow-other-keys)
 
 
-  (let* ((data-type (parameter "data-type"))
-	 (fields (getcx data-type :fields))	 
-	 (root-item)
-	 (parent-item)
-	 (edit-item)
-	 (parent-slot)
-	 (edit-objects (reverse (getcx data-type :edit-object))))
+  (let* ((data-type (string-downcase (parameter "data-type")))
+	 (fields (getcx data-type :fields)))
 
-
-    (when edit-objects      
-      (setf root-item (getf (first edit-objects) :item))
-      (when (> (length edit-objects) 1)
-	(setf edit-item (getf (first (last edit-objects)) :item))
-	(setf parent-slot (getf (first (last edit-objects)) :field-name))
-	(setf parent-item
-	      (getf (nth (- (length edit-objects) 2) edit-objects) :item)))
-      
-      (unless (> (length edit-objects) 1)
-	(setf edit-item root-item)))
     
     (setf (getcx data-type :validation-errors) nil)
- 
-    (when fields
-      (unless edit-item
-	(setf edit-item (make-item :data-type data-type)))
+    
+    (multiple-value-bind (root-item parent-slot parent-item edit-item)
+	(prepare-edit-objects)
 
-      (synq-item-values data-type fields parent-item edit-item)
+      (when fields
+	(unless edit-item
+	  (setf edit-item (make-item :data-type data-type)))
 
+	(synq-item-values data-type fields parent-item edit-item)
 
-      (move-uploaded-file fields edit-item)   
-
+	(move-uploaded-file fields edit-item)   
       
-      (grid-append-child data-type parent-slot parent-item
-			 edit-item)
-      
-      (grid-persist-item data-type root-item))))
+	(grid-append-child data-type parent-slot parent-item
+			   edit-item)
+
+	
+	(grid-persist-item data-type root-item)))))
 
 
-(defun store-from-stash (store-name)
-  (dolist (store (getcx (gethash :data-type (cache *context*)) :stores))
-    (when (equalp store-name (name store))
-      
-      (return-from store-from-stash store))))
-
-
-
-
-
-;;todo: file delete
 (defmethod action-handler ((action (eql :delete)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  
-  (let* ((edit-objects (reverse (set-edit-obects)))
-	 (root-item)
-	 (parent-item)
-	 (edit-item)
-	 (parent-slot))
-
-    (when edit-objects      
-      (setf root-item (getf (first edit-objects) :item))
-      (when (> (length edit-objects) 1)
-	(setf edit-item (getf (first (last edit-objects)) :item))
-	(setf parent-slot (getf (first (last edit-objects)) :field-name))
-	(setf parent-item
-	      (getf (nth (- (length edit-objects) 2) edit-objects) :item))))
-
-    (when (and edit-item parent-slot)
-       (let ((clean-list (getx parent-item parent-slot)))
+  (multiple-value-bind (root-item parent-slot parent-item edit-item)
+	(prepare-edit-objects)
+   
+      (when (and edit-item parent-slot)
+	(let ((clean-list (getx parent-item parent-slot)))
 	  (dolist (item clean-list)
 	    (when (equalp (item-hash item)
 			  (ensure-parse-integer (parameter "item-id")))
 	      
 	      (setf clean-list
 		    (remove item clean-list))
-	      (let* ((collection (get-perist-collection
-		     (gethash :collection-name (cache *context*))))
-		    (server-path
+	      (let* ((collection (wfx-get-collection
+		       (gethash :collection-name (cache *context*))))
+		     (server-path
 		      (string-downcase
 		       (frmt "~A/files/~A/"
 			     (if (location collection)
@@ -2396,28 +2458,23 @@
 			     (parameter "data-type")))))
 		
 		(dolist (field (getcx (parameter "data-type") :fields))
-	
+		  
 		  (when (or (equalp (simple-type field) :image)
 			    (equalp (simple-type field) :file))
-		  
-		    (delete-file (string-downcase
-				  (frmt "~A~A/~A" server-path
-					(getf field :name)
-					(replace-all-shit
-					 (getx edit-item (getf field :name))
-					 '(("_" "-")
-					   ("(" "-")
-					   (")" "-")
-					   ("'" "-")
-					   ("\"" "-")
-					   (" " "-")))))))))))
+		    
+		    (delete-file
+		     (string-downcase
+		      (frmt "~A~A/~A" server-path
+			    (getf field :name)
+			    (sanitize-file-name
+			     (getx edit-item (getf field :name)))))))))))
 	  
 	  (setf (getx parent-item parent-slot) clean-list)
 	  
 	  (persist-item (item-collection root-item) root-item)))
 
-    (unless (and edit-item parent-slot)
-     
-      (setf (cl-naive-store::item-deleted-p root-item) t)
-      (persist-item (item-collection root-item) root-item)
-      (cl-naive-store::remove-item root-item))))
+      (unless (and edit-item parent-slot)
+	
+	(setf (cl-naive-store::item-deleted-p root-item) t)
+	(persist-item (item-collection root-item) root-item)
+	(cl-naive-store::remove-item root-item))))

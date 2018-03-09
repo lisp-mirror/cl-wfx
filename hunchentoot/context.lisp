@@ -1184,23 +1184,11 @@ myEditor.on('change', updateTextArea);
 
 	(ensure-directories-exist server-path)
 
-
 	(fad:copy-file path
 		       (merge-pathnames
-
-			(string-downcase
-			 (replace-all-shit
-			  filename
-			  '(("_" "-")
-			    ("(" "-")
-			    (")" "-")
-			    ("'" "-")
-			    ("\"" "-")
-			    (" " "-"))
-			  ))
+			(sanitize-file-name filename)
 			server-path)
-		       :overwrite t)))
-    ))
+		       :overwrite t)))))
 
 
 (defgeneric setup-file-upload (system &key &allow-other-keys))

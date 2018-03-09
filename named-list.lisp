@@ -74,7 +74,7 @@
 
 
 (defun get-named-list (name &key store)
-  (fetch-item
+  (wfx-fetch-item
    (get-collection (or
 		     store
 		     (system-store))
@@ -102,8 +102,8 @@
 				store)
   (let ((list
 	 (get-named-list-values name :store store)))
- 
-    (funcall sort-function list)))
+    (when list
+	(funcall sort-function list))))
 
 (defun get-named-list-sorted-values (name
 				     &key
@@ -111,7 +111,8 @@
 					#'named-list-sort-order-function)
 				       store)
   (let* ((list (get-named-list name :store store))
-	 (sorted-list (funcall sort-function (getx list :list-values)))
+	 (sorted-list (if list
+			  (funcall sort-function (getx list :list-values))))
 	 (value-list))
     (dolist (item sorted-list)
       (setf value-list (pushnew (getx item :value) value-list)))
