@@ -90,7 +90,7 @@
 (defun get-data-spec (spec-name)
 ;;  (break "~A" spec-name)
   (if (current-user)
-      (fetch-item "data-specs"
+      (wfx-fetch-item "data-specs"
 		  :test (lambda (item)
 			  (equalp (name item) spec-name)))
-      (get-data-spec* spec-name)))
+      (get-data-spec spec-name)))
