@@ -18,8 +18,6 @@
 (defmethod parameter* (parameter (request request))
   (getf (parameters request) parameter))
 
-
-
 (defgeneric request-context (request &key &allow-other-keys))
 
 (defmethod request-context ((request request) &key &allow-other-keys))
@@ -27,16 +25,12 @@
 (defgeneric process-sys-request (processor request &key &allow-other-keys)
   (:documentation "Processes a system request using the passed processor."))
 
-#|
-(defmethod process-sys-request (context request &key &allow-other-keys)
-  (break "process-sys-request needs to be implemented"))
-|#
-
 (defgeneric system-request (system request &key &allow-other-keys)
   (:documentation "Processes system requests."))
 
 ;;TODO: is this the right way to get module
-(defmethod system-request ((system system) (request request) &key &allow-other-keys)
+(defmethod system-request ((system system) (request request)
+			   &key &allow-other-keys)
   (let* ((*request* request)
 	 (*system* system)
 	 (*session* (start-session system))
@@ -51,7 +45,6 @@
   (declare (optimize speed))
   (format nil "~:@(~36r~)" (random (expt 2 32))))
 
-
 (defun find-context-in-module (module name)
 
   (find-in-item-list (getx module :contexts)
@@ -60,8 +53,7 @@
 		       (or (string-equal name (getx item :name))
 			   (string-equal name 
 					 (string-downcase 
-					  (id-string (getx item :name)))))))
-  )
+					  (id-string (getx item :name))))))))
 
 (defun generate-new-context (module session name)
   (let* ((contexts (contexts session))

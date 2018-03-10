@@ -2,7 +2,6 @@
 
 (defparameter *core-store-definitions* nil)
 
-
 (defun add-core-definitions (definitions)  
   (setf *core-store-definitions* 
 	(append *core-store-definitions* definitions)))
@@ -27,16 +26,12 @@
 (defun init-definitions (universe destination store-name definitions)
   (when definitions
     (dolist (definition definitions)
-
       (let ((destinations (or (getf definition :destinations)
 			      (list destination))))
 	(when (find destination destinations :test 'equalp)
-
 	  (let ((data-type-def (getf definition :data-type))
 		(collection-def (getf definition :collection)))
 
-	   
-	    
 	    (cond (collection-def			   
 		   (add-collection 
 		    (get-store universe store-name)
@@ -47,7 +42,6 @@
 		     :bucket-keys (getf collection-def :bucket-keys)
 		     :filter (getf collection-def :filter)
 		     :destinations (getf definition :destinations))))
-		  
 		  (data-type-def
 		   (let ((fields))
 		     (dolist (field (getf data-type-def :fields))
@@ -61,21 +55,19 @@
 				       :type-def (getf field :type-def)
 				       :attributes (getf field :attributes))))))
 
-		     
-		 
-		     (add-data-type (get-store universe store-name)
-				    (make-instance 
-				     'extended-data-type
-				     :name (getf data-type-def :name)
-				     :label (getf data-type-def :label)
-				     :top-level-p
-				     (getf data-type-def :top-level-p)
-				     :fields fields
-				     :destinations
-				     (getf definition :destinations)
-				     :entity-accessor
-				     (getf definition :entity-accessor)
-				     )))))))))))
+		     (add-data-type
+		      (get-store universe store-name)
+		      (make-instance 
+		       'extended-data-type
+		       :name (getf data-type-def :name)
+		       :label (getf data-type-def :label)
+		       :top-level-p
+		       (getf data-type-def :top-level-p)
+		       :fields fields
+		       :destinations
+		       (getf definition :destinations)
+		       :entity-accessor
+		       (getf definition :entity-accessor))))))))))))
 
 
 (defmethod init-core-universe ((system system) &key &allow-other-keys)
@@ -94,13 +86,11 @@
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name (name system)))
- ;; (break "wtf ~A" (data-definitions system))
-  (init-definitions (universe system)
+   (init-definitions (universe system)
 		    :system (name system) (data-definitions system)))
 
 (defmethod init-license-universe ((system system) license-code
 				  &key &allow-other-keys)
-  
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name license-code))
@@ -108,8 +98,6 @@
 		     *core-store-definitions*)
   (init-definitions (universe system) :license license-code
 		    (data-definitions system)))
-
-
 
 (defun core-store ()
   (cl-naive-store::get-store* (universe *system*) "core"))
@@ -137,7 +125,6 @@
 	(t
 	 (license-store mod))))
 
-
 (defun find-collection-def (system name)
   (let ((definitions (data-definitions system)))
     (dolist (def definitions)
@@ -153,9 +140,6 @@
 
 	(when (and col (string-equal (dig col :name) name))
 	  (return-from find-type-def def))))))
-
-
-
 
 (defun collection-stores (system collection)
   "To enable \"auto\" customization, stores adhere to a hieghrarchy
@@ -184,11 +168,9 @@ items override earlier ones. See merge-store-items."
 
       (remove-if #'not (list core-store system-store license-store))))
 
-
 (defun collection-store (collection-name)
   "Selecting the last store from stores list ensure hierarchy of items
 that override others to the correct level."
-
   (first (last (collection-stores *system*
 				  collection-name))))
 
@@ -216,11 +198,8 @@ that override others to the correct level."
   (let ((items)
 	(collection-name (if (stringp collection)
 			     collection
-			     (name collection)
-			     ;;(digx collection :collection :name)
-			     )))
+			     (name collection))))
     
-   
     (dolist (store (collection-stores *system* collection-name))      
       (when (get-collection store collection-name)
 	(setf items (append-items
@@ -235,10 +214,8 @@ that override others to the correct level."
 		collection
 		:test test :result-type result-type))))
 
-
 (defun append-items (items more-items)
   (let ((merged-items items))
-    
     (dolist (item (remove-if #'not items))
       (dolist (more-item (remove-if #'not more-items))
 	(when (equalp (item-hash item)
@@ -286,7 +263,6 @@ that override others to the correct level."
       (let ((collection (get-collection
 				  store 
 				  collection-name)))
-
 	(when collection  
 	  (setf items
 		(append-items

@@ -26,7 +26,6 @@
 	   (mod (third split))
 	   (context (fourth split)))
       (declare (ignore sys))
-      ;;  (break "~A" mod)
 
       (unless (equalp mod "web")
 	(when (get-store-from-short-mod mod)
@@ -49,8 +48,6 @@
 				(request hunch-request)
 				&key &allow-other-keys)
 
- ;; (break "wtf")
- ;; (break "~A" (hunchentoot:post-parameters*))
     ;;TODO:: How to register actions? Contexs spec permissions?
     (if (find (parameter "action") 
 	      (list "save" "delete" "login" "logout"
@@ -67,10 +64,7 @@
 	  ((parameter "set-entities")
 	   (action-handler :set-entities
 			   context
-			   request))
-
-	  
-	  )
+			   request)))
     
     ;;TODO: why checking for ajax?
     (unless (ajax-request-p (request-object request))
@@ -79,11 +73,9 @@
       
       ))
 
-
 (defmethod system-request ((acceptor hunch-system) (request hunch-request) 
 			   &key &allow-other-keys)
   (process-sys-request *context* request))
-
 
 (defun dont-process (request)
   (let ((script-name (hunchentoot:script-name request)))
@@ -101,15 +93,10 @@
 	(search "set-reading" script-name)
 	(search "get-user" script-name)
 	(search "set-image" script-name)
-	(search "file-upload" script-name)
-	
-	))
-  )
+	(search "file-upload" script-name))))
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
   (with-debugging
-
-    
     (let ((*request* (make-instance 'hunch-request :request-object request))
 	  (*system* acceptor)
 	  (dont (dont-process request))
@@ -117,8 +104,6 @@
       (declare (special *current-theme*))
       (hunchentoot:start-session)
 
-      ;;(break "~A" (hunchentoot::post-parameters*))
-      
       (if (not dont)           
 	  (let* ((*session* (start-session acceptor))
 		 (*context* (request-context *request*))
@@ -128,16 +113,11 @@
 	
 	    (unless *context*
 	      (bad-request *request*))
-	    ;;	 (break "~A" *context*)
 	    (when *context*
-
-	      	   ;;(break "~A"		  (hunchentoot:post-parameters*))
-	   
 	      (system-request acceptor *request*))	 
 	 
 	    (call-next-method))
 	  (progn
-	    
 	    (call-next-method))))))
 
 (defvar *widget-parameters*)
@@ -209,7 +189,8 @@
 		       ;;(deferred-js)
 		       )))))))
 
-(defmethod load-context-specs :after ((system hunch-system) &key &allow-other-keys)
+(defmethod load-context-specs :after ((system hunch-system)
+				      &key &allow-other-keys)
   (load-default-ajax system))
 
 

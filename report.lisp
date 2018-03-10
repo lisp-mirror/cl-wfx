@@ -147,15 +147,12 @@
   (when *data*
     (when (getf *data* :data) 
       (with-html-string
-;;	(break "poes ~A" (eval (getf element :data-script)))
 	  (dolist (*item* (eval (getf element :data-script)))
-	    
 	    (when *item*
 		(cl-who:htm
 		 (:div :class "row"	       
 		       (dolist (cell (getf element :cells))
 			 (cl-who:htm
-			;;  (break "wtf ~A" *item*)
 			  (:div :class "col"
 				(cl-who:str
 				 (if (getf cell :value)
@@ -194,7 +191,6 @@
 (defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :row))
 				  element)
-
   (with-html-string
     (:div :class "row"
 	  (dolist (cell (getf element :cells))
@@ -216,8 +212,7 @@
 			   (cl-who:str
 			    (eval (getf cell :script))))
 			  (t
-			   (break "?????")))
-		   ))))))
+			   (error "WTF?")))))))))
 
 (defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :footer-row))
@@ -256,24 +251,20 @@
 		(:h3
 		 (cl-who:str (getf element :text)))))))
 
-
-
 (defun render-selection (report)
   (when (digx report :code :selection-script)
     (eval (digx report :code :selection-script))))
 
-
 (defmethod render-report ((type (eql :html)) report-name)
   (let* ((report (wfx-fetch-item "reports"
-				:test (lambda (item)
-					(equalp (getx item :name)
-						report-name)))))
-;;    (break "~A" report-name)
+				 :test (lambda (item)
+					 (equalp (getx item :name)
+						 report-name)))))
     (cl-wfx::with-html-string
       (:div :id "report-body"
-       (when report
-	 (cl-who:str 
-	  (eval (getx report :code))))))))
+	    (when report
+	      (cl-who:str 
+	       (eval (getx report :code))))))))
 
 (defun ajax-report (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))

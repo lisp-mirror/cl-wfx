@@ -2,55 +2,54 @@
 
 (defun render-login ()
   (with-html-string
-      (:div :class "row"
-	    (:div :class "card col-6"
-		  (:img :class "card-image-top"
-			:src  (frmt "~Acor/web/images/~A"
-				    (site-url *system*)
-				    (if (theme-element
-					 (theme *system*) :login-image)
-					(theme-element
-					 (theme *system*) :login-image)
-					"logo-login.png")))	 
-		  (:div :class "card-block"
-			(:h4 :class "card-title"
-			     "Login")
-			(:form :method "post"
-			       :action ""			       
-			       (:input :type "hidden" :id "contextid" 
-				       :value (context-id *context*))
-			       (:div :class "form-group"
-				     (:label :for "email" "Email")
-				     (:input :type "email" 
-					     :class "form-control"
-					     :name "email"
-					     :id "email"
-					     :value ""))
-			       (:div :class "form-group"
-				     (:label :for "password" "Password")
-				     (:input :type "password" 
-					     :class "form-control"
-					     :name "password"
-					     :id "password"
-					     :placeholder "Password"
-					     :value ""))
-			       (:button :name "action"
-					:class "btn btn-primary"
-					:type "submit"
-					:value "login"
-					"Login")))
-		  (:div :class "card-footer"
-			(cl-who:str (gethash :login-error (cache *context*))))))))
-
-
+    (:div :class "row"
+	  (:div :class "card col-6"
+		(:img :class "card-image-top"
+		      :src  (frmt "~Acor/web/images/~A"
+				  (site-url *system*)
+				  (if (theme-element
+				       (theme *system*) :login-image)
+				      (theme-element
+				       (theme *system*) :login-image)
+				      "logo-login.png")))	 
+		(:div :class "card-block"
+		      (:h4 :class "card-title"
+			   "Login")
+		      (:form :method "post"
+			     :action ""			       
+			     (:input :type "hidden" :id "contextid" 
+				     :value (context-id *context*))
+			     (:div :class "form-group"
+				   (:label :for "email" "Email")
+				   (:input :type "email" 
+					   :class "form-control"
+					   :name "email"
+					   :id "email"
+					   :value ""))
+			     (:div :class "form-group"
+				   (:label :for "password" "Password")
+				   (:input :type "password" 
+					   :class "form-control"
+					   :name "password"
+					   :id "password"
+					   :placeholder "Password"
+					   :value ""))
+			     (:button :name "action"
+				      :class "btn btn-primary"
+				      :type "submit"
+				      :value "login"
+				      "Login")))
+		(:div :class "card-footer"
+		      (cl-who:str
+		       (gethash :login-error (cache *context*))))))))
 
 (defun context-url (spec module)
   (let* ((short (if spec
-		   (digx module :module-short)
-		   "sys"))
-	(spec (or spec (get-context-spec (get-store-from-short-mod 
-					  short)
-					 (default-context *system*)))))
+		    (digx module :module-short)
+		    "sys"))
+	 (spec (or spec (get-context-spec (get-store-from-short-mod 
+					   short)
+					  (default-context *system*)))))
     
     (frmt "~A~A/~A" (site-url *system*) 
 	  (string-downcase 
@@ -73,40 +72,29 @@
     (when *session*
       (clear-hash-items (cache *session*))
       (clear-hash-items (contexts *session*))
-       (setf (user *session*) nil))
-    ;;(hunchentoot:remove-session *session*)
-    )
+      (setf (user *session*) nil)))
   
   (dolist (license-code (getx user :license-codes))
     (init-license-universe *system* license-code))
-  
-  ;; (break "~A" (core-collection "active-users"))
   
   (let ((active-user (fetch-item (core-collection "active-users")
 				 :test (lambda (item)				 
 					 (equalp (parameter "email")
 						 (digx item :email))))))
-     (unless active-user      
+    (unless active-user      
       (setf active-user (persist-item (core-collection "active-users")
 				      (list :email (digx user :email) 
 					    :selected-licenses nil
 					    :selected-entities nil))))
-     (setf (user *session*) user)
+    (setf (user *session*) user)
     (setf (active-session-user *session*) active-user))
   
-  ;;(init-user-session user)
-
-  ;;  (log-login "Login" (email login) "Passed" "Login passed.")
-
   ;;TODO: Handle default page other than cor pages....
   (hunchentoot:redirect (context-url nil *module*)))
 
 (defmethod on-failure ()
-  ;; (log-login "Login" (get-val login 'email) "Failed" "User name or password incorrect.")
   (setf (gethash :login-error (cache *context*))
 	"User name or password incorrect."))
-
-
 
 (defmethod action-handler ((action (eql :login)) 
 			   (context context) 
@@ -119,20 +107,17 @@
           (on-success user)
           (on-failure )))))
 
-
 (defmethod action-handler ((action (eql :logout)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
-  
-  
+ 
   (setf (contexts *session*) nil)
   (setf *session* nil)
   (persist-item (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
   (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
-
 
 (defun user-mods ()
   (wfx-fetch-items "modules"
@@ -148,10 +133,9 @@
 (defun system-menu ()
   (let ((sys-mod (fetch-item (core-collection "modules")
 			     :test (lambda (item)
-				     (string-equal "Core" (digx item :name))))))    
+				     (string-equal "Core" (digx item :name)))))) 
     (if sys-mod
 	(digx (first (digx sys-mod :menu)) :menu-items))))
-
 
 (defun accessible-entity (entity accessible-entities)
   (if (find entity accessible-entities)
@@ -163,10 +147,8 @@
 
 (defun accessible-entity-roots (accessible-entities license-code)
   (let ((roots))
-    
     (dolist (entity (fetch-items (license-collection license-code "entities")
-				 :result-type 'list))
-      
+				 :result-type 'list))      
       (when (digx entity :root-p)	
 	(when (accessible-entity entity accessible-entities)
 	  (pushnew entity roots))))
@@ -177,13 +159,11 @@
     (:div :class "row"
 	  (:div :class "col"
 		(:div :class "form-check"
-		      
 		      (:div :class "form-check-label"
 			    (dotimes (i level)
 			      (cl-who:htm "&nbsp;"))
 			    
 			    (if (find entity accessible-entities)
-				
 				(if (find (item-hash entity)
 					  (digx (active-user)
 						:selected-entities)
@@ -200,25 +180,24 @@
 					     :name "tree-entity-id"
 					     :value (item-hash entity))))
 				(cl-who:htm
-				 (:input :class "form-check-input" :type "checkbox" 
+				 (:input :class "form-check-input"
+					 :type "checkbox" 
 					 :disabled "")))
 			    (cl-who:str (getx entity :name))))))
     
     (if (digx entity :children)
-		    (dolist (entity (digx entity :children))
-		      (cl-who:str (render-entity-check entity 
-						       (+ level 1) 
-						       accessible-entities))))))
+	(dolist (entity (digx entity :children))
+	  (cl-who:str (render-entity-check entity 
+					   (+ level 1) 
+					   accessible-entities))))))
 
 (defun render-entity-tree (license-code accessible-entities )
   (with-html-string
     (:form
-  
      (dolist (entity (accessible-entity-roots
 		      accessible-entities license-code))
 
        (when (digx entity :root-p)
-	 
 	   (cl-who:str (render-entity-check entity 0 accessible-entities))))
 
      (:div :class "row"
@@ -241,9 +220,7 @@
  
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
-     
       (dolist (license-code (digx (active-user) :selected-licenses))
-	
 	(dolist (entity (digx (license-user license-code)
 			      :accessible-entities))	  
 	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
@@ -269,20 +246,15 @@
 			      (:input :class "form-check-input" :type "checkbox" 
 				      :name "license-id" :value
 				      (cl-who:str code))))
-			 
 			 (cl-who:str code))))))))
-
-
 
 (defun context-access-p (context)
   (let ((access-p))
-
     (when (and (active-user) (digx (active-user) :selected-licenses))
-     ;; (break "~A" (current-user))
       (cond ((getx (current-user) :super-user-p)
 	     (setf access-p t))
 	    (t (dolist (lic (digx (active-user)
-			 :selected-licenses))
+				  :selected-licenses))
 		 (when (license-user lic)
 		   (dolist (permission
 			     (getx (license-user lic)
@@ -292,8 +264,7 @@
 				   (digx permission
 					 :context-spec))
 		       
-		       (setf access-p t)))))))
-      )
+		       (setf access-p t))))))))
     access-p))
 
 (defun render-user-admin-menu ()
@@ -306,8 +277,7 @@
 	       (theme-element-attribute
 		(theme *system*)
 		:nav-toggler-right
-		:text-color-class)			     )
-	      
+		:text-color-class))
 	      :href ""
 	      :id "userDropdown" 
 	      :data-toggle "dropdown" 
@@ -319,7 +289,6 @@
 	  
 	  (:div :class "dropdown-menu"
 		:aria-labelledby "userDropdown"
-		
 		(let ((sys-mod 
 		       (fetch-item
 			(core-collection "modules")
@@ -327,17 +296,12 @@
 				(string-equal
 				 "Core" 
 				 (digx item :name))))))
-		  
-					; (break "sys-mod ~A" (digx sys-mod :menu))
+
 		  (dolist (menu (digx sys-mod :menu))
 		    (when (equalp (digx menu :name) "System")
-		      
 		      (dolist (item (digx menu :menu-items))
-
 			(let ((parameters))
-			  
 			  (dolist (param (digx item :context-parameters))
-			    
 			    (setf parameters 
 				  (if parameters
 				      (frmt "~A&~A=~A" 
@@ -351,9 +315,7 @@
 			  (when (or (equalp (digx item :name) "Logout")
 				    (context-access-p
 				     (digx item :context-spec)))
-			    
 			    (cl-who:htm
-			     
 			     (:a :class "dropdown-item"
 				 :href 
 				 (if parameters
@@ -365,13 +327,11 @@
 				     (context-url 
 				      (digx item :context-spec)
 				      sys-mod))
-				 
 				 (cl-who:str (digx item :name))))))))))))))
 
 (defun render-entity-display ()
   (with-html-string
     (:span :class
-
 	   (concatenate
 	    'string
 	    "navbar-text mr-auto font-weight-bold "
@@ -387,7 +347,6 @@
 	       (let ((entities))
 		 (dolist (license-code (digx (active-user)
 					     :selected-licenses))
-		   
 		   (dolist (entity (digx (license-user license-code)
 					 :accessible-entities))
 		     (dolist (selected (getx (active-user)
@@ -441,10 +400,10 @@
     (:li :class "nav-item"
 	 (:a :class "nav-link bg-light text-dark border border-secondary rounded "
 	     :style "text-overflow: ellipsis;overflow: hidden;"
-	  :href (context-url
-		 (digx item :context-spec)
-		 mod)
-	  (cl-who:str (digx item :name))))))
+	     :href (context-url
+		    (digx item :context-spec)
+		    mod)
+	     (cl-who:str (digx item :name))))))
 
 (defun render-left-user-menu ()
   (with-html-string
@@ -465,7 +424,7 @@
 			  (dolist (item (data-menu (digx menu :menu-items)))
 			    (cl-who:str (render-menu-item mod item))))))
 	      (cl-who:htm
-	       (:a :class "nav-link  bg-secondary text-light border border-light rounded"
+	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
 		   :href "#report-menu"
 		   (:strong "Reports"))
@@ -481,48 +440,41 @@
 	       (:div :id "other-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (other-menu (digx menu :menu-items)))
-		 (cl-who:str (render-menu-item mod item)))))
-	       
-	       )
-	      )
-	    ))
-    ))
+		 (cl-who:str (render-menu-item mod item)))))))))))
 
 (defun render-license-dropdown (list &key (select-prompt "Select a License"))
   (let ((selected-value (or (parameter "license-select")
 			    (car (getx (active-user) :selected-licenses))
 			    select-prompt)))
-    ;;(break "~A" (hunchentoot::post-parameters*))
+
     (with-html-string
       (:div :class "bt-group dropdown w-100"
-	   
-	     (:input :type "hidden" :class "selected-value" 
-		     :name "license-selected"
-		     :value (or selected-value
-				""))
-	     (:button :class "btn dropdown-toggle w-100"
-		      :type "button"
-		      :data-toggle "dropdown"
-		      :aria-haspopup "true" :aria-expanded "false"
-		      (cl-who:str (or selected-value "")))
-	     
-	     (:div :class "dropdown-menu w-100" ;;:aria-labelledby "license-select"
-		   (dolist (option list)
-		     (cl-who:htm
-		      (:span :class "dropdown-item"
-			     :onclick (js-render-form-values
-				       "cl-wfx:ajax-license-select"
-				       "entities-selection"
-				       "license-selection"
-				       (js-pair "action"
-						"license-select-action")
-				       (js-pair "select-action-value"
-						option))
+	    (:input :type "hidden" :class "selected-value" 
+		    :name "license-selected"
+		    :value (or selected-value
+			       ""))
+	    (:button :class "btn dropdown-toggle w-100"
+		     :type "button"
+		     :data-toggle "dropdown"
+		     :aria-haspopup "true" :aria-expanded "false"
+		     (cl-who:str (or selected-value "")))
+	    (:div :class "dropdown-menu w-100"
+		  (dolist (option list)
+		    (cl-who:htm
+		     (:span :class "dropdown-item"
+			    :onclick (js-render-form-values
+				      "cl-wfx:ajax-license-select"
+				      "entities-selection"
+				      "license-selection"
+				      (js-pair "action"
+					       "license-select-action")
+				      (js-pair "select-action-value"
+					       option))
 			     
-			     (:input :id "select-action"
-				     :type "hidden"
-				     :value option)
-			     (cl-who:str option)))))))))
+			    (:input :id "select-action"
+				    :type "hidden"
+				    :value option)
+			    (cl-who:str option)))))))))
 
 (defun ajax-license-select (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
@@ -539,11 +491,8 @@
 		      :license (parameter "select-action-value")
 		      (data-definitions *system*))
     
-    (persist-item (core-collection "active-users") (active-user))
-
-    ;;(break "??")
-    ;;Render Entities for selected license
-    )
+    (persist-item (core-collection "active-users") (active-user)))
+  
   (with-html-string
     (:div :class "col"
 	  (:div :class "row bg-light"
@@ -552,14 +501,11 @@
 	  (dolist (license-code (digx (active-user) 
 				      :selected-licenses))
 	    (when (license-user license-code)
-
 	      (cl-who:str
-	       
 	       (render-entity-tree 
 		license-code
 		(getx (license-user license-code)
-		      :accessible-entities))))))
-      ))
+		      :accessible-entities))))))))
 
 (defmethod action-handler ((action (eql :set-licenses)) 
 			   (context context) 
@@ -569,8 +515,6 @@
   (setf (getf (item-values (active-user)) :selected-licenses) nil)
   (setf (getx (active-user) :selected-entities) nil)
 
-  
-  
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "license-id")
       (pushnew (cdr parameter)
@@ -578,72 +522,55 @@
 	       :test #'string-equal)
 
       (init-definitions (universe *system*)
-		    :license (cdr parameter)
-		    (data-definitions *system*))
+			:license (cdr parameter)
+			(data-definitions *system*))
       
-      (persist-item (core-collection "active-users") (active-user))
-      )))
+      (persist-item (core-collection "active-users") (active-user)))))
 
 (defun render-right-menu ()
   (with-html-string
-
     (:div :class "nav navpills flex-column"
 	  :style "box-shadow: 0px 5px 10px;"
 	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
 	      :data-toggle "collapse"
 	      :href "#license-context"
 	      (:strong "License Context"))
-	  
 	  (:div
 	   :id "license-context"
 	   (:ul :class "nav flex-column"
-		     
 		(:form
 		 :id "license-selection"
-
 		 (:div :class "col nav-item  bg-light font-weight-bold"
-			     "Accessible Licenses")
+		       "Accessible Licenses")
 		 (:div :class "row"
 		       (:div :class "col"
 			     (cl-who:str (render-license-dropdown
 					  (digx (current-user)
 						:license-codes) ))))
-			    
 		 (:div :class "row" :id "entities-selection"
 		       (:div :class "col"
-
 			     (:div :class "col bg-light font-weight-bold"
-					  "Accessible Entities")
-					
+				   "Accessible Entities")
 			     (let ((license-code
 				    (car (getf (item-values (active-user))
 					       :selected-licenses))))
 			       (when license-code
-				 (when (getf (item-values (active-user)) :selected-entities)
-				   (cl-who:str (render-entity-tree 
-						license-code
-						(getx (license-user license-code)
-						      :accessible-entities))))))))
-
-			    
-			    
-			    
-		 )))
+				 (when (getf (item-values (active-user))
+					     :selected-entities)
+				   (cl-who:str
+				    (render-entity-tree 
+				     license-code
+				     (getx (license-user license-code)
+					   :accessible-entities)))))))))))
 
 	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
 	      :data-toggle "collapse"
 	      :href "#debug-info"
-	      (:strong "Debug Info"))
-	  
+	      (:strong "Debug Info"))	  
 	  (:div :id "debug-info" :class "collapse"
 		(:ul :class "nav flex-column"
 		     (:div
-		      (cl-who:str (hunchentoot:post-parameters*)))))
-	  
-	  )
-     
-    
-    ))
+		      (cl-who:str (hunchentoot:post-parameters*))))))))
 
 (defun theme-element (theme element)
   (dig theme element))
@@ -657,26 +584,23 @@
       (setf style-string
        (concatenate 'string style-string
 		    (frmt "~A: ~A;" (first style) (second style)))))
-
     style-string))
 
 (defun render-page (menu-p body)
-
   (with-html-string
-      (:html
-       (:head
-
-	(cl-who:str
-	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/font-awesome-4.7.0/css/font-awesome.min.css\">
+    (:html
+     (:head
+      (cl-who:str
+       (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/font-awesome-4.7.0/css/font-awesome.min.css\">
 " (site-url *system*)))
 
-	"<script  src=\"https://code.jquery.com/jquery-3.2.1.min.js\" integrity=\"sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=\"  crossorigin=\"anonymous\"></script>"
+      "<script  src=\"https://code.jquery.com/jquery-3.2.1.min.js\" integrity=\"sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=\"  crossorigin=\"anonymous\"></script>"
 	
-	"<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js\" integrity=\"sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh\" crossorigin=\"anonymous\"></script>
+      "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js\" integrity=\"sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh\" crossorigin=\"anonymous\"></script>
 "
-	"<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css\" integrity=\"sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb\" crossorigin=\"anonymous\">"
+      "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css\" integrity=\"sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb\" crossorigin=\"anonymous\">"
 
-	"
+      "
 
 <link href=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/css/fileinput.min.css\" media=\"all\" rel=\"stylesheet\" type=\"text/css\" />
 
@@ -686,24 +610,24 @@
 
 <script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js\" integrity=\"sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ\" crossorigin=\"anonymous\"></script>"
 
-#|
-	(cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
+      #|
+      (cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
 	
-	(cl-who:str
-	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/codemirror/lib/codemirror.css\">" (site-url *system*)))
+      (cl-who:str
+      (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/codemirror/lib/codemirror.css\">" (site-url *system*)))
 	
-	(cl-who:str
-	 (frmt  "<script src=\"~Aweb/codemirror/mode/commonlisp/commonlisp.js\"></script>
+      (cl-who:str
+      (frmt  "<script src=\"~Aweb/codemirror/mode/commonlisp/commonlisp.js\"></script>
 " (site-url *system*)))
 	
-	(cl-who:str
-	 (frmt  "<script src=\"~Aweb/codemirror/addon/edit/closebrackets.js\"></script>
+      (cl-who:str
+      (frmt  "<script src=\"~Aweb/codemirror/addon/edit/closebrackets.js\"></script>
 " (site-url *system*)))
 	
-	(cl-who:str
-	 (frmt  "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
+      (cl-who:str
+      (frmt  "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
 " (site-url *system*)))
-|#
+      |#
 	(cl-who:str
 	 (frmt  "<script src=\"~Aweb/cl-wfx.js\"></script>
 " (site-url *system*)))
@@ -716,9 +640,8 @@
 ")
        
        
-       (:body;; :style
-	   ;;   (frmt "background-image: url(~Acor/web/images/grid-bulb-alt.png);background-size: cover;opacity: 0.9;filter:alpha(opacity=90);;"		    (site-url *system*))
-
+     (:body
+      
 	(:input :type "hidden" :id "contextid" :value (context-id *context*))
 
 	(if (not menu-p)	 
@@ -739,7 +662,6 @@
 		      (theme-element
 		       (theme *system*) :main-nav-bg-image))
 		"box-shadow: 0px 5px 10px;")
-
 	      
 	      (if (current-user)
 		  (cl-who:htm 
@@ -750,9 +672,7 @@
 			     (theme-element-attribute
 			      (theme *system*)
 			      :nav-toggler-left
-			      :text-color-class)
-			     )
-
+			      :text-color-class))
 			    
 			    :type "button btn-small"
 			    :data-toggle "collapse"
@@ -778,15 +698,13 @@
 	      (if (current-user)
 		  (cl-who:htm
 		   (:button :class
-			    
 			    (concatenate
 			     'string
 			     "navbar-toggler navbar-toggler-right "
 			     (theme-element-attribute
 			      (theme *system*)
 			      :nav-toggler-right
-			      :text-color-class)
-			     )
+			      :text-color-class))
 			    :type "button"
 			    :data-toggle "collapse"
 			    :data-target "#exNavbarRight"
@@ -797,7 +715,6 @@
 	     
 	     (:div
 	      :class "container-fluid"
-	      
 	      (:div :class "row"
 		    (:div
 		     :class "collapse col-md-2 col-md-auto show hidden-print"
@@ -832,9 +749,9 @@
 });
 </script>"
 #|
-	(:script :type "text/javascript"
-	 (cl-who:str
-	  "$(document).ready(function() {
+      (:script :type "text/javascript"
+	(cl-who:str
+	"$(document).ready(function() {
         $('.wfx-script').each(function(i,textarea) {
                
      	  	editor = CodeMirror.fromTextArea(textarea, {
@@ -851,8 +768,8 @@ function updateTextArea() {
 }
 myEditor.on('change', updateTextArea);
 });});")
-	 )
-|#
+	)
+      |#
 
 	(:script :type "text/javascript"
 	 (cl-who:str
@@ -866,8 +783,7 @@ myEditor.on('change', updateTextArea);
                   initialPreviewAsData: true,
                  initialPreview: [$(\"#init\" + file.id).val() ],
                  maxFileCount: 1})});
-            });")
-	 )
+            });"))
 
 	(:script :type "text/javascript"
 	 (cl-who:str
@@ -878,8 +794,7 @@ myEditor.on('change', updateTextArea);
                 checkbox.checked = $(\"#grid-select-all\").is(\":checked\");
                 })
              };
-            ")
-	 )
+            "))
 	
 	(:script :type "text/javascript"
 	 (cl-who:str (frmt	      
@@ -911,7 +826,6 @@ myEditor.on('change', updateTextArea);
 
 (defun check-user-access ()
   (unless (current-user)
-    
     (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*)))))
 
 (defmethod setup-context ((module item) (context-spec item)
@@ -1008,7 +922,6 @@ myEditor.on('change', updateTextArea);
 					 (:label :for "script" "Script")
 					 (:textarea
 					  :class "form-control wfx-script"
-					  
 					  :rows 20
 					  :name "script"
 					  :id "script"
@@ -1037,7 +950,6 @@ myEditor.on('change', updateTextArea);
 	'cl-who:esc
 	'cl-naive-store:getx))
 
-
 (defun script-eval-safe (script)
   (let* ((sandbox-impl::*allowed-extra-symbols*
 	    *script-functions*)
@@ -1051,7 +963,6 @@ myEditor.on('change', updateTextArea);
 	      (sandbox::*msg-no-value-message* "Nil"))
 	  
 	  (sandbox::read-eval-print script  s)
-
 	  script-result))))
 
 (defun script-eval (script)  
@@ -1085,16 +996,13 @@ myEditor.on('change', updateTextArea);
 	nil
       (with-html-string
 	"<!itemtype html>"
-	
 	(cl-who:str (render-page t (render-repl)))))))
-
 
 (defun render-set-password ()
   (with-html-string
     (:div :class "row"
 	  (:div :class "col"
 		(:div :class "card"
-		      
 		      (:div :class "card-block"
 			    (:h4 :class "card-title"
 				 "Add New User")
@@ -1127,8 +1035,7 @@ myEditor.on('change', updateTextArea);
 			    (:div :class "card-footer"
 				  (cl-who:str
 				   (gethash :user-not-found-error
-					    (cache *context*)))))
-		      )))))
+					    (cache *context*))))))))))
 
 (defmethod action-handler ((action (eql :set-password)) 
 			   (context context) 
@@ -1146,7 +1053,8 @@ myEditor.on('change', updateTextArea);
 
 (defgeneric setup-context-set-password (system &key &allow-other-keys))
 
-(defmethod setup-context-set-password ((system hunch-system)  &key &allow-other-keys)
+(defmethod setup-context-set-password ((system hunch-system)
+				       &key &allow-other-keys)
   (eval
    `(hunchentoot:define-easy-handler
 	(setup-password
@@ -1157,14 +1065,10 @@ myEditor.on('change', updateTextArea);
 	"<!itemtype html>"	
 	(cl-who:str (render-page t (render-set-password)))))))
 
-(defparameter *unsecure-upload-dir* "/home/phil/Temp/shit/")
-
 (defun handle-file (post-parameter)
   ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
 
- ;; (break "???")
   (when (and post-parameter (listp post-parameter))
-    ;; (break "You got here with: ~A." post-parameter)
     (destructuring-bind (path filename content-type)
         post-parameter
       (declare (ignore content-type))
@@ -1173,7 +1077,6 @@ myEditor.on('change', updateTextArea);
       (when (search "Windows" (hunchentoot:user-agent) :test #'char-equal)
         (setf filename (ppcre:regex-replace ".*\\\\" filename "")))
      
-      ;;(break "~A" path)
       (let ((server-path (string-downcase
 			  (frmt "~A/~A/~A/files/tmp/~A/~A/"
 				(location (universe *system*))
@@ -1194,7 +1097,6 @@ myEditor.on('change', updateTextArea);
 (defgeneric setup-file-upload (system &key &allow-other-keys))
 
 (defmethod setup-file-upload ((system hunch-system)  &key &allow-other-keys)
-
   (eval
    `(hunchentoot:define-easy-handler
 	(,(intern (frmt "file-upload-~A" (name system))) 
@@ -1206,15 +1108,3 @@ myEditor.on('change', updateTextArea);
 			(handle-file (hunchentoot:post-parameter "file_data")
 				     ))
       "{}")))
-
-#|
-(hunchentoot:define-easy-handler (upload-file :uri "/cor/file-upload") ()
- ;; (break "~A~%~A"  (hunchentoot:post-parameters*)	 (hunchentoot:get-parameters*))
-  (let ((uploaded (when (and (boundp 'hunchentoot:*request*)
-			      (hunchentoot:get-parameter "datatype"))
-		     (handle-file (hunchentoot:post-parameter "file_data")
-				  )))))
-  
-  "{}")
-
-|#
