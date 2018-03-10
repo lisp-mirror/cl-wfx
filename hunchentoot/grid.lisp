@@ -868,7 +868,7 @@
     (sort (copy-list items) #'string-lessp :key #'sort-val)))
 
 
-(defun grid-js-render-new (data-type top-level)
+(defun grid-js-render-new (data-type)
   (let ((active-page (getcx data-type :active-page))
 	(items))
     
@@ -918,7 +918,7 @@
        :class "btn btn-sm btn-outline-success"
        :aria-pressed "false"
        :onclick 
-       (grid-js-render-new data-spec nil)
+       (grid-js-render-new data-spec)
        (cl-who:str "+")))
     ))
 
@@ -1100,8 +1100,7 @@
 	
 	))))
 
-(defun render-expand (data-type item subs sub-level sub-level-p
-		      parent-item)
+(defun render-expand (data-type item subs sub-level sub-level-p)
   (when (equalp (ensure-parse-integer
 		 (getcx data-type :expand-id)) 
 		(item-hash item))
@@ -1197,7 +1196,7 @@
 
 
 (defun render-row-goodies (subs sub-level-p sub-level data-type
-			   item fields parent-item)
+			   item fields)
   
 
   
@@ -1231,8 +1230,7 @@
 					   1))
 			   
 			   (cl-who:str (render-expand data-type item subs
-						      sub-level sub-level-p
-						      parent-item)))))))))))
+						      sub-level sub-level-p)))))))))))
 
 
 (defun render-new-edit (data-type fields parent-item parent-spec)
@@ -1285,8 +1283,7 @@
 	  (cl-who:str
 	   (render-row-goodies subs sub-level-p
 			       sub-level data-type
-			       item fields
-			       parent-item)))
+			       item fields)))
 		    
 	(cl-who:str (render-new-edit data-type fields
 				     parent-item parent-spec))
@@ -1825,7 +1822,7 @@
 		      :type "submit" 
 		      :aria-pressed "false"
 		      :onclick 
-		      (grid-js-render-new data-type t)
+		      (grid-js-render-new data-type)
 		      (cl-who:str "+"))
 
 		     
@@ -1881,7 +1878,7 @@
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
-				   (grid-js-render-new data-type t)
+				   (grid-js-render-new data-type)
 				   (cl-who:str "+")))
 			    (:div :class "col-2"
 				  (cl-who:str

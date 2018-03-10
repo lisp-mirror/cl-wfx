@@ -1,6 +1,4 @@
 (in-package :cl-wfx)
-;;TODO: How to replace global with tmp-directory from system in image-dispathcer
-(defparameter *tmp-directory* #p"~/hunchentoot-upload/")
 
 (defclass hunch-system (system hunchentoot:easy-acceptor)
   ((site-url :initarg :site-url
@@ -34,20 +32,6 @@ because hunchentoot does not have vhosts by default.")
 (defmacro define-ajax (system name lambda-list &body body)
    `(ht-simple-ajax:defun-ajax ,name ,lambda-list ((ajax-processor ,system))
        ,@body))
-
-(defun %image-processor ()
-  (let ((uri (hunchentoot:url-decode (hunchentoot:request-uri*))))
-    (cond ((and
-            (alexandria:starts-with-subseq
-	     (frmt "~Aimages" (site-url *system*)) uri))
-
-	   (hunchentoot:handle-static-file 
-	     (merge-pathnames
-	      (subseq uri (search (site-url *system*) uri :test #'equalp))
-	      *tmp-directory*)))
-          (t
-           (setf (hunchentoot:return-code*) hunchentoot:+http-not-found+)
-           (hunchentoot:abort-request-handler)))))
 
 ;;TODO: Does this have to be a function because it gets passed to
 ;;the prefix-dispatcher or can we make it a method and specialize on system??
@@ -85,7 +69,7 @@ because hunchentoot does not have vhosts by default.")
                             (lambda () (ajax-call-lisp-function system processor))))
 
 
-(defmethod start-sys ((system system) &key &allow-other-keys)
+(defmethod start-sys ((system hunch-system) &key &allow-other-keys)
   (assert-ends-with-/ (site-url system))
     
   (hunchentoot:start system)
@@ -96,19 +80,11 @@ because hunchentoot does not have vhosts by default.")
 			 :server-uri (frmt "~Aajax" (site-url system))))
 	 (ajax-prefix-dispatcher
 	  (create-ajax-dispatcher system ajax-processor))
-	 
 
-	 (image-processor (hunchentoot:create-prefix-dispatcher 
-			   (frmt "~Aimages" (site-url system))
-			   #'%image-processor))
-	
-	 
 	 (file-dispatcher-sys-web
 	  (hunchentoot:create-folder-dispatcher-and-handler
 	   (frmt "~Aweb/" (site-url system)) 
 	   (system-web-folder system)))
-	 
-	 
 	 
 	 (file-dispatcher-web
 	  (hunchentoot:create-folder-dispatcher-and-handler
@@ -116,12 +92,9 @@ because hunchentoot does not have vhosts by default.")
 	   (web-folder system))))
     
     (pushnew ajax-prefix-dispatcher hunchentoot:*dispatch-table*)
-    (pushnew image-processor hunchentoot:*dispatch-table*)
     (pushnew file-dispatcher-web hunchentoot:*dispatch-table*)
     (pushnew file-dispatcher-sys-web hunchentoot:*dispatch-table*)
       
-    (setf (ajax-processor system) ajax-processor)
-;;    (setf (image-processor system) image-processor)
-    )
+    (setf (ajax-processor system) ajax-processor))
   system)
 

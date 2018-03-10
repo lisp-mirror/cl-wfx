@@ -39,13 +39,6 @@
           args-scripts))
 
 
-
-(defun move-upload (file new-name)
-  (let ((new-path (merge-pathnames new-name *tmp-directory*)))
-    (ensure-directories-exist new-path)
-    (nth-value 2 (rename-file file new-path))))
-
-
 #|
 
 (defun receive-image ()

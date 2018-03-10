@@ -114,7 +114,7 @@
 	  (*system* acceptor)
 	  (dont (dont-process request))
 	  (*current-theme* (theme acceptor)))
-      
+      (declare (special *current-theme*))
       (hunchentoot:start-session)
 
       ;;(break "~A" (hunchentoot::post-parameters*))

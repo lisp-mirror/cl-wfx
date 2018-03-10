@@ -20,10 +20,7 @@
 (defmacro with-inner-htm (&body body)
   `(cl-who:str
     (cl-who:htm
-     ,@body
-     )
-    )
-  )
+     ,@body)))
 
 (defun render-to-string* (renderer &rest args)
   (let* ((splits (split-sequence:split-sequence #\: renderer))
