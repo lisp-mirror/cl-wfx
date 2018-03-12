@@ -54,18 +54,18 @@
   (dolist (trigger (action-handler-triggers system))
     (let ((handler (eval trigger)))
       (when handler
-	(action-handler handler context request))
-      ))
+	(action-handler handler context request))))
   
-    (if (find (parameter "action") 
-	      (list "save" "delete" "login" "logout"
-		    "assign-campaign" "select-action" "grid-select-action"
-		    "add-selection" "eval-repl" "set-password") 
-	      :test #'string-equal)
-	(action-handler (intern (string-upcase (parameter "action")) :keyword)
-			context
-			request))
-    (cond ((parameter "set-licenses")
+  
+    (cond ((find (parameter "action") 
+		 (list "save" "delete" "login" "logout"
+		       "assign-campaign" "select-action" "grid-select-action"
+		       "add-selection" "eval-repl" "set-password") 
+		 :test #'string-equal)
+	   (action-handler (intern (string-upcase (parameter "action")) :keyword)
+			   context
+			   request))
+	  ((parameter "set-licenses")
 	   (action-handler :set-licenses
 			   context
 			   request))

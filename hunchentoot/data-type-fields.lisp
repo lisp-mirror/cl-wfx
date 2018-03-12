@@ -76,14 +76,14 @@
       
       (if (getx item (getf field :name))
 	  (let ((image-url (file-url collection field item)))
-	    ;; (break "~A~%~A~%~A"   (getx item (getf field :name))  image-url server-path)
 	    (push (hunchentoot::create-static-file-dispatcher-and-handler
 		   image-url
 		   server-path)
 		  hunchentoot::*dispatch-table*)
 	    (cl-who:htm
 	     (:a :data-toggle "modal"
-		 :data-target (string-downcase (frmt "#~A-modal" (getf field :name)))
+		 :data-target (string-downcase
+			       (frmt "#~A-modal" (getf field :name)))
 		 (:img
 		  :style "width:128px;height:128px;"
 		  :src image-url))
