@@ -83,7 +83,7 @@
 
 (defmethod system-request ((acceptor hunch-system) (request hunch-request) 
 			   &key &allow-other-keys)
-  (process-sys-request *context* request))
+  (process-sys-request acceptor *context* request))
 
 (defun dont-process (system request)
   (let ((script-name (hunchentoot:script-name request))

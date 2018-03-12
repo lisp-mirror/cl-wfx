@@ -1146,7 +1146,7 @@
 (defun render-new-edit (data-type fields parent-item parent-spec)
   (with-html-string
     (:div :id (frmt "ajax-new-~A" data-type)
-	  
+	 ;; (break "~A" (gethash :item-hierarchy (cache *context*)))
 	  (when (and (getcx data-type :edit-item)
 		     (not (item-hash (getcx data-type :edit-item))))
 	    (when (and (and (equalp (parameter "action") "save")
