@@ -44,11 +44,19 @@
 (defgeneric action-handler (action context request
 				&key &allow-other-keys))
 
-(defmethod process-sys-request ((context context) 
+(defmethod process-sys-request ((system hunch-system)
+				(context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
 
-    ;;TODO:: How to register actions? Contexs spec permissions?
+  ;;TODO:: How to register actions? Contexs spec permissions?
+
+  (dolist (trigger (action-handler-triggers system))
+    (let ((handler (eval trigger)))
+      (when handler
+	(action-handler handler context request))
+      ))
+  
     (if (find (parameter "action") 
 	      (list "save" "delete" "login" "logout"
 		    "assign-campaign" "select-action" "grid-select-action"
@@ -77,29 +85,33 @@
 			   &key &allow-other-keys)
   (process-sys-request *context* request))
 
-(defun dont-process (request)
-  (let ((script-name (hunchentoot:script-name request)))
-    (or (search ".js" script-name)
-	(search ".css" script-name)
-	(search ".jpg" script-name)
-	(search ".png" script-name)
-	(search ".gif" script-name)
-	(search ".ico" script-name)
-	(search ".woff" script-name)
-	(search ".woff2" script-name)
-	(search ".ttf" script-name)
-	(search ".svg" script-name)
-	(search "get-meters" script-name)
-	(search "set-reading" script-name)
-	(search "get-user" script-name)
-	(search "set-image" script-name)
-	(search "file-upload" script-name))))
+(defun dont-process (system request)
+  (let ((script-name (hunchentoot:script-name request))
+	(default-exclusions
+	 (list ".js"
+	       ".css"
+	       ".jpg"
+	       ".png"
+	       ".gif"
+	       ".ico"
+	       ".woff"
+	       ".woff2"
+	       ".ttf"
+	       ".ttf"
+	       "file-upload")))
+
+    (dolist (exclusion (concatenate 'list
+				     default-exclusions
+				     (request-exclusions system)))
+      (when (search exclusion script-name)
+	(return-from dont-process t)))
+    nil))
 
 (defmethod hunchentoot:handle-request :around ((acceptor hunch-system) request)
   (with-debugging
     (let ((*request* (make-instance 'hunch-request :request-object request))
 	  (*system* acceptor)
-	  (dont (dont-process request))
+	  (dont (dont-process acceptor request))
 	  (*current-theme* (theme acceptor)))
       (declare (special *current-theme*))
       (hunchentoot:start-session)

@@ -1066,8 +1066,6 @@ myEditor.on('change', updateTextArea);
 	(cl-who:str (render-page t (render-set-password)))))))
 
 (defun handle-file (post-parameter)
-  ;;(ht-log :info "Handling file upload with params: '~A'." post-parameter)
-
   (when (and post-parameter (listp post-parameter))
     (destructuring-bind (path filename content-type)
         post-parameter

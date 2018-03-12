@@ -22,7 +22,7 @@
 
 (defmethod request-context ((request request) &key &allow-other-keys))
 
-(defgeneric process-sys-request (processor request &key &allow-other-keys)
+(defgeneric process-sys-request (system processor request &key &allow-other-keys)
   (:documentation "Processes a system request using the passed processor."))
 
 (defgeneric system-request (system request &key &allow-other-keys)
@@ -37,7 +37,7 @@
 	 (*context* (request-context request))
 	 (*module* (module *context*)))
     (declare (special *system* *context* *session* *request*))
-    (process-sys-request *context* request )))
+    (process-sys-request system *context* request )))
 
 (defvar *context-id-lock* (bordeaux-threads:make-lock))
 

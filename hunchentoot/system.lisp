@@ -25,6 +25,16 @@ because hunchentoot does not have vhosts by default.")
    (default-context :initarg :default-context
 	      :accessor default-context
 	      :initform nil)
+   (request-exclusions
+    :initarg :request-exclusions
+    :accessor request-exclusions
+    :initform nil
+    :documentation "Hunchentoot scripts/pages not to be processed by request handler. Does partial matching of these with search against script-name.")
+   (action-handler-triggers
+    :initarg :action-handler-triggers
+    :accessor action-handler-triggers
+    :initform nil
+    :documentation "Must return handler to use based on logic applied to parameters.")
    (theme :initarg :theme
 	  :accessor theme
 	  :initform nil)))
