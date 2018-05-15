@@ -47,13 +47,24 @@ Dont set manually use with-system macro.")
 (defun frmt (control-string &rest args)
   (apply #'format nil control-string args))
 
-(defun format-money-for-export (value &key (include-comma nil))
+(defun format-money-for-export-no-cents (value &key (include-comma nil))
   (typecase value
     (null "")
     ((or integer single-float ratio float)
      (if include-comma
 	 (format nil "~:d" (truncate value))
 	 (format nil "~d" (truncate value))
+	 ))
+    (t
+     (princ-to-string value))))
+
+(defun format-money-for-export (value &key (include-comma nil))
+  (typecase value
+    (null "")
+    ((or integer single-float ratio float)
+     (if include-comma
+	 (format nil "~:d" value)
+	 (format nil "~d" value)
 	 ))
     (t
      (princ-to-string value))))
