@@ -369,6 +369,25 @@
 	       (js-pair "page"
 			(or active-page 1)))))
 
+(defun grid-js-render-action (data-type action &key item)
+  (let ((active-page (getcx data-type :active-page)))
+    (js-render "cl-wfx:ajax-grid"
+	       (gethash :collection-name (cache *context*))	      
+	       (js-pair "data-type" (frmt "~A" data-type))
+	       
+	       
+	       (js-pair "action" "item-action")
+	       (js-pair "action-name" (string-downcase (frmt "~A" (or action ""))))
+
+		       
+	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
+
+
+	       (js-pair "pages"
+			(or (parameter "pages") 50))
+	       (js-pair "page"
+			(or active-page 1)))))
+
 (defun hierarchy-string (items)
   (setf items (reverse (remove-duplicates items :test #'equalp)))
   (let ((hierarchy ""))
@@ -393,7 +412,8 @@
 	       (frmt "ajax-edit-~A" (item-hash item))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
-	       (js-pair "action" (or action ""))
+	       (js-pair "action" (string-downcase (frmt "~A" (or action ""))))
+	     
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
 	       (js-pair "item-hierarchy"
@@ -442,7 +462,23 @@
 		 :onclick
 		 (frmt "if(confirm(\"Are you sure you want to delete?\")){~A}"
 		       (grid-js-render-delete data-type
-					      :item item))))))))))
+					      :item item)))))))
+      
+      
+    ;;  (break "~A" (getf   (getcx data-type :data-type) :item-actions))
+      (dolist (action (getf (getcx data-type :data-type) :item-actions))
+	(cl-who:htm
+		(:button
+		 :name (getf action :name)
+		 :type "submit"
+		 :onclick
+		 (grid-js-render-action data-type
+					(getf action :name)
+					:item item)
+		 (cl-who:str (getf action :label))
+		 ))
+	)
+      )))
 
 (defun render-edit-buttons (data-type)
   (with-html-string
@@ -1565,6 +1601,30 @@
 				 "Select Action Handler")
 	       (eval (digx script :script :code))))))
     (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
+
+
+
+(defmethod action-handler ((action (eql :item-action)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  
+  (let* ((data-type (getcx (parameter "data-type") :data-type))
+	 (item (wfx-fetch-context-item 
+		(gethash :collection-name (cache *context*))
+		:test (lambda (item)				      
+			(equalp
+			 (item-hash item)
+			 (parse-integer (parameter "item-id")))))))
+    
+
+    (when item
+      
+      (dolist (action (getf data-type :item-actions))
+	(when (string-equal (parameter "action-name") (getf action :name))
+
+	  (funcall (eval (getf action :action))  item )
+	  )))))
 
 (defun getcx (&rest indicators)
   (let* ((indicator (pop indicators))

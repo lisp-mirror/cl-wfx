@@ -60,7 +60,8 @@
     (cond ((find (parameter "action") 
 		 (list "save" "delete" "login" "logout"
 		       "assign-campaign" "select-action" "grid-select-action"
-		       "add-selection" "eval-repl" "set-password") 
+		       "add-selection" "eval-repl" "set-password"
+		       "item-action") 
 		 :test #'string-equal)
 	   (action-handler (intern (string-upcase (parameter "action")) :keyword)
 			   context
