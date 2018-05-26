@@ -653,7 +653,7 @@
 	       (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
 	     
 	     (:nav 
-	      :class "navbar sticky-top hidden-print justify-content-between bg-white"
+	      :class "navbar sticky-top d-print-none justify-content-between bg-white"
 	      :style
 	      (if (theme-element
 		     (theme *system*) :main-nav-bg-image)
@@ -717,7 +717,7 @@
 	      :class "container-fluid"
 	      (:div :class "row"
 		    (:div
-		     :class "collapse col-md-2 col-md-auto show hidden-print"
+		     :class "collapse col-md-2 col-md-auto show d-print-none"
 		     :id "exNavbarLeft"
 		     (:br)
 		     (cl-who:str (render-left-user-menu)))
@@ -726,7 +726,7 @@
 			 (:br)
 			 (cl-who:str body))
 		    (:div
-		     :class "collapse col-md-2 hidden-print " 
+		     :class "collapse col-md-2 d-print-none " 
 		     :id "exNavbarRight" :style "background-color:#FFFFFF"
 		     (:br)
 		     (cl-who:str (render-right-menu)))))))
