@@ -73,8 +73,8 @@
       (clear-hash-items (cache *session*))
       (clear-hash-items (contexts *session*))
       (setf (user *session*) nil)))
-  
-  (dolist (license-code (getx user :license-codes))
+
+  (dolist (license-code (available-licenses user))
     (init-license-universe *system* license-code))
   
   (let ((active-user (fetch-item (core-collection "active-users")
@@ -221,8 +221,10 @@
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
       (dolist (license-code (digx (active-user) :selected-licenses))
-	(dolist (entity (digx (license-user license-code)
-			      :accessible-entities))	  
+
+	
+	(dolist (entity (available-entities license-code))
+	  
 	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
 	    (pushnew (item-hash entity)
 		     (getx (active-user) :selected-entities))
@@ -230,7 +232,7 @@
 
 (defun render-licence-codes ()
   (with-html-string
-    (dolist (code (digx (current-user) :license-codes))    
+    (dolist (code (available-licenses))    
       (cl-who:htm       
        (:div :class "row"
 	     (:div :class "form-check"
@@ -250,7 +252,9 @@
 
 (defun context-access-p (context)
   (let ((access-p))
-    (when (and (active-user) (digx (active-user) :selected-licenses))
+  
+    (when (and (active-user)
+	       (digx (active-user) :selected-licenses))
       (cond ((getx (current-user) :super-user-p)
 	     (setf access-p t))
 	    (t (dolist (lic (digx (active-user)
@@ -316,6 +320,7 @@
 				    (context-access-p
 				     (digx item :context-spec)))
 			    (cl-who:htm
+			  
 			     (:a :class "dropdown-item"
 				 :href 
 				 (if parameters
@@ -345,20 +350,20 @@
 	     "Entities: ~A"
 	     (when (active-user)
 	       (let ((entities))
+	
 		 (dolist (license-code (digx (active-user)
-					     :selected-licenses))
-		   (dolist (entity (digx (license-user license-code)
-					 :accessible-entities))
-		     (dolist (selected (getx (active-user)
-					     :selected-entities))
-		       (when (equalp (item-hash entity)
-				     selected)
-			 (if (not entities)
-			     (setf entities (getx entity :name))
-			     (setf entities
-				   (frmt "~A|~A"
-					 entities
-					 (getx entity :name) )))))))
+					     :selected-licenses))	
+		   (dolist (entity (available-entities license-code))
+		       (dolist (selected (getx (active-user)
+					       :selected-entities))
+			 (when (equalp (item-hash entity)
+				       selected)
+			   (if (not entities)
+			       (setf entities (getx entity :name))
+			       (setf entities
+				     (frmt "~A|~A"
+					   entities
+					   (getx entity :name) )))))))
 		 entities)))))))
 
 (defun data-menu (menu-items)
@@ -498,14 +503,17 @@
 	  (:div :class "row bg-light"
 		(:div :class "col bg-light font-weight-bold"
 		      "Accessible Entities"))
+
+	  
+	  
 	  (dolist (license-code (digx (active-user) 
 				      :selected-licenses))
-	    (when (license-user license-code)
+	    (when (or (license-user license-code)
+		      (getx (current-user) :super-user-p))	      
 	      (cl-who:str
 	       (render-entity-tree 
 		license-code
-		(getx (license-user license-code)
-		      :accessible-entities))))))))
+		(available-entities license-code))))))))
 
 (defmethod action-handler ((action (eql :set-licenses)) 
 			   (context context) 
@@ -545,8 +553,7 @@
 		 (:div :class "row"
 		       (:div :class "col"
 			     (cl-who:str (render-license-dropdown
-					  (digx (current-user)
-						:license-codes) ))))
+					   (available-licenses) ))))
 		 (:div :class "row" :id "entities-selection"
 		       (:div :class "col"
 			     (:div :class "col bg-light font-weight-bold"
@@ -560,8 +567,7 @@
 				   (cl-who:str
 				    (render-entity-tree 
 				     license-code
-				     (getx (license-user license-code)
-					   :accessible-entities)))))))))))
+				     (available-entities license-code)))))))))))
 
 	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
 	      :data-toggle "collapse"

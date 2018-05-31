@@ -127,3 +127,26 @@
 (defmethod ensure-demo-license ((system system) &key &allow-other-keys)
   (make-license system "Demo" "000000"))
 
+(defun available-entities (license-code)
+  (if (getx (current-user) :super-user-p)
+      (get-license-entities license-code)
+      (if (license-user license-code)
+	  (digx (license-user license-code)
+		:accessible-entities))))
+
+(defun get-license-codes ()
+  (let ((licenses
+	 (fetch-items (core-collection "licenses")
+		      :test (lambda (item)
+			      t)))
+	(codes))
+    (dolist (lic licenses)
+      (setf codes (push (getx lic :license-code)
+			codes)))
+    codes))
+
+(defun available-licenses (&optional user)
+  (if (getx (or user (current-user)) :super-user-p)
+      (get-license-codes)
+      (if (or user (current-user))
+	  (getx (or user (current-user)) :license-codes))))

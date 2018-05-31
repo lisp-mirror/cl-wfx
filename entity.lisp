@@ -70,11 +70,13 @@
 		  (tail-entity (getx entity :children) name)))))
      (tail-entity (get-license-entities (getx license :license-code)) name)))
 
+
 (defun get-entity (name)
-  (let ((license-codes (or (and (active-user) (getx (active-user)
-						    :selected-licenses))
-			   (and (current-user) (getx (current-user)
-						     :license-codes)))))    
+  (let ((license-codes (or (and (active-user)
+				(getx (active-user)
+				      :selected-licenses))
+			   (and (current-user)
+				(available-licenses)))))    
     (dolist (code license-codes)
       (let ((license (get-license code)))
 	(when license

@@ -3,7 +3,7 @@
 
 (defun print-item-val-s* (field item)
   (let ((*print-case* :downcase)
-	(val (getfx item field)))
+	(val (if item (getfx item field))))
     
     (if val
 	(frmt "~S" val)
@@ -11,7 +11,7 @@
 
 (defun print-item-val-a* (field item)
   (let ((*print-case* :downcase)
-	(val (getfx item field)))
+	(val (if item (getfx item field))))
     (if val
 	(frmt "~A" val)
 	"")))

@@ -369,15 +369,15 @@ must be valid email to enable confirmation.")
 	       "admin@cl-wfx.com" 
 	       "admin"
 	       :name "Core Admin"
-	       :super-user t))
+	       :super-user-p t))
 
 (defmethod ensure-system-user ((system system) &key &allow-other-keys)
   (ensure-user system 
 	       (frmt "admin@~A.com" (name system)) 
 	       "admin"
 	       :name "System Admin"
-	       :licenses (list "000000")
-	       :super-user t))
+	       :licenses (or (get-license-codes) (list "000000"))
+	       :super-user-p t))
 
 (defmacro with-core-user (system &body body)
   `(let* ((*system* ,system)	 
@@ -408,10 +408,10 @@ must be valid email to enable confirmation.")
 
 ;;TODO: implement permissions from wfx permissions.lisp
 
-(defgeneric match-entities (user entities))
+(defgeneric match-entities (user license-code entities))
 
-(defmethod match-entities ((user item) entities)
-  (intersection (getx user :accessible-entities) entities))
+(defmethod match-entities ((user item) license-code entities)
+  (intersection (available-entities license-code) entities))
 
 
 

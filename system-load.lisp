@@ -23,7 +23,7 @@
   
   (unless (get-context-spec (core-store) "Set Password")
     (persist-item (core-collection "context-specs")
-		  '(:name "set-password"
+		  '(:name "Set Password"
 		    :permissions nil
 		    :for-everyone t)))
   
@@ -174,37 +174,37 @@
 				     spec)))))
 
     (setf menu-items (append menu-items
-				 (list
-				  (make-item
-					:data-type "menu-item"
-					:values
-					(list
-					 :name "REPL"
-					 :context-spec 
-					 (get-context-spec (core-store )
-							   "REPL")))
-				  (make-item
-					:data-type "menu-item"
-					:values
-					(list
-					 :name "Set Password"
-					 :context-spec 
-					 (get-context-spec (core-store )
-							   "Set Password")))
-				  (make-item
-					:data-type "menu-item"
-					:values
-					(list
-					 :name "Logout"
-					 :context-spec 
-					 (get-context-spec (core-store ) "Login")
-					 :context-parameters 
-					 (list (make-item
-						:values
-						(list
-						 :name "action"
-						 :value "logout")))))
-				       )))
+			     (list
+			      (make-item
+			       :data-type "menu-item"
+			       :values
+			       (list
+				:name "REPL"
+				:context-spec 
+				(get-context-spec (core-store )
+						  "REPL")))
+			      (make-item
+			       :data-type "menu-item"
+			       :values
+			       (list
+				:name "Set Password"
+				:context-spec 
+				(get-context-spec (core-store )
+						  "Set Password")))
+			      (make-item
+			       :data-type "menu-item"
+			       :values
+			       (list
+				:name "Logout"
+				:context-spec 
+				(get-context-spec (core-store ) "Login")
+				:context-parameters 
+				(list (make-item
+				       :values
+				       (list
+					:name "action"
+					:value "logout")))))
+			      )))
     (when sys-mod
       (setf (getx sys-mod :contexts) contexts)
       (let ((menu
