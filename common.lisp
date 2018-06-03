@@ -136,9 +136,12 @@ is replaced with replacement."
 
 (defun empty-p (value)
   "Checks if value is null or an empty string."
-  (or (null value)
-      (equal value "")
-      (equal (trim-whitespace (princ-to-string value)) "")))
+  (or
+   (not value)
+   (null value)
+   (equal value "")
+   (equal value "NIL")
+   (equal (trim-whitespace (princ-to-string value)) "")))
 
 ;;#####################DATES
 
@@ -275,3 +278,17 @@ is replaced with replacement."
   (if (typep date 'unsigned-byte)
       (format-universal-date date)
       date))
+
+(defconstant +24h-secs+ (* 60 60 24))
+
+(defconstant +hour-secs+ (* 60 60))
+
+(defun date-diff (start-date end-date &key return-type)
+  (cond ((equal return-type :days)
+         (/ (- end-date  start-date) +24h-secs+))
+        ((equal return-type :hours)
+         (/ (- end-date  start-date) +hour-secs+))
+        ((equal return-type :minutes)
+         (/ (- end-date  start-date) 60))
+        (t
+         (- end-date start-date))))
