@@ -279,6 +279,25 @@ is replaced with replacement."
       (format-universal-date date)
       date))
 
+(defun build-system-date (year month day)
+  (format nil "~d-~2,'0d-~2,'0d" year month day))
+
+(defun format-system-universal-date (universal-date)
+  (when universal-date
+    (if (stringp universal-date)
+        universal-date
+        (multiple-value-bind (a b c day month year)
+            (decode-universal-time universal-date
+                                   *time-zone*)
+          (declare (ignore a b c))
+          (build-system-date year month day)))))
+
+(defun format-system-date (date)
+  (if (typep date 'unsigned-byte)
+      (format-system-universal-date date)
+      date))
+
+
 (defconstant +24h-secs+ (* 60 60 24))
 
 (defconstant +hour-secs+ (* 60 60))
