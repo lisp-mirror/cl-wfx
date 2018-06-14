@@ -718,9 +718,7 @@
 	       
 		     (:div :class "col form-check-label"
 			   (when (check-top-level-p data-type)
-			     (when (not (and (check-top-level-p data-type) subs))
-		
-			       (cl-who:htm
+			     (cl-who:htm
 				(:input
 				 :class "float-right"
 				 :type "checkbox"
@@ -729,7 +727,7 @@
 				 :onclick "gridSelectAll();"
 				 :value "All"
 				 :checked (parameter "grid-select-all"))
-				"Select All"))))))))))
+				"Select All")))))))))
 
 (defun render-grid-header (data-type sub-p)
   (let ((fields (getcx	data-type :fields))
@@ -1809,8 +1807,16 @@
 				  (cl-who:str
 				   (render-grid-paging data-type)))))))))))
 
+
+
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
+
+  ;;need to remove items from hierarchy when cancel is pushed
+  (if (string-equal (parameter "action") "cancel")
+      (setf (gethash :item-hierarchy (cache *context*))
+	    (cdr (gethash :item-hierarchy (cache *context*))))) 
+  
   (render-grid (getx (context-spec *context*) :name)))
 
 (defun get-child (fields parent-item data-type hash)
@@ -1974,8 +1980,13 @@
 	  (setf (getcx data-type :edit-object) edit-objects))
       edit-objects)))
 
+
+
+
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
+
+  
   (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields )
 	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
@@ -1983,6 +1994,7 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
+
    
     (setf (getcx data-type :edit-object) nil)
     
@@ -1993,12 +2005,15 @@
 			(second (first hierarchy))))
 
     (setf fields (getcx root-type :fields))
-     
+
+    
     (setf root-item (fetch-grid-root-edit-item root-hash))
 
     (unless root-item
       (setf root-item (make-item :data-type data-type)))
 
+   ;; (break "~A~%~A~%~A" root-item hierarchy (hunchentoot::post-parameters*))
+    
     (when root-item
       (setf edit-objects (list (list :data-type root-type :item root-item)))
 
