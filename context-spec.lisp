@@ -63,7 +63,7 @@
 	     :label "Scripts"
 	     :db-type (:type :list
 			     :complex-type :list-items
-			     :data-type "context-scripts"
+			     :data-type "context-script"
 			     :accessor (:script :name))			  
 	     :attributes (:display t :editable t))
       (:name :url 
@@ -108,5 +108,10 @@
 
 (defun get-context-spec (store name)
   (fetch-item (get-collection store "context-specs")
+	      :test (lambda (item)
+		      (equalp name (getx item :name)))))
+
+(defun get-context-spec-x (name)
+  (wfx-fetch-item "context-specs"
 	      :test (lambda (item)
 		      (equalp name (getx item :name)))))

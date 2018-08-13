@@ -20,6 +20,7 @@
       (return-from entity-type-p t))))
 
 (defun check-top-level-p (data-type)
+  
   (when data-type
     (when (getcx data-type :data-type)
       (dig (getcx data-type :data-type) :data-type :top-level-p))))
@@ -1557,10 +1558,14 @@
 		   (intern (string-upcase (parameter "add-selection-field"))
 			   :keyword)))))))
     (when persist-p
-      (persist-item
-       (wfx-get-collection	
-	(gethash :collection-name (cache *context*)))
-       (getcx (gethash :data-type (cache *context*)) :root-item)))))
+      (let ((root-item
+	     (getcx (gethash :data-type (cache *context*)) :root-item)))
+	(persist-item
+	 (wfx-get-collection	
+	  (gethash :collection-name (cache *context*)))
+	 (if (listp root-item)
+	     (first root-item)
+	     root-item))))))
 
 (defun delete-selected (selected)
   (dolist (item selected)
@@ -1805,7 +1810,16 @@
 		      (:div :class "row"	  
 			    (:div :class "col"
 				  (cl-who:str
-				   (render-grid-paging data-type)))))))))))
+				   (render-grid-paging data-type))))))
+	  (:div
+	   
+	   (cl-who:str (gethash :context-script-event (cache *context*))))
+	  (:div
+
+	   (cl-who:str (gethash :context-script-code (cache *context*))))
+	  (:div
+
+	   (cl-who:str (gethash :context-script-result (cache *context*)))))))))
 
 
 
@@ -2251,7 +2265,8 @@
 	(edit-item)
 	(parent-slot))
       
-    (when edit-objects      
+    (when edit-objects
+      
       (setf root-item (getf (first edit-objects) :item))
 
       ;;Create new item if saving item higher up in the store
@@ -2300,11 +2315,31 @@
 
     (values root-item parent-slot parent-item edit-item)))
 
+
+(defun fire-context-event (context event root-item edit-item)
+  (let ((context-spec (context-spec context)))
+    (when (getx context-spec :scripts)
+      (dolist (script (getx context-spec :scripts))
+	(when (find event (getx script :events) :test 'equalp)
+	  (let* ((code (digx script :script :code))
+		 (result (script-eval
+			  `(let ((*root-item* ,root-item)
+				 (*edit-item* ,edit-item))
+			     ,code))))
+	    (setf (gethash :context-script-code (cache *context*))
+		  code)
+	    (setf (gethash :context-script-event (cache *context*))
+		  event)
+	    (setf (gethash :context-script-result (cache *context*))	   
+		  (or (first result) (second result)) )
+	    ))))))
+
 (defmethod action-handler ((action (eql :save)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
+ 
   (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields (getcx data-type :fields)))
 
@@ -2324,7 +2359,12 @@
 	(grid-append-child data-type parent-slot parent-item
 			   edit-item)
 
-	(grid-persist-item data-type root-item)))))
+	(grid-persist-item data-type root-item)
+
+	(fire-context-event context :save root-item edit-item)
+	
+
+	))))
 
 
 (defmethod action-handler ((action (eql :delete)) 

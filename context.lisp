@@ -4,9 +4,6 @@
   ((context-id :initarg :context-id
 	       :accessor context-id
 	       :initform (random 10810))
-   (module :initarg :module
-	   :accessor module
-	   :initform nil)
    (context-spec :initarg :context-spec
 		       :accessor context-spec
 		       :initform nil)
@@ -21,10 +18,10 @@
 	     :initform (make-hash-table :test #'equalp)))
   (:documentation "An instance of a context within the current user session."))
 
-(defgeneric start-context (module session context-name &key &allow-other-keys)
+(defgeneric start-context (session context-name &key &allow-other-keys)
   (:documentation "Creates a context instance."))
 
-(defgeneric setup-context (module context-spec system  &key &allow-other-keys)
+(defgeneric setup-context (context-spec system  &key &allow-other-keys)
   (:documentation "To be used to setup a context instance.."))
 
 (defgeneric init-context (context session )

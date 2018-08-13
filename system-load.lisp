@@ -132,11 +132,12 @@
 	 :context-spec context-spec)))
 
 
-
-
-
 (defmethod load-modules :around ((system system) &key &allow-other-keys)
 
+
+  (setup-context-system system)
+
+  
   (let* ((sys-mod (get-module (core-store) "Core"))
 	(contexts (list
 			      ;;  (get-context-spec "theme")
@@ -230,16 +231,9 @@
 
     (setf sys-mod (persist-item (core-collection "modules") sys-mod))
     
-    (dolist (spec (digx sys-mod :contexts))
-      (setup-context sys-mod spec *system*))
-
-    
-    (setup-context-repl *system*)
-    (setup-context-set-password *system*)
     (setup-file-upload *system*)
     
-    (setup-context-login sys-mod
-			 (get-context-spec (core-store ) "Login") *system*))
+   )
   (call-next-method))
 
 

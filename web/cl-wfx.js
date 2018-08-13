@@ -1,4 +1,65 @@
+function prep_dropdowns() {
+//    alert("prep_dropdowns")
+    $(document).on('click', '.dropdown-item', function(){
+	var selVal = $(this).children().first();
+	var selText = $(this).text();
+	$(this).parents('.dropdown').find('.dropdown-toggle').html($.trim(selText));
+	$(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
+    });
+}
 
+function prep_auto_completes () {
+    $(document).on('click', '.auto-complete-item', function(){
+	var selVal = $(this).children().first();
+	var selText = $(this).text();
+	
+	$(this).parents('.auto-complete').find('.auto-complete-text').val($.trim(selText));
+	$(this).parents('.auto-complete').find('.selected-value').val($(selVal).val());
+	$(this).parents('.auto-complete').find('.auto-list').empty();
+    });
+}
+
+function prep_codemirror () {
+    $(document).ready(function() {
+        $('.wfx-script').each(function(i,textarea) {
+            
+     	    editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: "text/x-common-lisp"});
+            editor.display.wrapper.style.fontSize = "12px";
+            editor.refresh();
+	    function updateTextArea() {
+		editor.save();
+	    }
+	    myEditor.on('change', updateTextArea);
+	});});
+    
+}
+
+function prep_file_upload () {
+    $(document).ready(function() {
+        $(".file-upload").each(function (i,file) {
+	    
+            file.fileinput({
+                uploadUrl: "/cor/file-upload",
+                uploadAsync: false,
+                theme: "fa",
+                initialPreviewAsData: true,
+                initialPreview: [$("#init" + file.id).val() ],
+                maxFileCount: 1})});
+    });
+    
+}
+
+function gridSelectAll() {    
+    $(".grid-selection").each(function (i,checkbox) {	
+        checkbox.checked = $("#grid-select-all").is(":checked");
+    })
+};
 
 function before_ajax(context)
 {
@@ -156,6 +217,11 @@ function ajax_render_event_key(script_name,renderer,source_id,key,id,args){
     }
 }
 
+function prep_elements() {
+    
+
+}
+
 function ajax_render (script_name, renderer, id, args) {
     var widget = find_widget(id);
 /*    jQuery.fallr('show', {
@@ -178,6 +244,8 @@ function ajax_render (script_name, renderer, id, args) {
                            applyPeach(widget);
 
 			   fileUploadPrep(args);
+
+			   prep_elements();
 			   
                            if (json[1]) {
                                eval(json[1]);
@@ -228,7 +296,9 @@ function get_values(widget, tag_name, disabled) {
 var scripts = [];
 
 function save_scripts() {
-
+    if(scripts.length > 0) {
+	alert(scripts);
+    }
    for (i = 0; i < scripts.length; i++) {
      scripts[i].save();
     }

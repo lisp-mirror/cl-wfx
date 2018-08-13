@@ -34,8 +34,8 @@
   (let* ((*request* request)
 	 (*system* system)
 	 (*session* (start-session system))
-	 (*context* (request-context request))
-	 (*module* (module *context*)))
+	 (*context* (request-context request)))
+    
     (declare (special *system* *context* *session* *request*))
     (process-sys-request system *context* request )))
 
@@ -45,22 +45,9 @@
   (declare (optimize speed))
   (format nil "~:@(~36r~)" (random (expt 2 32))))
 
-(defun find-context-in-module (module name)
-
-  (find-in-item-list (getx module :contexts)
-		     (lambda (item)
-		       
-		       (or (string-equal name (getx item :name))
-			   (string-equal name 
-					 (string-downcase 
-					  (id-string (getx item :name))))))))
-
-(defun generate-new-context (module session name)
+(defun generate-new-context (session context-spec)
   (let* ((contexts (contexts session))
-	 (context-spec 
-	  (find-context-in-module module name))	 
 	 (context (make-instance 'context 
-				 :module module
 				 :context-spec context-spec)))
 
     (bordeaux-threads:with-lock-held (*context-id-lock*)
@@ -71,12 +58,12 @@
 	 return id))
     context))
 
-(defmethod start-context ((module item) (session session) context-name  &key id request)
+(defmethod start-context ((session session) context-spec  &key id request)
   (let* ((id (or id (parameter* "contextid" request)))
 	 (context (if id
 		     (or (gethash id (contexts session))
 			 (bad-request request))
-		     (generate-new-context module session context-name))))
+		     (generate-new-context session context-spec))))
     (setf (session context) session)
     (init-context context session)
     context))

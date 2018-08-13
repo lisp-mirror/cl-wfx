@@ -43,23 +43,10 @@
 		      (cl-who:str
 		       (gethash :login-error (cache *context*))))))))
 
-(defun context-url (spec module)
-  (let* ((short (if spec
-		    (digx module :module-short)
-		    "sys"))
-	 (spec (or spec (get-context-spec (get-store-from-short-mod 
-					   short)
-					  (default-context *system*)))))
-    
-    (frmt "~A~A/~A" (site-url *system*) 
+(defun context-url (spec-name)
+  (frmt "~As-wfx?cs=~A" (site-url *system*) 
 	  (string-downcase 
-	   (id-string short))
-	  (if (and spec (digx spec :url))
-	      (digx spec :url)
-	      (string-downcase 
-	       (id-string (if spec
-			      (digx spec :name)
-			      (default-context *system*))))))))
+	   spec-name)))
 
 (defun clear-hash-items (hash)
   (when hash
@@ -90,7 +77,7 @@
     (setf (active-session-user *session*) active-user))
   
   ;;TODO: Handle default page other than cor pages....
-  (hunchentoot:redirect (context-url nil *module*)))
+  (hunchentoot:redirect (context-url (default-context *system*))))
 
 (defmethod on-failure ()
   (setf (gethash :login-error (cache *context*))
@@ -326,12 +313,10 @@
 				 (if parameters
 				     (frmt "~A?~A" 
 					   (context-url 
-					    (digx item :context-spec)
-					    sys-mod)
+					     (digx item :context-spec :name))
 					   parameters)
 				     (context-url 
-				      (digx item :context-spec)
-				      sys-mod))
+				      (digx item :context-spec :name)))
 				 (cl-who:str (digx item :name))))))))))))))
 
 (defun render-entity-display ()
@@ -400,14 +385,13 @@
 	(pushnew item items)))
     (reverse items)))
 
-(defun render-menu-item (mod item)
+(defun render-menu-item (item)
   (with-html-string
     (:li :class "nav-item"
 	 (:a :class "nav-link bg-light text-dark border border-secondary rounded "
 	     :style "text-overflow: ellipsis;overflow: hidden;"
 	     :href (context-url
-		    (digx item :context-spec)
-		    mod)
+		    (digx item :context-spec :name))
 	     (cl-who:str (digx item :name))))))
 
 (defun render-left-user-menu ()
@@ -427,7 +411,7 @@
 	       (:div :id "data-menu" :class "expand"
 		     (:ul :class "nav flex-column ml"
 			  (dolist (item (data-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item mod item))))))
+			    (cl-who:str (render-menu-item item))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -436,7 +420,7 @@
 	       (:div :id "report-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (report-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item mod item))))))
+			    (cl-who:str (render-menu-item  item))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -445,7 +429,7 @@
 	       (:div :id "other-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (other-menu (digx menu :menu-items)))
-		 (cl-who:str (render-menu-item mod item)))))))))))
+		 (cl-who:str (render-menu-item item)))))))))))
 
 (defun render-license-dropdown (list &key (select-prompt "Select a License"))
   (let ((selected-value (or (parameter "license-select")
@@ -592,31 +576,36 @@
 		    (frmt "~A: ~A;" (first style) (second style)))))
     style-string))
 
-(defun render-page (menu-p body)
+
+
+(defgeneric page-css (system &key &allow-other-keys))
+
+(defmethod page-css ((system hunch-system) &key &allow-other-keys)
+  )
+
+(defmethod page-css :around ((system hunch-system) &key &allow-other-keys)
+  
   (with-html-string
-    (:html
-     (:head
-      (cl-who:str
-       (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/font-awesome-4.7.0/css/font-awesome.min.css\">
-" (site-url *system*)))
+    (:link :rel "stylesheet"
+	   :href (frmt "~Aweb/font-awesome-4.7.0/css/font-awesome.min.css"
+		       (site-url system)))
+    
+    (:link :rel "stylesheet"
+	   :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
+	   :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
+	   :crossorigin "anonymous")
 
-      "<script  src=\"https://code.jquery.com/jquery-3.2.1.min.js\" integrity=\"sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=\"  crossorigin=\"anonymous\"></script>"
-	
-      "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js\" integrity=\"sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh\" crossorigin=\"anonymous\"></script>
-"
-      "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css\" integrity=\"sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb\" crossorigin=\"anonymous\">"
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/css/fileinput.min.css"
+	   :media "all"
+	   :type "text/css")
 
-      "
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
 
-<link href=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/css/fileinput.min.css\" media=\"all\" rel=\"stylesheet\" type=\"text/css\" />
-
-<script src=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/js/fileinput.min.js\"></script>
-
-<script src=\"https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.5/themes/fa/theme.min.js\"></script>
-
-<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js\" integrity=\"sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ\" crossorigin=\"anonymous\"></script>"
-
-      #|
+    
+    
+       #|
       (cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
 	
       (cl-who:str
@@ -634,18 +623,139 @@
       (frmt  "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
 " (site-url *system*)))
       |#
-	(cl-who:str
-	 (frmt  "<script src=\"~Aweb/cl-wfx.js\"></script>
-" (site-url *system*)))
+    
 
-	(cl-who:str
-	 (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/cl-wfx.css\">
-" (site-url *system*)))	
-	"<link href=https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css' rel='stylesheet>
- <script src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js></script>
-")
-       
-       
+    (:link :rel "stylesheet"
+	   :href (frmt "~Aweb/cl-wfx.css" (site-url system)))
+
+    (cl-who:str (call-next-method))
+   )
+  )
+
+
+
+
+(defgeneric page-header-js (system &key &allow-other-keys))
+
+(defmethod page-header-js ((system hunch-system) &key &allow-other-keys)
+  )
+
+
+(defmethod page-header-js :around ((system hunch-system) &key &allow-other-keys)
+  (with-html-string
+    (:script
+      :src "https://code.jquery.com/jquery-3.3.1.slim.min.js"
+      :integrity "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      :crossorigin "anonymous")
+    
+    (:script
+     :src "https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+     :ingegrity "sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+     :crossorigin "anonymous")
+    
+    (:script
+     :src "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
+     :ingegrity "sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
+     :crossorigin "anonymous")
+    
+    (:script
+     :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/js/fileinput.min.js")
+    
+    (:script
+     :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js")
+    (:script
+     :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js")
+    
+    (:script
+     :src (frmt "~Aweb/cl-wfx.js" (site-url system)))
+
+    (cl-who:str (call-next-method))
+    ))
+
+
+
+(defgeneric page-footer-js (system &key &allow-other-keys))
+
+(defmethod page-footer-js ((system hunch-system) &key &allow-other-keys)
+ )
+
+(defmethod page-footer-js :around ((system hunch-system) &key &allow-other-keys)
+
+  (with-html-string
+    (:script :type "text/javascript"
+     (cl-who:str
+      "prep_dropdowns();"))
+    
+    (:script :type "text/javascript"
+     (cl-who:str
+      "prep_auto_completes();"))
+    
+    (:script :type "text/javascript"
+	     (cl-who:str 
+	      "//prep_codemiror();"
+	      )
+	     )
+   
+    (:script :type "text/javascript"
+	     (cl-who:str
+	      "prep_file_upload();"))
+
+
+    (:script :type "text/javascript"
+	     (cl-who:str
+	      (frmt	      
+	       "function ajax_call(func, callback, args, widget_args) {
+
+    var uri = '~Aajax/' + encodeURIComponent(func);
+    var post_parameters = '&contextid=' + contextid.value;
+    var i;
+    if (args.length > 0) {
+        uri += '?';
+        for (i = 0; i < args.length; ++i) {
+            if (i > 0)
+                uri += '&';
+            uri += 'arg' + i + '=' + encodeURIComponent(args[i]);
+        }
+    }
+
+    if (widget_args && widget_args.length > 0) {
+        for (i = 0; i < widget_args.length; ++i) {
+            var arg = widget_args[i];
+            post_parameters += '&' + encodeURIComponent(arg[0]) + '='
+                + encodeURIComponent(arg[1]);
+        }
+    }
+
+    fetchURI(uri, callback, post_parameters);
+
+}" (site-url system))))
+
+    (cl-who:str (call-next-method))
+    ))
+
+
+(defgeneric render-page (system body &key menu-p header-css header-js
+				       footer-js
+				       &allow-other-keys))
+
+
+(defmethod render-page ((system hunch-system) body
+			&key menu-p header-css header-js
+			  footer-js
+			  &allow-other-keys)
+  (with-html-string
+    (:html
+     (:head
+      (:meta :charset "utf-8")
+      (:meta :name "viewport"
+	     :content "width=device-width, initial-scale=1, shrink-to-fit=no")
+
+      (cl-who:str (page-css system))
+      (cl-who:str header-css)
+      (cl-who:str (page-header-js system))
+      (cl-who:str header-js))
+     
+     
      (:body
       
 	(:input :type "hidden" :id "contextid" :value (context-id *context*))
@@ -656,17 +766,17 @@
 		   (cl-who:str body)))
 	    (cl-who:htm
 	     (unless (active-user)
-	       (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
+	       (hunchentoot:redirect (frmt "~Acor/login" (site-url system))))
 	     
 	     (:nav 
 	      :class "navbar sticky-top d-print-none justify-content-between bg-white"
 	      :style
 	      (if (theme-element
-		     (theme *system*) :main-nav-bg-image)
+		     (theme system) :main-nav-bg-image)
 		(frmt "background-image: url(~Acor/web/images/~A);background-size: cover;box-shadow: 0px 5px 10px;"
-		      (site-url *system*)
+		      (site-url system)
 		      (theme-element
-		       (theme *system*) :main-nav-bg-image))
+		       (theme system) :main-nav-bg-image))
 		"box-shadow: 0px 5px 10px;")
 	      
 	      (if (current-user)
@@ -676,7 +786,7 @@
 			     'string
 			     "navbar-toggler navbar-toggler-left "
 			     (theme-element-attribute
-			      (theme *system*)
+			      (theme system)
 			      :nav-toggler-left
 			      :text-color-class))
 			    
@@ -690,12 +800,12 @@
 	      
 	      (:a :class "navbar-brand" :href "#" 
 		  (:img
-		   :style (theme-style (theme *system*) :main-nav-logo)
+		   :style (theme-style (theme system) :main-nav-logo)
 		   :src (frmt "~Acor/web/images/~A"
-			      (site-url *system*)
+			      (site-url system)
 			      (theme-element-attribute
-			       (theme *system*) :main-nav-logo :src)))
-		  (name *system*))
+			       (theme system) :main-nav-logo :src)))
+		  (name system))
 
 	      (cl-who:str (render-entity-display))
 	      
@@ -708,7 +818,7 @@
 			     'string
 			     "navbar-toggler navbar-toggler-right "
 			     (theme-element-attribute
-			      (theme *system*)
+			      (theme system)
 			      :nav-toggler-right
 			      :text-color-class))
 			    :type "button"
@@ -738,178 +848,17 @@
 		     (cl-who:str (render-right-menu)))))))
 
 
-	"<script>$(document).on('click', '.dropdown-item', function(){
-       var selVal = $(this).children().first();
-       var selText = $(this).text();
-       $(this).parents('.dropdown').find('.dropdown-toggle').html($.trim(selText));
-       $(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
-});</script>"
+	(cl-who:str (page-footer-js system))
+	(cl-who:str footer-js)
 
-	"<script>$(document).on('click', '.auto-complete-item', function(){
-       var selVal = $(this).children().first();
-       var selText = $(this).text();
 
-       $(this).parents('.auto-complete').find('.auto-complete-text').val($.trim(selText));
-       $(this).parents('.auto-complete').find('.selected-value').val($(selVal).val());
-       $(this).parents('.auto-complete').find('.auto-list').empty();
-});
-</script>"
-#|
-      (:script :type "text/javascript"
-	(cl-who:str
-	"$(document).ready(function() {
-        $('.wfx-script').each(function(i,textarea) {
-               
-     	  	editor = CodeMirror.fromTextArea(textarea, {
-                lineNumbers: true,
-                smartIndent: true,
-          	autoCloseBrackets: true,
- 		showTrailingSpace: true,
-                matchBrackets: true,
-          	    mode: \"text/x-common-lisp\"});
-          editor.display.wrapper.style.fontSize = \"12px\";
-          editor.refresh();
-function updateTextArea() {
-    editor.save();
-}
-myEditor.on('change', updateTextArea);
-});});")
-	)
-      |#
 
-	(:script :type "text/javascript"
-	 (cl-who:str
-	  "$(document).ready(function() {
-              $(\".file-upload\").each(function (i,file) {
-
-                 file.fileinput({
-                 uploadUrl: \"/cor/file-upload\",
-                 uploadAsync: false,
-                 theme: \"fa\",
-                  initialPreviewAsData: true,
-                 initialPreview: [$(\"#init\" + file.id).val() ],
-                 maxFileCount: 1})});
-            });"))
-
-	(:script :type "text/javascript"
-	 (cl-who:str
-	  "function gridSelectAll() {
-
-              $(\".grid-selection\").each(function (i,checkbox) {
-
-                checkbox.checked = $(\"#grid-select-all\").is(\":checked\");
-                })
-             };
-            "))
-	
-	(:script :type "text/javascript"
-	 (cl-who:str (frmt	      
-		      "function ajax_call(func, callback, args, widget_args) {
-
-    var uri = '~Aajax/' + encodeURIComponent(func);
-    var post_parameters = '&contextid=' + contextid.value;
-    var i;
-    if (args.length > 0) {
-        uri += '?';
-        for (i = 0; i < args.length; ++i) {
-            if (i > 0)
-                uri += '&';
-            uri += 'arg' + i + '=' + encodeURIComponent(args[i]);
-        }
-    }
-
-    if (widget_args && widget_args.length > 0) {
-        for (i = 0; i < widget_args.length; ++i) {
-            var arg = widget_args[i];
-            post_parameters += '&' + encodeURIComponent(arg[0]) + '='
-                + encodeURIComponent(arg[1]);
-        }
-    }
-
-    fetchURI(uri, callback, post_parameters);
-
-}" (site-url *system*))))))))
+	))))
 
 (defun check-user-access ()
   (unless (current-user)
-    (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*)))))
+    (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*)))))
 
-(defmethod setup-context ((module item) (context-spec item)
-			  (system hunch-system)  
-			  &key &allow-other-keys)
-  (eval
-   `(hunchentoot:define-easy-handler 
-	(,(alexandria:symbolicate 
-	   (string-upcase (id-string (digx context-spec :name))) 
-	   '-page)  
-	  :uri ,(if (digx context-spec :url)
-		    (digx context-spec :url)
-		    (frmt "~A~A/~A" (site-url system) 
-			  (string-downcase 
-			   (id-string (digx module :module-short)))
-			  (string-downcase 
-			   (id-string (digx context-spec :name)))))  
-	  :allow-other-keys t) ,(digx context-spec :args)
-      
-      
-      (check-user-access)
-      (with-html-string
-	  "<!itemtype html>"
-	(cl-who:str (render-page t (render-grid 
-				    ,(digx context-spec :collection))))))))
-
-(defmethod setup-context-report ((module item) (context-spec item)
-				 (system hunch-system)  
-				 &key &allow-other-keys)
-  (eval
-   `(hunchentoot:define-easy-handler 
-	(,(alexandria:symbolicate 
-	   (string-upcase (id-string (digx context-spec :name))) 
-	   '-page)  
-	  :uri ,(if (digx context-spec :url)
-		    (digx context-spec :url)
-		    (frmt "~A~A/~A" (site-url system) 
-			  (string-downcase 
-			   (id-string (digx module :module-short)))
-			  (string-downcase 
-			   (id-string (digx context-spec :name)))))  
-	  :allow-other-keys t) ,(digx context-spec :args)
-      
-      
-      (check-user-access)
-      (with-html-string
-	  "<!itemtype html>"
-	  (cl-who:str (render-page t (render-report
-				      :html 
-				      ,(digx context-spec :report))))))))
-
-
-(defgeneric setup-context-login (module context-spec system
-				 &key &allow-other-keys))
-
-(defmethod setup-context-login ((module item) (context-spec item)
-				(system hunch-system)
-				&key &allow-other-keys)  
-
-  (eval
-   `(hunchentoot:define-easy-handler
-	(,(alexandria:symbolicate 
-	   (string-upcase 
-	    (id-string (digx context-spec :args))) 
-	   '-page)  
-	  :uri ,(frmt "~A~A/~A" (site-url system) 
-		      (string-downcase 
-		       (id-string 
-			(digx module :module-short)))
-		      (if (digx context-spec :url)
-			  (digx context-spec :url)
-			  (string-downcase 
-			   (id-string 
-			    (digx context-spec :name)))))  
-	  :allow-other-keys t) ,(digx context-spec :args)
-      (with-html-string
-	  "<!itemtype html>"
-	  (cl-who:str (render-page nil (render-login)))))))
 
 (defun render-repl ()
   (with-html-string
@@ -991,18 +940,6 @@ myEditor.on('change', updateTextArea);
       (setf (gethash :repl-result (cache *context*))	   
 	    (or (first result) (second result)) ))))
 
-(defgeneric setup-context-repl (system &key &allow-other-keys))
-
-(defmethod setup-context-repl ((system hunch-system)  &key &allow-other-keys)
-  (eval
-   `(hunchentoot:define-easy-handler
-	(,(intern (frmt "repl-~A" (name system))) 
-	  :uri ,(frmt "~Acor/repl" (site-url system))  
-	  :allow-other-keys t)
-	nil
-      (with-html-string
-	"<!itemtype html>"
-	(cl-who:str (render-page t (render-repl)))))))
 
 (defun render-set-password ()
   (with-html-string
@@ -1057,19 +994,7 @@ myEditor.on('change', updateTextArea);
           (setf (gethash :user-not-found-error (cache *context*))
 		"User not found!")))))
 
-(defgeneric setup-context-set-password (system &key &allow-other-keys))
 
-(defmethod setup-context-set-password ((system hunch-system)
-				       &key &allow-other-keys)
-  (eval
-   `(hunchentoot:define-easy-handler
-	(setup-password
-	  :uri ,(frmt "~Acor/set-password" (site-url *system*))  
-	  :allow-other-keys t)
-	nil
-      (with-html-string
-	"<!itemtype html>"	
-	(cl-who:str (render-page t (render-set-password)))))))
 
 (defun handle-file (post-parameter)
   (when (and post-parameter (listp post-parameter))
@@ -1112,3 +1037,105 @@ myEditor.on('change', updateTextArea);
 			(handle-file (hunchentoot:post-parameter "file_data")
 				     ))
       "{}")))
+
+
+(defmethod custom-render-context ((system hunch-system)
+				 context-spec
+				 &key &allow-other-keys)
+  (warn "Implement custom-render-context")
+  )
+
+(defgeneric render-context (system context-spec-name &key &allow-other-keys))
+
+(defmethod render-context ((system hunch-system) context-spec-name
+			    &key &allow-other-keys)
+
+  
+  (let ((context-spec (get-context-spec-x context-spec-name)))
+    
+    (cond ((not context-spec)
+	   (check-user-access)
+	   (with-html-string
+	     "<!doctype html>"
+	     (cl-who:str (render-page system
+				      "Context not defined."
+				      :menu-p t)))
+	   )
+	  ((not (empty-p (getx context-spec :collection)))
+	   (check-user-access)
+	   
+	   (with-html-string
+	     "<!doctype html>"
+	     (cl-who:str
+	      (render-page system
+			   (if (context-access-p context-spec)
+			       (render-grid 
+				(getx context-spec :collection))
+			       "Access Denied")
+			   :menu-p t))))
+	  ((not (empty-p (getx context-spec :report)))
+	   (check-user-access)
+	   (with-html-string
+	     "<!doctype html>"
+	     (cl-who:str
+	      (render-page system
+			   (if (context-access-p context-spec)
+			       (render-report
+				:html 
+				(digx context-spec :report))
+			       "Access Denied"
+			       )
+			   :menu-p t))))
+	  ((string-equal (getx context-spec :name) "repl")
+	   (check-user-access)
+	   (with-html-string
+	       "<!doctype html>"
+	       (cl-who:str
+		(render-page system
+			     (if (context-access-p context-spec)
+				 (render-repl)
+				 "Access Denied")
+			     :menu-p t))))
+
+	  
+	  ((string-equal (getx context-spec :name) "file-upload")
+
+	   (when (and (boundp 'hunchentoot:*request*)
+				 (hunchentoot:get-parameter "datatype"))
+			(handle-file (hunchentoot:post-parameter "file_data"))))
+	  ((string-equal (getx context-spec :name) "set password")
+	   (with-html-string
+	     "<!doctype html>"	
+	     (cl-who:str (render-page system
+				      (render-set-password)
+				      :menu-p t))))
+	  ((string-equal (getx context-spec :name) "login")
+	   (with-html-string
+	     
+	     (cl-who:str (render-page system
+				      (render-login)
+				      :menu-p nil))))
+	  ((not (empty-p (getx context-spec :renderer)))
+	   
+	   (script-eval
+		   (read-no-eval
+		    (getx context-spec :renderer))))
+	  (t
+	   (custom-render-context system context-spec)
+	   ))
+    )
+  )
+
+(defmethod setup-context-system ((system hunch-system)  
+				 &key &allow-other-keys)
+  (eval
+   `(hunchentoot:define-easy-handler 
+	(,(alexandria:symbolicate 
+	   (string-upcase (id-string (name system))) 
+	   '-dynamic-easy-handler)  
+	  :uri ,(frmt "~As-wfx" (site-url system))  
+	  :allow-other-keys t) 
+      nil
+      
+      (with-html-string
+	(cl-who:str (render-context *system* (parameter "cs")))))))

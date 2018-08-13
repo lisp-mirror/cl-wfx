@@ -16,30 +16,19 @@
                                  (hunchentoot:script-name request)))
 
 (defmethod request-context ((request hunch-request) &key &allow-other-keys)
-  (let ((script-name (or (parameter "context-uri") 
-			 (hunchentoot:script-name (request-object request))))
-	(sys-mod))
-
-    (let* ((split
-	    (split-sequence:split-sequence #\/ script-name))
+  (let* ((split
+	    (split-sequence:split-sequence
+	     #\/
+	     (hunchentoot:script-name (request-object request))))
 	   (sys (second split))
-	   (mod (third split))
-	   (context (fourth split)))
+
+	   (context-name (parameter "cs"))
+	   (context-spec (get-context-spec-x context-name)))
       (declare (ignore sys))
 
-      (unless (equalp mod "web")
-	(when (get-store-from-short-mod mod)
-	  
-	  (setf sys-mod (get-module-short (get-store-from-short-mod mod) mod)))
-	
-	
-	(unless sys-mod
-	  (warn (frmt "No mod for request ? ~A ~A" mod (core-store)))
-	  (setf sys-mod (get-module-short (core-store) "cor")))
-	
-	(start-context sys-mod *session* context
+      (start-context *session* context-spec
 		       :id (or (parameter "i") (parameter "contextid"))
-		       :request request)))))
+		       :request request)))
 
 (defgeneric action-handler (action context request
 				&key &allow-other-keys))
@@ -63,24 +52,22 @@
 		       "add-selection" "eval-repl" "set-password"
 		       "item-action") 
 		 :test #'string-equal)
+	   ;;TODO: why do we check against a list of actions and not just fire
+	   ;;the action
 	   (action-handler (intern (string-upcase (parameter "action")) :keyword)
 			   context
 			   request))
 	  ((parameter "set-licenses")
+	   ;;TODO: this is not used any more an ajax call ajax-license-select
+	   ;;handles this ... check to delete
+	   (break "~A" (hunchentoot:post-parameters*))
 	   (action-handler :set-licenses
 			   context
 			   request))
-	  ((parameter "set-entities")
+	  ((parameter "set-entities")	   
 	   (action-handler :set-entities
 			   context
-			   request)))
-    
-    ;;TODO: why checking for ajax?
-    (unless (ajax-request-p (request-object request))
-      ;;synq data
-      ;;fire events
-      
-      ))
+			   request))))
 
 (defmethod system-request ((acceptor hunch-system) (request hunch-request) 
 			   &key &allow-other-keys)
@@ -97,7 +84,6 @@
 	       ".ico"
 	       ".woff"
 	       ".woff2"
-	       ".ttf"
 	       ".ttf"
 	       "file-upload")))
 
@@ -121,7 +107,7 @@
 	  (let* ((*session* (start-session acceptor))
 		 (*context* (request-context *request*))
 		 ;;TODO: is this the right way to get module
-		 (*module* (if *context* (module *context*))))
+		 )
 	    (declare (special *system* *context* *session* *request*))
 	
 	    (unless *context*

@@ -146,7 +146,7 @@
 where license store items overide, system which overrides
 core items. So stores are fetched in core,system,license order
 so that when items are merged when fetched, later
-items override earlier ones. See merge-store-items."
+items override earlier ones. See append-items."
   (let ((core-store)
 	(system-store)
 	(license-store)
@@ -163,6 +163,9 @@ items override earlier ones. See merge-store-items."
 	       (setf system-store (system-store)))
 	      (t
 	       (if (active-user)
+		   ;;TODO: cannot select more than one license at this time
+		   ;;change selected-lcisenses to selected-license or
+		   ;;implement multiple license screens.
 		   (dolist (lic (getx (active-user) :selected-licenses))
 		     (setf license-store (license-store lic))))))))
 
@@ -179,20 +182,15 @@ that override others to the correct level."
   (get-collection (collection-store collection-name)
 		  collection-name))
 
-(defun merge-store-items (items add-items)
-  (if items
-	(let ((merged-items))
-	  (dolist (item items)
-	    (let ((merge-flag nil))
-	      (dolist (itemx add-items)
-		(when (equalp (item-hash item)
-			      (item-hash itemx))
-		  (push itemx merged-items)
-		  (setf merge-flag t)))
-	      (unless merge-flag 
-		(push item merged-items))))
-	  merged-items)
-	add-items))
+(defun append-items (items more-items)
+  (let ((merged-items items))
+    (dolist (item (remove-if #'not items))
+      (dolist (more-item (remove-if #'not more-items))
+	(when (equalp (item-hash item)
+		      (item-hash more-item))
+	  
+	  (setf merged-items (remove item merged-items)))))
+    (append merged-items more-items)))
 
 (defun wfx-fetch-items (collection &key test (result-type 'list))
   (let ((items)
@@ -214,15 +212,7 @@ that override others to the correct level."
 		collection
 		:test test :result-type result-type))))
 
-(defun append-items (items more-items)
-  (let ((merged-items items))
-    (dolist (item (remove-if #'not items))
-      (dolist (more-item (remove-if #'not more-items))
-	(when (equalp (item-hash item)
-		      (item-hash more-item))
-	  
-	  (setf merged-items (remove item merged-items)))))
-    (append merged-items more-items)))
+
 
 ;;TODO: do something to force correct order of stores searched instead of relying on order of stores!!!
 

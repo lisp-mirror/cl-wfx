@@ -1,7 +1,13 @@
 (in-package :cl-Wfx)
 
 (defun context-uri ()
-  (or (parameter "context-uri") (hunchentoot:script-name*)))
+  (or (parameter "context-uri")
+      (frmt "~A?cs=~A"
+	    (hunchentoot:script-name*)
+	    (parameter "cs")
+	    )
+      )
+  )
 
 (defvar *in-ajax-request* nil)
 
