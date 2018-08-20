@@ -468,7 +468,8 @@
       
     ;;  (break "~A" (getf   (getcx data-type :data-type) :item-actions))
       (dolist (action (getf (getcx data-type :data-type) :item-actions))
-	(cl-who:htm
+	(cond ((equalp (getf action :type) :button)
+	       (cl-who:htm
 		(:button
 		 :name (getf action :name)
 		 :type "submit"
@@ -477,7 +478,19 @@
 					(getf action :name)
 					:item item)
 		 (cl-who:str (getf action :label))
-		 ))
+		 )))
+	      ((equalp (getf action :type) :link)
+	       (cl-who:htm
+		(:a :class "btn"  :role "button"
+		    :target "_blank"
+		    :href (cl-who:str (apply
+				       (eval
+					(getf action :action))
+				       (list item
+					     (getcx data-type :parent-item))))
+		    (cl-who:str (getf action :label))))
+
+	       ))
 	)
       )))
 
@@ -919,10 +932,11 @@
 	      
 	      ((equalp (complex-type field) :text)
 	       (cl-who:htm
-		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:12px;"
+		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
 		      (cl-who:str val)
 		      )))
 	      ((and (or (equalp (complex-type field) :string)
+			(equalp (complex-type field) :link)
 			(equalp (complex-type field) :list)
 			(equalp (complex-type field) :collection))
 		    (or (> (length val) 15)
@@ -931,7 +945,7 @@
 			 (> (length val) (length (getf field :label))))))
 	       
 	       (cl-who:htm
-		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:12px;"
+		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
 		      (cl-who:str val))))
 	      ((or (equalp (complex-type field) :number)
 			(equalp (complex-type field) :integer))
@@ -1195,6 +1209,34 @@
 				   (getcx data-type :edit-item)
 				   parent-item parent-spec)))))))
 
+
+(defun data-type-access-p (data-type)
+  (let ((access-p))
+  
+    (when (and (active-user)
+	       (digx (active-user) :selected-licenses))
+      (cond ((getx (current-user) :super-user-p)
+	     (setf access-p t))
+	    (t (dolist (lic (digx (active-user)
+				  :selected-licenses))
+		 (when (license-user lic)
+		   (let ((no-spec t))
+		     (dolist (permission
+			       (getx (license-user lic)
+				     :data-type-permissions))
+		       
+		       (when (equalp data-type
+				     (digx permission
+					   :type-name))
+			 (setf no-spec nil)
+			 (when (getf (digx permission
+					   :permissions)
+				     :update)
+			   (setf access-p t))))
+		     (when no-spec
+		       (setf access-p t))))))))
+    access-p))
+
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec)
   (let ((sub-level-p (not (equalp data-type 
@@ -1209,7 +1251,8 @@
 	  (when (find (complex-type field)
 		      (list :collection-items :list-items
 			    :hierarchical))
-	    (pushnew field subs)))
+	    (when (data-type-access-p data-type)
+	      (pushnew field subs))))
 
 	(setf data-items (sort-by-keys page-items (keysx fields)))	
 

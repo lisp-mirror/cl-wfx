@@ -21,6 +21,24 @@
 				     :delimiter " ")
 		     :attributes (:display t :editable t))))
     :destinations (:core))
+
+   (:data-type
+    (:name "data-type-permission"
+     :label "Data-Type Permission"
+     :top-level-p nil
+     :fields ((:name :type-name
+		     :label "Type Name"
+		     :db-type :string
+		     :key-p t
+		     :attributes 
+		     (:display t :editable t)) 
+	      (:name :permissions 
+		     :label "Permissions"
+		     :db-type (:type :keyword
+				     :complex-type :value-string-list
+				     :delimiter " ")
+		     :attributes (:display t :editable t))))
+    :destinations (:core))
    
    (:data-type
     (:name "user-profile"
@@ -39,6 +57,14 @@
 				     :complex-type :list-items
 				     :data-type "user-permission"
 				     :accessor (:context-spec :name))
+		     :attributes (:display t :editable t))
+	      (:name :data-type-permissions 
+		     :label "Data Type Permissions"
+		     :key nil
+		     :db-type (:type :list
+				     :complex-type :list-items
+				     :data-type "data-type-permission"
+				     :accessor (:name))
 		     :attributes (:display t :editable t)))
      :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
     :destinations (:core :license))
@@ -161,7 +187,15 @@
 			     :complex-type :list-items
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
-	     :attributes (:display t :editable t))     
+	     :attributes (:display t :editable t))
+      (:name :data-type-permissions 
+	     :label "Data Type Permissions"
+	     :key nil
+	     :db-type (:type :list
+			     :complex-type :list-items
+			     :data-type "data-type-permission"
+			     :accessor (:name))
+	     :attributes (:display t :editable t))
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :db-type (:type :list
@@ -298,10 +332,11 @@ must be valid email to enable confirmation.")
 
 (defparameter *user* nil)
 
-(defun add-user (email password &key name licenses contexts
+(defun add-user (email password &key name licenses contexts exclude-data-types
 				  entities super-user-p permissions)
   (let ((user (get-user email))
-	(permissionsx))
+	(context-permissions)
+	(data-type-permissions))
     
     (when user
       (multiple-value-bind (password salt)
@@ -317,7 +352,7 @@ must be valid email to enable confirmation.")
 				    :name name
 				    :license-codes licenses
 				    :super-user-p super-user-p)))
-    
+
     (dolist (context contexts)	    
 	    (push
 	     (make-item
@@ -326,7 +361,17 @@ must be valid email to enable confirmation.")
 	      (list :context-spec
 		    context
 		    :permissions (or permissions '(:update :delete :search))))
-	     permissionsx))
+	     context-permissions))
+    
+    (dolist (data-type exclude-data-types)	    
+	    (push
+	     (make-item
+	      :data-type "data-type-permission"
+	      :values
+	      (list :type-name
+		    data-type
+		    :permissions (or permissions '())))
+	     data-type-permissions))
     
     (dolist (code licenses)
       (unless (find code (getx user :license-codes) :test #'equalp)
@@ -340,7 +385,7 @@ must be valid email to enable confirmation.")
       (let ((lic-user (get-license-user code email)))
 
 	(when lic-user
-	  (setf (getx lic-user :permissions) permissionsx)
+	  (setf (getx lic-user :permissions) context-permissions)
 	  (setf (getx lic-user :accessible-entities) entities)
 	  (persist-item (license-collection code "license-users") lic-user))
 	
@@ -349,7 +394,8 @@ must be valid email to enable confirmation.")
 	   (license-collection code "license-users")
 	   (list
 	    :email email
-	    :permissions permissionsx
+	    :permissions context-permissions
+	    :data-type-permissions data-type-permissions
 	    :accessible-entities entities	   
 	    :status :active)))))
     user))

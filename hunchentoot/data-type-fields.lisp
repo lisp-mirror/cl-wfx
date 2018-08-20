@@ -32,6 +32,10 @@
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
 
+(defmethod print-item-val ((type (eql :link)) field item
+			   &key &allow-other-keys)
+  (print-item-val-a* field item))
+
 (defmethod print-item-val ((type (eql :text)) field item
 			   &key &allow-other-keys)
   (print-item-val-a* field item))
@@ -282,6 +286,10 @@
   (render-input-val* type field item))
 
 (defmethod render-input-val ((type (eql :string)) field item
+			     &key &allow-other-keys)
+  (render-input-val* type field item))
+
+(defmethod render-input-val ((type (eql :link)) field item
 			     &key &allow-other-keys)
   (render-input-val* type field item))
 
