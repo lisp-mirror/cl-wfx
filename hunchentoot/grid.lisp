@@ -128,6 +128,7 @@
 	    
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
+		    :autocomplete "off"
 		    :placeholder
 		    (or select-prompt
 			"Press enter for list or start typing and then press enter for list...")
@@ -178,6 +179,7 @@
 	    
 	    (:input :class "form-control auto-complete-text"
 		    :type "text"
+		    :autocomplete "off"
 		    :placeholder
 		    (or select-prompt
 			"Press enter for list or start typing and then press enter for list...")
