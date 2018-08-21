@@ -402,10 +402,12 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+      (unless (equalp (getf hierarchy-item :data-type)
+		      data-type)
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
 
     (setf items (pushnew (list data-type (item-hash item))
 			 items))
@@ -550,7 +552,7 @@
 	       (gethash :item-hierarchy (cache *context*))
 	       (list (list :data-type data-type
 			   :item item))))
-	
+
 	(:td :style "width:50px;"
 	 (cl-who:str (render-edit-buttons data-type))))
        
@@ -1107,7 +1109,7 @@
 		       :data-type :fields)))
 	  
 	  (setf (getcx sub-data-spec :active-item) item)
-	  
+
 	  (setf (gethash :item-hierarchy (cache *context*))
 		(append
 		 (gethash :item-hierarchy (cache *context*))
@@ -1884,9 +1886,12 @@
   (let ((items))
 
 
+    ;;???
     (when (string-equal (parameter "action") "cancel")
       )
 
+
+    
     
      ;;need to remove items from hierarchy when cancel is pushed
       (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
@@ -1898,6 +1903,8 @@
 			 items)))
 	 
 	  ))
+
+     
       (setf (gethash :item-hierarchy (cache *context*))
 	      ;;(cdr (gethash :item-hierarchy (cache *context*)))
 	    (reverse items)
@@ -2081,6 +2088,7 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
+
 
    
     (setf (getcx data-type :edit-object) nil)

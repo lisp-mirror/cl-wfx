@@ -416,7 +416,33 @@
 
 (defmethod render-input-val ((type (eql :number)) field item
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (let ((name (getf field :name)))
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name 
+		  :type "number"
+		  :step "any"		  
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item))
+		  :disabled "disabled"))
+	(with-html-string
+	  (:input :class "form-control"
+		  :id name
+		  :name name		  
+		  :type "number"
+		  :step "any"
+		  :required (if (getf field :key-p)
+				"required")
+		  :value
+		  (cl-who:str (print-item-val 
+			       type
+			       field 
+			       item)))))))
 
 (defmethod render-input-val ((type (eql :integer)) field item
 			     &key &allow-other-keys)
