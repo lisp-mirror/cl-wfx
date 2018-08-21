@@ -104,7 +104,7 @@
   (persist-item (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
-  (hunchentoot:redirect (frmt "~Acor/login" (site-url *system*))))
+  (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*))))
 
 (defun user-mods ()
   (wfx-fetch-items "modules"
@@ -294,14 +294,10 @@
 			(let ((parameters))
 			  (dolist (param (digx item :context-parameters))
 			    (setf parameters 
-				  (if parameters
-				      (frmt "~A&~A=~A" 
+				  (frmt "~A&~A=~A" 
 					    parameters
 					    (digx param :name)
-					    (digx param :value))
-				      (frmt "~A=~A" 
-					    (digx param :name)
-					    (digx param :value)))))
+					    (digx param :value))))
 			  
 			  (when (or (equalp (digx item :name) "Logout")
 				    (context-access-p
@@ -311,7 +307,7 @@
 			     (:a :class "dropdown-item"
 				 :href 
 				 (if parameters
-				     (frmt "~A?~A" 
+				     (frmt "~A&~A" 
 					   (context-url 
 					     (digx item :context-spec :name))
 					   parameters)
