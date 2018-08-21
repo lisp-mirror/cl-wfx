@@ -256,11 +256,16 @@
 		      data-type :active-page))
 	(items))
 
-    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))      
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
+      (unless (and
+	       (equalp (getf hierarchy-item :data-type) data-type)
+	       (not (equalp (item-hash (getf hierarchy-item :item))
+			    (or item-id (getcx data-type :item-id))))
+	       )
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
 
     (js-render-form-values 
      "cl-wfx:ajax-grid"
@@ -348,10 +353,14 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+      (unless (and (equalp (getf hierarchy-item :data-type)
+			   data-type)
+		   (not (equalp (item-hash (getf hierarchy-item :item))
+			    (item-hash item))))
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
 
     (setf items (pushnew (list data-type (item-hash item))
 				  items))
@@ -402,8 +411,10 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (unless (equalp (getf hierarchy-item :data-type)
-		      data-type)
+      (unless (and (equalp (getf hierarchy-item :data-type)
+			   data-type)
+		   (not (equalp (item-hash (getf hierarchy-item :item))
+			    (item-hash item))))
 	(setf items (pushnew 
 		     (list (getf hierarchy-item :data-type)
 			   (item-hash (getf hierarchy-item :item)))
@@ -1886,29 +1897,30 @@
   (let ((items))
 
 
-    ;;???
+    ;;need to remove items from hierarchy when cancel is pushed
     (when (string-equal (parameter "action") "cancel")
-      )
-
-
-    
-    
-     ;;need to remove items from hierarchy when cancel is pushed
-      (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-	(when (getf hierarchy-item :item)
-	  (when (item-hash (getf hierarchy-item :item))
-	 
-	    (setf items (pushnew 
-			 hierarchy-item
-			 items)))
+      (setf (gethash :item-hierarchy (cache *context*))
+	 (cdr (gethash :item-hierarchy (cache *context*)))
 	 
 	  ))
 
+    ;;Clean up possible hierarchy errors
+    
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
+      (when (getf hierarchy-item :item)
+	(when (item-hash (getf hierarchy-item :item))
+	 
+	  (setf items (pushnew 
+		       hierarchy-item
+		       items)))
+	 
+	))
+
      
-      (setf (gethash :item-hierarchy (cache *context*))
-	      ;;(cdr (gethash :item-hierarchy (cache *context*)))
-	    (reverse items)
-	    )
+    (setf (gethash :item-hierarchy (cache *context*))
+	  ;;(cdr (gethash :item-hierarchy (cache *context*)))
+	  (reverse items)
+	  )
   
    
     (render-grid (getx (context-spec *context*) :name))))
@@ -2333,6 +2345,7 @@
       (when collection
 	(setf (item-collection root-item) collection)
 	(setf (item-store root-item) (store collection))
+;;	(break "~A" root-item)
 	(persist-item collection root-item :allow-key-change-p t)))))
 
 (defun prepare-edit-objects ()
