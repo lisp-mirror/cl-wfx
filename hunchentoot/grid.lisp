@@ -251,11 +251,12 @@
 (defun grid-js-render-form-values (data-type form-id 
 				   &key action action-script
 				     action-data item-id )
+  
   (let ((active-page (getcx 
 		      data-type :active-page))
 	(items))
-    
-    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
+
+    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))      
       (setf items (pushnew 
 		   (list (getf hierarchy-item :data-type)
 			 (item-hash (getf hierarchy-item :item)))
@@ -495,6 +496,7 @@
       )))
 
 (defun render-edit-buttons (data-type)
+ 
   (with-html-string
     (when (user-context-permission-p
 	   (getx (context-spec *context*) :name)
@@ -858,15 +860,18 @@
 (defun grid-js-render-new (data-type)
   (let ((active-page (getcx data-type :active-page))
 	(items))
-    
+
+   ;; (break "~A" (gethash :item-hierarchy (cache *context*)))
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+      (unless (equalp (getf hierarchy-item :data-type) data-type)
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
     
     (setf items (pushnew (list data-type 0)
-		      items))
+			 items))
+    
     (js-render "cl-wfx:ajax-grid-edit"
 	       (frmt "ajax-new-~A" data-type)	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -1752,6 +1757,8 @@
 
 (defun render-grid (collection-name)
   (when (context-access-p (context-spec *context*))
+ 
+    
     (let* ((collection (if (not (gethash :collection-name (cache *context*)))
 			   (find-collection-def *system*   
 						collection-name)))
@@ -1770,7 +1777,9 @@
       (set-grid-filter data-type)
 	
       (set-grid-expand)
-	
+
+     
+      
       (let ((page-items (fetch-grid-data data-type)))
 	(with-html-string  
 	  (:div
@@ -1837,13 +1846,16 @@
 		(:div :class "card-footer"
 		      (:div :class "row"
 			    (:div :class "col"
+				 
 				  (:button 
 				   :name "new" :type "submit" 
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
 				   (grid-js-render-new data-type)
-				   (cl-who:str "+")))
+				   (cl-who:str "+"))
+				  
+				  )
 			    (:div :class "col-2"
 				  (cl-who:str
 				   (render-select-actions
@@ -1869,12 +1881,30 @@
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
-  ;;need to remove items from hierarchy when cancel is pushed
-  (if (string-equal (parameter "action") "cancel")
+  (let ((items))
+
+
+    (when (string-equal (parameter "action") "cancel")
+      )
+
+    
+     ;;need to remove items from hierarchy when cancel is pushed
+      (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
+	(when (getf hierarchy-item :item)
+	  (when (item-hash (getf hierarchy-item :item))
+	 
+	    (setf items (pushnew 
+			 hierarchy-item
+			 items)))
+	 
+	  ))
       (setf (gethash :item-hierarchy (cache *context*))
-	    (cdr (gethash :item-hierarchy (cache *context*))))) 
+	      ;;(cdr (gethash :item-hierarchy (cache *context*)))
+	    (reverse items)
+	    )
   
-  (render-grid (getx (context-spec *context*) :name)))
+   
+    (render-grid (getx (context-spec *context*) :name))))
 
 (defun get-child (fields parent-item data-type hash)
   (dolist (field fields)
