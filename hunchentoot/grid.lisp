@@ -347,10 +347,12 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+      (unless (equalp (getf hierarchy-item :data-type)
+		      data-type)
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
 
     (setf items (pushnew (list data-type (item-hash item))
 				  items))
@@ -401,11 +403,14 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
+      (unless (equalp (getf hierarchy-item :data-type)
+		      data-type)
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
 
+    
     (setf items (pushnew (list data-type (item-hash item))
 			 items))
 
@@ -517,6 +522,21 @@
 				       :action "cancel")
 		       (item-hash (getcx data-type :edit-item))))))
 
+(defun append-hierarchy (data-type item)
+  (let ((items))
+    (dolist (h-item (gethash :item-hierarchy (cache *context*)))
+      (unless (equalp data-type (getf h-item :data-type))
+	(when item
+	  (push h-item items))))
+
+    (when item
+      (setf items (push (list :data-type
+			      data-type
+			      :item item)
+			items)))    
+  
+    (setf (gethash :item-hierarchy (cache *context*)) (reverse items))))
+
 (defun render-grid-edit (data-type fields item parent-item
 			 parent-spec)
   (setf (getcx data-type :edit-item) item)
@@ -543,12 +563,17 @@
 	(dolist (field (limit-fields (get-data-fields header-fields)))	  
 	  (cl-who:str (render-table-cell field item)))
 
+	
+
+	(append-hierarchy data-type item)
+
+	#|
 	(setf (gethash :item-hierarchy (cache *context*))
 	      (append
 	       (gethash :item-hierarchy (cache *context*))
 	       (list (list :data-type data-type
 			   :item item))))
-	
+	|#
 	(:td :style "width:50px;"
 	 (cl-who:str (render-edit-buttons data-type))))
        
@@ -855,18 +880,20 @@
     (sort (copy-list items) #'string-lessp :key #'sort-val)))
 
 
-(defun grid-js-render-new (data-type)
+(defun grid-js-render-new (data-type &key top-p)
   (let ((active-page (getcx data-type :active-page))
 	(items))
-    
+
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (setf items (pushnew 
-		   (list (getf hierarchy-item :data-type)
-			 (item-hash (getf hierarchy-item :item)))
-		   items)))
-    
+      (when (not top-p)
+	(setf items (pushnew 
+		     (list (getf hierarchy-item :data-type)
+			   (item-hash (getf hierarchy-item :item)))
+		     items))))
+
     (setf items (pushnew (list data-type 0)
-		      items))
+			 items))
+    
     (js-render "cl-wfx:ajax-grid-edit"
 	       (frmt "ajax-new-~A" data-type)	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -1102,12 +1129,15 @@
 		       :data-type :fields)))
 	  
 	  (setf (getcx sub-data-spec :active-item) item)
-	  
+
+	  (append-hierarchy data-type item)
+	  #|
 	  (setf (gethash :item-hierarchy (cache *context*))
 		(append
 		 (gethash :item-hierarchy (cache *context*))
 		 (list (list :data-type data-type
 			     :item item))))
+	  |#
 	  
 	  (cl-who:htm
 	   (:div
@@ -1788,7 +1818,7 @@
 		      :type "submit" 
 		      :aria-pressed "false"
 		      :onclick 
-		      (grid-js-render-new data-type)
+		      (grid-js-render-new data-type :top-p t)
 		      (cl-who:str "+"))
 
 		     (cl-who:str
@@ -1842,7 +1872,7 @@
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
-				   (grid-js-render-new data-type)
+				   (grid-js-render-new data-type :top-p t)
 				   (cl-who:str "+")))
 			    (:div :class "col-2"
 				  (cl-who:str
@@ -2052,7 +2082,6 @@
 	 (root-item)
 	 (edit-objects))
 
-   
     (setf (getcx data-type :edit-object) nil)
     
     (setf root-type (if  hierarchy
