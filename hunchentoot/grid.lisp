@@ -251,21 +251,15 @@
 (defun grid-js-render-form-values (data-type form-id 
 				   &key action action-script
 				     action-data item-id )
-  
   (let ((active-page (getcx 
 		      data-type :active-page))
 	(items))
-
+    
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (unless (and
-	       (equalp (getf hierarchy-item :data-type) data-type)
-	       (not (equalp (item-hash (getf hierarchy-item :item))
-			    (or item-id (getcx data-type :item-id))))
-	       )
-	(setf items (pushnew 
-		     (list (getf hierarchy-item :data-type)
-			   (item-hash (getf hierarchy-item :item)))
-		     items))))
+      (setf items (pushnew 
+		   (list (getf hierarchy-item :data-type)
+			 (item-hash (getf hierarchy-item :item)))
+		   items)))
 
     (js-render-form-values 
      "cl-wfx:ajax-grid"
@@ -353,14 +347,10 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (unless (and (equalp (getf hierarchy-item :data-type)
-			   data-type)
-		   (not (equalp (item-hash (getf hierarchy-item :item))
-			    (item-hash item))))
-	(setf items (pushnew 
-		     (list (getf hierarchy-item :data-type)
-			   (item-hash (getf hierarchy-item :item)))
-		     items))))
+      (setf items (pushnew 
+		   (list (getf hierarchy-item :data-type)
+			 (item-hash (getf hierarchy-item :item)))
+		   items)))
 
     (setf items (pushnew (list data-type (item-hash item))
 				  items))
@@ -411,14 +401,10 @@
 	(items))
 
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (unless (and (equalp (getf hierarchy-item :data-type)
-			   data-type)
-		   (not (equalp (item-hash (getf hierarchy-item :item))
-			    (item-hash item))))
-	(setf items (pushnew 
-		     (list (getf hierarchy-item :data-type)
-			   (item-hash (getf hierarchy-item :item)))
-		     items))))
+      (setf items (pushnew 
+		   (list (getf hierarchy-item :data-type)
+			 (item-hash (getf hierarchy-item :item)))
+		   items)))
 
     (setf items (pushnew (list data-type (item-hash item))
 			 items))
@@ -509,7 +495,6 @@
       )))
 
 (defun render-edit-buttons (data-type)
- 
   (with-html-string
     (when (user-context-permission-p
 	   (getx (context-spec *context*) :name)
@@ -563,7 +548,7 @@
 	       (gethash :item-hierarchy (cache *context*))
 	       (list (list :data-type data-type
 			   :item item))))
-
+	
 	(:td :style "width:50px;"
 	 (cl-who:str (render-edit-buttons data-type))))
        
@@ -873,18 +858,15 @@
 (defun grid-js-render-new (data-type)
   (let ((active-page (getcx data-type :active-page))
 	(items))
-
-   ;; (break "~A" (gethash :item-hierarchy (cache *context*)))
+    
     (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (unless (equalp (getf hierarchy-item :data-type) data-type)
-	(setf items (pushnew 
-		     (list (getf hierarchy-item :data-type)
-			   (item-hash (getf hierarchy-item :item)))
-		     items))))
+      (setf items (pushnew 
+		   (list (getf hierarchy-item :data-type)
+			 (item-hash (getf hierarchy-item :item)))
+		   items)))
     
     (setf items (pushnew (list data-type 0)
-			 items))
-    
+		      items))
     (js-render "cl-wfx:ajax-grid-edit"
 	       (frmt "ajax-new-~A" data-type)	      
 	       (js-pair "data-type" (frmt "~A" data-type))
@@ -1120,7 +1102,7 @@
 		       :data-type :fields)))
 	  
 	  (setf (getcx sub-data-spec :active-item) item)
-
+	  
 	  (setf (gethash :item-hierarchy (cache *context*))
 		(append
 		 (gethash :item-hierarchy (cache *context*))
@@ -1770,8 +1752,6 @@
 
 (defun render-grid (collection-name)
   (when (context-access-p (context-spec *context*))
- 
-    
     (let* ((collection (if (not (gethash :collection-name (cache *context*)))
 			   (find-collection-def *system*   
 						collection-name)))
@@ -1790,9 +1770,7 @@
       (set-grid-filter data-type)
 	
       (set-grid-expand)
-
-     
-      
+	
       (let ((page-items (fetch-grid-data data-type)))
 	(with-html-string  
 	  (:div
@@ -1859,16 +1837,13 @@
 		(:div :class "card-footer"
 		      (:div :class "row"
 			    (:div :class "col"
-				 
 				  (:button 
 				   :name "new" :type "submit" 
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
 				   (grid-js-render-new data-type)
-				   (cl-who:str "+"))
-				  
-				  )
+				   (cl-who:str "+")))
 			    (:div :class "col-2"
 				  (cl-who:str
 				   (render-select-actions
@@ -1894,36 +1869,12 @@
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
-  (let ((items))
-
-
-    ;;need to remove items from hierarchy when cancel is pushed
-    (when (string-equal (parameter "action") "cancel")
+  ;;need to remove items from hierarchy when cancel is pushed
+  (if (string-equal (parameter "action") "cancel")
       (setf (gethash :item-hierarchy (cache *context*))
-	 (cdr (gethash :item-hierarchy (cache *context*)))
-	 
-	  ))
-
-    ;;Clean up possible hierarchy errors
-    
-    (dolist (hierarchy-item (gethash :item-hierarchy (cache *context*)))
-      (when (getf hierarchy-item :item)
-	(when (item-hash (getf hierarchy-item :item))
-	 
-	  (setf items (pushnew 
-		       hierarchy-item
-		       items)))
-	 
-	))
-
-     
-    (setf (gethash :item-hierarchy (cache *context*))
-	  ;;(cdr (gethash :item-hierarchy (cache *context*)))
-	  (reverse items)
-	  )
+	    (cdr (gethash :item-hierarchy (cache *context*))))) 
   
-   
-    (render-grid (getx (context-spec *context*) :name))))
+  (render-grid (getx (context-spec *context*) :name)))
 
 (defun get-child (fields parent-item data-type hash)
   (dolist (field fields)
@@ -2100,7 +2051,6 @@
 	 (root-hash)
 	 (root-item)
 	 (edit-objects))
-
 
    
     (setf (getcx data-type :edit-object) nil)
@@ -2345,7 +2295,6 @@
       (when collection
 	(setf (item-collection root-item) collection)
 	(setf (item-store root-item) (store collection))
-;;	(break "~A" root-item)
 	(persist-item collection root-item :allow-key-change-p t)))))
 
 (defun prepare-edit-objects ()
