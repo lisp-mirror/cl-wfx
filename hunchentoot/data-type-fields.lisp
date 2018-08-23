@@ -1,44 +1,50 @@
 (in-package :cl-wfx)
 
 
-(defun print-item-val-s* (field item)
+
+
+(defun print-item-val-s* (field item &key default-value)
   (let ((*print-case* :downcase)
 	(val (if item (getfx item field))))
     
     (if val
 	(frmt "~S" val)
-	"")))
+	(if default-value
+	    default-value
+	    ""))))
 
-(defun print-item-val-a* (field item)
+(defun print-item-val-a* (field item &key default-value)
   (let ((*print-case* :downcase)
 	(val (if item (getfx item field))))
     (if val
 	(frmt "~A" val)
-	"")))
+	(if default-value
+	    default-value
+	    ""))))
 
 (defmethod print-item-val ((type (eql :symbol)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :keyword)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :script)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :string)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :link)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :text)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defun file-server-path (collection field item)
   (string-downcase
@@ -71,7 +77,7 @@
 	       (sanitize-file-name (getx item (getf field :name)))))))
 
 (defmethod print-item-val ((type (eql :image)) field item
-			   &key &allow-other-keys)
+			   &key default-value &allow-other-keys)
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
@@ -101,11 +107,11 @@
 	  (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
 
 (defmethod print-item-val ((type (eql :email)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :file)) field item
-			   &key &allow-other-keys)
+			   &key default-value &allow-other-keys)
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
@@ -126,46 +132,49 @@
 	  ))))
 
 (defmethod print-item-val ((type (eql :number)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :integer)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :date)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :time)) field item
-			   &key &allow-other-keys)
-  (print-item-val-a* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-a* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :boolean)) field item
-			   &key &allow-other-keys)
+			   &key default-value &allow-other-keys)
   (if (getfx item field)
       "checked"
-      ""))
+      (if default-value
+	  default-value
+	  "")))
 
 (defmethod print-item-val ((type (eql :key-value)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :item)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 
 (defmethod print-item-val ((type (eql :value-list)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :key-value-list)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :value-string-list)) 
-			   field item &key &allow-other-keys)
+			   field item &key default-value
+					&allow-other-keys)
   (let* ((delimiter (dig field :db-type :delimiter))
 	 (val (getsfx (dig field :db-type :type) field item))
 	 (final-val))
@@ -188,15 +197,17 @@
     final-val))
 
 (defmethod print-item-val ((type (eql :list-items)) field item
-			   &key &allow-other-keys)
-  (print-item-val-s* field item))
+			   &key default-value &allow-other-keys)
+  (print-item-val-s* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :collection-items))
-			   field item &key &allow-other-keys)
+			   field item &key default-value
+					&allow-other-keys)
   (print-item-val-s* field item))
 
 (defmethod print-item-val ((type (eql :contained-item)) field item
-			   &key &allow-other-keys)
+			   &key default-value
+			     &allow-other-keys)
   (let ((item-val (getfx item field))
 	(accessor (dig field :db-type :accessor)))
     
@@ -211,7 +222,8 @@
 		    (dig field :db-type :accessor))))))))
 
 (defmethod print-item-val ((type (eql :collection-contained-item)) 
-			   field item &key &allow-other-keys)
+			   field item &key default-value
+					&allow-other-keys)
   (print-item-val-s* field item))
 
 (defmethod print-item-val ((type (eql :collection)) field item
@@ -231,7 +243,7 @@
 		    (dig field :db-type :accessor))))))))
 
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
-			   &key &allow-other-keys)
+			   &key default-value &allow-other-keys)
   ;;TODO: Sort this shit out need to loop tree
   (let ((item-val (getfx item field))
 	(final))    
@@ -250,6 +262,13 @@
 
 (defgeneric render-input-val (type field item &key &allow-other-keys))
 
+(defun item-default-val* (field item)
+  (if (getf field :default-value)
+      (apply
+       (eval
+	(getf field :default-value))
+       (list item))))
+
 (defun render-input-val* (type field item)
   (let ((name (getf field :name)))
     (if (not (digx field :attributes :editable))
@@ -259,10 +278,13 @@
 		  :name name 
 		  :type "text"		  
 		  :value
-		  (cl-who:str (print-item-val 
+		  (cl-who:str
+		   (print-item-val 
 			       type
 			       field 
-			       item))
+			       item
+			       :default-value
+			       (item-default-val* field item)))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -275,7 +297,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item)))))))
+			       item
+			       :default-value
+			       (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :symbol)) field item
 			     &key &allow-other-keys)
@@ -306,7 +330,9 @@
 	   (cl-who:str (print-item-val 
 			type
 			field 
-			item))))
+			item
+			:default-value
+			       (item-default-val* field item)))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
@@ -318,7 +344,9 @@
 	    (print-item-val 
 	     type
 	     field 
-	     item)))))))
+	     item
+	     :default-value
+	     (item-default-val* field item))))))))
 
 (defun render-image (field item)
   (let* ((collection (wfx-get-collection
@@ -428,7 +456,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item))
+			       item
+			       :default-value
+			       (item-default-val* field item)))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -442,7 +472,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item)))))))
+			       item
+			       :default-value
+			       (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :integer)) field item
 			     &key &allow-other-keys)
@@ -458,7 +490,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item))
+			       item
+			       :default-value
+			       (item-default-val* field item)))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -472,7 +506,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item)))))))
+			       item
+			       :default-value
+			       (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :date)) field item
 			     &key &allow-other-keys)
@@ -487,7 +523,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item))
+			       item
+			       :default-value
+			       (item-default-val* field item)))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -500,7 +538,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item)))))))
+			       item
+			       :default-value
+			       (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :time)) field item
 			     &key &allow-other-keys)
@@ -515,7 +555,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item))
+			       item
+			       :default-value
+			       (item-default-val* field item)))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -528,7 +570,9 @@
 		  (cl-who:str (print-item-val 
 			       type
 			       field 
-			       item)))))))
+			       item
+			       :default-value
+			       (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :boolean)) field item
 			     &key &allow-other-keys)
@@ -547,7 +591,9 @@
 				   :value (getsfx
 					   type
 					   field 
-					   item)
+					   item
+					   :default-value
+					   (item-default-val* field item))
 				   :checked print-val
 				   :aria-label "..."
 				   :disabled "disabled")))
@@ -562,7 +608,9 @@
 				   :value (getsfx
 					   type
 					   field 
-					   item)
+					   item
+					   :default-value
+					   (item-default-val* field item))
 				   :checked print-val
 				   :aria-label "..."))))))))
 
