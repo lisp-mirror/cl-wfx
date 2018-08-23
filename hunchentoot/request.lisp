@@ -103,6 +103,7 @@
       (declare (special *current-theme*))
       (hunchentoot:start-session)
 
+
       (if (not dont)           
 	  (let* ((*session* (start-session acceptor))
 		 (*context* (request-context *request*))
