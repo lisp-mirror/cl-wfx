@@ -98,12 +98,25 @@
      :label "User"
      :top-level-p t
      :fields
-     ((:name :email
+     (
+      (:name :email
 	     :label "Email"
 	     :key-p t
 	     :db-type :email
 	     :attributes (:display t :editable t)
 	     :documentation "User email address used as unique identifier for a user, must be valid email to enable confirmation.")
+      (:name :title
+	     :label "Title"
+	     :db-type (:type :keyword
+			     :complex-type :value-list
+			     :values (:mr
+				      :mrs
+				      :miss
+				      :prof
+				      :dr
+				      ))
+	     :attributes (:display t :editable t)
+	     :documentation "")
       (:name :name
 	     :label "Name"
 	     :key nil

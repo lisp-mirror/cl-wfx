@@ -462,9 +462,18 @@
 		 :name (getf action :name)
 		 :type "submit"
 		 :onclick
-		 (grid-js-render-action data-type
-					(getf action :name)
-					:item item)
+		 
+		 (if (getf action :confirmation)
+		     (frmt "~A;alert(\"~A\")"
+			   
+			   (grid-js-render-action data-type
+						  (getf action :name)
+						  :item item)
+			   (getf action :confirmation))
+		     (grid-js-render-action data-type
+						  (getf action :name)
+						  :item item))
+		 
 		 (cl-who:str (getf action :label))
 		 )))
 	      ((equalp (getf action :type) :link)
@@ -989,7 +998,7 @@
 			       (cl-who:str
 				(render-select-button item)))))))))))
 
-(defun render-select-from-grid (data-type sub sub-data-spec)
+(defun render-select-from-grid (data-type sub sub-data-spec hierarchy)
   (when (and (equalp (parameter "action")
 		     "select-from")
 	     (string-equal
@@ -1039,7 +1048,8 @@
 			   (js-pair "action" "add-selection")
 			   (js-pair "add-selection-field"
 				    (frmt "~A" (dig sub :name)))
-		       
+			   (js-pair "item-hierarchy"
+				    (hierarchy-string hierarchy))
 			   (js-pair "pages"
 				    (or (parameter "pages") 50))
 			   (js-pair "page"
@@ -1131,7 +1141,8 @@
 		   (cl-who:str
 		    (render-select-from-grid
 		     data-type sub
-		     sub-data-spec)))))))))))
+		     sub-data-spec
+		     hierarchy)))))))))))
 
 
 
@@ -1569,11 +1580,13 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
   (let ((persist-p))
+;;    (break "~A" (hunchentoot:post-parameters*))
     (dolist (param (hunchentoot:post-parameters*))
       (when (equalp (first param) "grid-selection")
 	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
 	  (when (equalp (first spliff) "true")
 	    (setf persist-p t)
+
 	    (pushnew
 	     (wfx-fetch-context-item 
 	      (getcx (parameter "data-type")
@@ -1585,10 +1598,17 @@
 			(second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
 		   (intern (string-upcase (parameter "add-selection-field"))
+
 			   :keyword)))))))
     (when persist-p
-      (let ((root-item
-	     (getcx (gethash :data-type (cache *context*)) :root-item)))
+
+           
+      (let* ((hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
+	     (root-hash (if hierarchy
+			    (second (first hierarchy))))
+	     (root-item
+	      (fetch-grid-root-edit-item root-hash)))
+;;	(break "~A" root-item)
 	(persist-item
 	 (wfx-get-collection	
 	  (gethash :collection-name (cache *context*)))
