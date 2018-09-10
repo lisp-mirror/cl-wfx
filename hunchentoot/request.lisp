@@ -60,7 +60,7 @@
 	  ((parameter "set-licenses")
 	   ;;TODO: this is not used any more an ajax call ajax-license-select
 	   ;;handles this ... check to delete
-	   (break "~A" (hunchentoot:post-parameters*))
+	 ;;  (break "~A" (hunchentoot:post-parameters*))
 	   (action-handler :set-licenses
 			   context
 			   request))
@@ -102,7 +102,6 @@
 	  (*current-theme* (theme acceptor)))
       (declare (special *current-theme*))
       (hunchentoot:start-session)
-
 
       (if (not dont)           
 	  (let* ((*session* (start-session acceptor))

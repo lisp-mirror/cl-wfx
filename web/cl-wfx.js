@@ -168,6 +168,7 @@ function fetchURI(uri, callback, parameters) {
             }}}
     if (!request) alert("Browser couldn't make a request object.");
 
+    
     request.open('POST', uri, true);
     request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 //alert(callback);
@@ -231,14 +232,14 @@ function ajax_render (script_name, renderer, id, args) {
 	useOverlay  : false
     });*/
 
-    
+
     if (renderer) {
 	args.push(['context-uri',script_name]);
         cl_ajax_render(script_name, renderer ,id, args,
                        function (response) {
 //alert("fuck");
                            var json = jQuery.parseJSON(response);
-//alert(json);
+
                            before_ajax(widget);
                            widget.innerHTML = json[0];
                            applyPeach(widget);
@@ -246,7 +247,7 @@ function ajax_render (script_name, renderer, id, args) {
 			   fileUploadPrep(args);
 
 			   prep_elements();
-			   
+
                            if (json[1]) {
                                eval(json[1]);
                            }
