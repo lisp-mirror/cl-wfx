@@ -203,6 +203,27 @@
 	    
 	    (:div :id (frmt "~A-drop-div" field-name) :class "auto-list")))))
 
+(defun accessor-value (item accessors)
+  (let ((value))
+    (if (listp accessors)
+	(if (listp (first accessors))
+	    (let ((values))
+	      (dolist (accessor accessors)
+		(push
+		 (apply #'digx
+			item
+			accessor)
+		 values))
+	      (setf value (format nil
+				  "~{~a~^ ~}"
+				  (reverse values))))
+	    (setf value (apply #'digx
+			       item
+			       accessors)))
+	(setf value (apply #'digx
+			   item
+			   (list accessors))))))
+
 (defmethod render-input-val ((type (eql :collection)) field item 
 			     &key data-type &allow-other-keys)
 
@@ -216,11 +237,7 @@
       (cl-who:str (render-item-list-auto-complete
 		   data-type name selected
 		   :value-func (lambda (item)
-				 (apply #'digx
-					item
-					(if (listp accessors)
-					    accessors
-					    (list accessors))))
+				 (accessor-value item accessors))
 		   :context-state-selected (getcx 
 					    (dig field :db-type :data-type)
 					    (frmt "~A-drop" name))
@@ -244,11 +261,7 @@
        (render-dropdown name selected list
 			:key-func 'cl-naive-store:item-hash
 			:value-func (lambda (item)
-				      (apply #'digx
-					     item
-					     (if (listp accessors)
-						 accessors
-						 (list accessors)))))))))
+				      (accessor-value item accessors)))))))
 
 (defun grid-js-render-form-values (data-type form-id 
 				   &key action action-script
@@ -832,7 +845,8 @@
 					    (list :collection
 						  :collection-items :list-items
 						  :hierarchical))
-				      (dig field :db-type :accessor))))))))
+				      (dig field :db-type :accessor)
+				      )))))))
     keys))
 
 (defun sort-by-keys (items keys)
@@ -841,12 +855,7 @@
 	     (dolist (key keys)
 	       (let* ((accessor (getf key :accessor))
 		      (val (if accessor
-			       (if (getx item (getf key :name))
-				   (apply #'digx
-					  (getx item (getf key :name))
-					  (if (listp accessor)
-					      accessor
-					      (list accessor))))
+			       (accessor-value item accessor)
 			       (getx item (getf key :name)))))
 		 (setf values (frmt "~A~A" values val))))	    
 	     values)))
@@ -907,6 +916,7 @@
   (let ((val (print-item-val 
 	      (complex-type field)
 	      field item)))
+   ;; (break "~A" val)
     (with-html-string
       (cl-who:htm
        (:td :style (cond
@@ -1393,11 +1403,7 @@
 		(let ((accessor (dig field :db-type :accessor)))
 		  (dolist (sub-val (getfx item field))
 		    (when sub-val
-		      (let* ((val (apply #'digx
-					 item
-					 (if (listp accessor)
-					     accessor
-					     (list accessor)))))
+		      (let* ((val (accessor-value item accessor)))
 		
 			(if (filter-found-p filter-term val)
 			    (push t found)
@@ -1424,11 +1430,7 @@
 	      (let ((accessor (dig field :db-type :accessor)))
 		(dolist (sub-val (getfx item field))
 		  (when sub-val
-		    (let* ((val (apply #'digx
-				       item
-				       (if (listp accessor)
-					   accessor
-					   (list accessor)))))
+		    (let* ((val (accessor-value item accessor)))
 		     
 		      (when val
 			(when (search search-term 
@@ -1923,11 +1925,7 @@
 					   "")
 			     (search (parameter
 				      (frmt "~A-drop" field-name))
-				     (apply #'digx
-					    item
-					    (if (listp accessors)
-						accessors
-						(list accessors)))
+				     (accessor-value item accessors)
 				     :test #'string-equal))))))
 
 	(with-html-string
@@ -1935,21 +1933,15 @@
 	   :class "auto-complete-menu nav flex-column bg-white rounded border"
 	   (setf list (sort (copy-list list) #'string<
 			    :key (lambda (item)
-				   (apply #'digx item
-					  (if (listp accessors)
-					      accessors
-					      (list accessors))))))
+				   (accessor-value item accessors))))
 	   (dolist (option list)
 	     (cl-who:htm
 	      (:span :class "auto-complete-item nav-link"
 		     (:input :type "hidden"
 			     :value (frmt "~A" (item-hash option)))
 		     (cl-who:str
-		      (trim-whitespace 
-		       (apply #'digx option
-			      (if (listp accessors)
-				  accessors
-				  (list accessors))))))))))))))
+		      (trim-whitespace
+		       (accessor-value option accessors))))))))))))
 
 (defun ajax-auto-complete-x (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
@@ -1967,9 +1959,7 @@
 					 "")
 			   (search (parameter
 				    (frmt "~A-drop" field-name))
-				   (apply #'digx
-					  item
-					  accessors)
+				   (accessor-value item accessors)
 				   :test #'string-equal))))))
 
       (with-html-string
@@ -1977,8 +1967,7 @@
 	 :class "auto-complete-menu nav flex-column bg-white rounded border"
 	 (setf list (sort (copy-list list) #'string<
 			  :key (lambda (item)
-				 (apply #'digx item
-					accessors))))
+				 (accessor-value item accessors))))
 	 (dolist (option list)
 	   (cl-who:htm
 	    (:span :class "auto-complete-item nav-link"
@@ -1986,8 +1975,7 @@
 			   :value (frmt "~A" (item-hash option)))
 		   (cl-who:str
 		    (trim-whitespace 
-		     (apply #'digx option
-			    accessors)))))))))))
+		     (accessor-value option accessors)))))))))))
 
 (declaim (optimize (debug 3))
 	 (notinline ajax-grid-edit))
@@ -2191,15 +2179,16 @@
 	 (setf (getfx edit-item field)
 	       (find-contained-item
 		value
-		(apply #'digx parent-item
-		       (digx field :db-type :container-accessor)) )))
+		(accessor-value parent-item
+				(digx field :db-type :container-accessor))
+	 )))
 	
 	((equalp (complex-type field) :contained-item)
 	 (setf (getfx edit-item field)
 	       (find-contained-item
 		value
-		(apply #'digx parent-item
-		       (digx field :db-type :container-accessor)) )))
+		(accessor-value parent-item
+				(digx field :db-type :container-accessor)) )))
 	(t	
 	 (setf (getfx edit-item field) value))))
 
@@ -2223,16 +2212,18 @@
 			   edit-item 
 			   (parameter field-name)
 			   :items
-			   (apply #'digx parent-item
-				  (digx field :db-type :container-accessor))))
+			   (accessor-value parent-item
+				(digx field :db-type :container-accessor))
+			   ))
 	    ((equalp (complex-type field) :contained-item)
 	     (validate-sfx (complex-type field)
 			   field 
 			   edit-item 
 			   (parameter field-name)
 			   :items
-			   (apply #'digx parent-item
-				  (digx field :db-type :container-accessor))))
+			   (accessor-value parent-item
+				(digx field :db-type :container-accessor))
+			   ))
 	    (t
 	     (list t nil)))
       (list t nil)))

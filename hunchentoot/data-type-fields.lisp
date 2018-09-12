@@ -1,13 +1,15 @@
 (in-package :cl-wfx)
 
-
-
-
 (defun print-item-val-s* (field item &key default-value)
   (let ((*print-case* :downcase)
-	(val (if item (getfx item field))))
-    
-    (if val
+	(val (if item (getfx item field)))
+	(accessors (if (listp (getf field :db-type))
+		       (dig field :db-type :accessor))))
+
+
+    (if (if accessors
+	    (accessor-value val accessors)
+	    val)
 	(frmt "~S" val)
 	(if default-value
 	    default-value
@@ -15,9 +17,14 @@
 
 (defun print-item-val-a* (field item &key default-value)
   (let ((*print-case* :downcase)
-	(val (if item (getfx item field))))
+	(val (if item (getfx item field)))
+	(accessors (if (listp (getf field :db-type))
+		       (dig field :db-type :accessor))))
+
     (if val
-	(frmt "~A" val)
+	(frmt "~A" (if accessors
+	    (accessor-value val accessors)
+	    val))
 	(if default-value
 	    default-value
 	    ""))))
@@ -215,11 +222,8 @@
       (when item-val
 	
 	(frmt "~A"
-	      (if (listp accessor)
-		  (apply #'digx item-val accessor)
-		  (getx
-		    item-val		    
-		    (dig field :db-type :accessor))))))))
+	      (accessor-value item-val (dig field :db-type :accessor))
+	      )))))
 
 (defmethod print-item-val ((type (eql :collection-contained-item)) 
 			   field item &key default-value
@@ -235,12 +239,9 @@
     
     (when (or (listp item-val) (equalp (type-of item-val) 'item))
        (when item-val
-	(frmt "~A"
-	      (if (listp accessor)
-		  (apply #'digx item-val accessor)
-		  (getx
-		    item-val		    
-		    (dig field :db-type :accessor))))))))
+	 (frmt "~A"
+	       (accessor-value item-val accessor)
+	     )))))
 
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key default-value &allow-other-keys)
@@ -252,12 +253,9 @@
 	(if final
 	    (setf final (frmt "~A ~A"
 			      final
-			      (getx 
-			       x
-			       (dig field :db-type :accessor))))
-	    (frmt "~A" (getx 
-			x
-			(dig field :db-type :accessor))))))))
+			      (accessor-value x (dig field :db-type :accessor))
+			     ))
+	    (frmt "~A" (accessor-value x (dig field :db-type :accessor))))))))
 
 
 (defgeneric render-input-val (type field item &key &allow-other-keys))
