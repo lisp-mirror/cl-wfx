@@ -916,7 +916,7 @@
   (let ((val (print-item-val 
 	      (complex-type field)
 	      field item)))
-   ;; (break "~A" val)
+   
     (with-html-string
       (cl-who:htm
        (:td :style (cond
@@ -1231,6 +1231,7 @@
 				     (digx permission
 					   :type-name))
 			 (setf no-spec nil)
+			 
 			 (when (getf (digx permission
 					   :permissions)
 				     :update)
@@ -1253,7 +1254,9 @@
 	  (when (find (complex-type field)
 		      (list :collection-items :list-items
 			    :hierarchical))
-	    (when (data-type-access-p data-type)
+	    (when (data-type-access-p (getf (getf field :db-type)
+					    :data-type))
+	     
 	      (pushnew field subs))))
 
 	(setf data-items (sort-by-keys page-items (keysx fields)))	
@@ -1266,6 +1269,7 @@
 	     (render-item-row subs data-type item fields
 			      item-hierarchy))
 
+	    
 	    (cl-who:str
 	     (render-row-goodies subs sub-level-p
 				 sub-level data-type
