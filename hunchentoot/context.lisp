@@ -640,8 +640,8 @@
 (defmethod page-header-js :around ((system hunch-system) &key &allow-other-keys)
   (with-html-string
     (:script
-      :src "https://code.jquery.com/jquery-3.3.1.slim.min.js"
-      :integrity "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+      :src "https://code.jquery.com/jquery-3.3.1.min.js"
+      :integrity "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
       :crossorigin "anonymous")
     
     (:script
