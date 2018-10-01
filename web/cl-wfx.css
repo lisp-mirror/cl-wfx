@@ -16,7 +16,7 @@ html {
     border-collapse: collapse;
     /*table-layout:fixed;*/
     width: 100% !important;
-    min-width: 600px;
+    /*min-width: 600px;*/
 }
 
 .grid-table-stuff th, td {
@@ -30,6 +30,12 @@ html {
 
 
 }
+
+
+.grow tr:hover td {
+    background-color: #00000008;
+    cursor : pointer;} `
+
 
 /*
 h1 {

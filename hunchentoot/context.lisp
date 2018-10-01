@@ -315,37 +315,19 @@
 				      (digx item :context-spec :name)))
 				 (cl-who:str (digx item :name))))))))))))))
 
-(defun render-entity-display ()
+(defun render-header-display (text)
   (with-html-string
     (:span :class
 	   (concatenate
 	    'string
 	    "navbar-text mr-auto font-weight-bold "
-	    (theme-element-attribute
+	    (tea
 	     (theme *system*)
 	     :nav-toggler-left
 	     :text-color-class)			     )
 	   	   
 	   (cl-who:str
-	    (frmt
-	     "Entities: ~A"
-	     (when (active-user)
-	       (let ((entities))
-	
-		 (dolist (license-code (digx (active-user)
-					     :selected-licenses))	
-		   (dolist (entity (available-entities license-code))
-		       (dolist (selected (getx (active-user)
-					       :selected-entities))
-			 (when (equalp (item-hash entity)
-				       selected)
-			   (if (not entities)
-			       (setf entities (getx entity :name))
-			       (setf entities
-				     (frmt "~A|~A"
-					   entities
-					   (getx entity :name) )))))))
-		 entities)))))))
+	    text))))
 
 (defun data-menu (menu-items)
   (let ((items))
@@ -383,12 +365,14 @@
 
 (defun render-menu-item (item)
   (with-html-string
-    (:li :class "nav-item"
-	 (:a :class "nav-link bg-light text-dark border border-secondary rounded "
-	     :style "text-overflow: ellipsis;overflow: hidden;"
+
+    
+    (:a :class "btn btn-outline-light text-dark w-100 text-left"
+	:role "button"
+	    
 	     :href (context-url
 		    (digx item :context-spec :name))
-	     (cl-who:str (digx item :name))))))
+	     (cl-who:str (digx item :name)))))
 
 (defun render-left-user-menu ()
   (with-html-string
@@ -407,7 +391,27 @@
 	       (:div :id "data-menu" :class "expand"
 		     (:ul :class "nav flex-column ml"
 			  (dolist (item (data-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item item))))))
+			  
+			    (cl-who:htm
+			     (:div :class "btn-group "
+				  
+				   (:button
+				    
+				    :class "btn btn-light"
+				    :name "filter-grid" 
+				    
+				    :data-toggle "collapse"
+				    :href "#collapseFilter" 
+				    :aria-expanded "false"
+				    :aria-controls="collapseFilter"
+				    :aria-pressed "false"
+				    (:i
+				    
+				     :class (frmt "fa ~A"
+						   (digx item :context-spec
+							 :icon))))
+				 
+				   (cl-who:str (render-menu-item item))))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -564,6 +568,14 @@
 (defun theme-element-attribute (theme element attribute)
   (dig theme element attribute))
 
+(defun tea (theme element attribute &optional default)
+  (let ((attribute 
+	 (theme-element-attribute theme element attribute)))
+    (if attribute
+	attribute
+	default)))
+
+
 (defun theme-style (theme element)
   (let ((style-string ""))
     (dolist (style (dig theme element :style))
@@ -572,7 +584,12 @@
 		    (frmt "~A: ~A;" (first style) (second style)))))
     style-string))
 
-
+(defun ts (theme element &optional default)
+  (let ((style
+	 (theme-style theme element)))
+    (if (not (empty-p style))
+	style
+	default)))
 
 (defgeneric page-css (system &key &allow-other-keys))
 
@@ -699,6 +716,11 @@
 
     (:script :type "text/javascript"
 	     (cl-who:str
+	      "prep_expands();"))
+
+    
+    (:script :type "text/javascript"
+	     (cl-who:str
 	      (frmt	      
 	       "function ajax_call(func, callback, args, widget_args) {
 
@@ -767,13 +789,13 @@
 	     (:nav 
 	      :class "navbar sticky-top d-print-none justify-content-between bg-white"
 	      :style
-	      (if (theme-element
-		     (theme system) :main-nav-bg-image)
-		(frmt "background-image: url(~Acor/web/images/~A);background-size: cover;box-shadow: 0px 5px 10px;"
+	      (if (tea (theme system) :main-nav-bar :bg-image)
+		(frmt "background-image: url(~Acor/web/images/~A);~A"
 		      (site-url system)
-		      (theme-element
-		       (theme system) :main-nav-bg-image))
-		"box-shadow: 0px 5px 10px;")
+		      (tea (theme system) :main-nav-bar :bg-image)
+		      (ts (theme system) :main-nav-bg-image))
+		(ts (theme system) :main-nav-bar
+		    "background-size: cover;box-shadow: 0px 1px 2px"))
 	      
 	      (if (current-user)
 		  (cl-who:htm 
@@ -781,7 +803,7 @@
 			    (concatenate
 			     'string
 			     "navbar-toggler navbar-toggler-left "
-			     (theme-element-attribute
+			     (tea
 			      (theme system)
 			      :nav-toggler-left
 			      :text-color-class))
@@ -796,14 +818,17 @@
 	      
 	      (:a :class "navbar-brand" :href "#" 
 		  (:img
-		   :style (theme-style (theme system) :main-nav-logo)
+		   :style (ts (theme system) :main-nav-logo
+			      "height:50px;")
 		   :src (frmt "~Acor/web/images/~A"
 			      (site-url system)
-			      (theme-element-attribute
-			       (theme system) :main-nav-logo :src)))
+			      (tea
+			       (theme system)
+			       :main-nav-logo
+			       :src)))
 		  (name system))
 
-	      (cl-who:str (render-entity-display))
+	      (cl-who:str (render-header-display ""))
 	      
 	      (cl-who:str (render-user-admin-menu))
 	      
