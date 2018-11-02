@@ -16,14 +16,24 @@ html {
     border-collapse: collapse;
     /*table-layout:fixed;*/
     width: 100% !important;
-    /*min-width: 600px;*/
+    table-layout:fixed;
+    display:table;
+    min-width: 250px;
 }
 
 .grid-table-stuff th, td {
     border: 1px solid lightgrey;
     word-break: keep-all;
+    width:100%;
 
 }
+
+.grid-table-stuff tbody {
+    box-sizing: content-box;
+   
+
+}
+
 
 .grid-card-header {
     height:12px;

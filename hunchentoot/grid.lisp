@@ -587,6 +587,7 @@
       (cl-who:htm
        (:div
 	:class "row"
+
 	(:div :class "col"
 	      (:button :class "btn btn-primary"
 		       :type "button"
@@ -594,7 +595,7 @@
 		       :data-target (frmt "#~A-more" sub-data-type)
 		       :area-expanded "false"
 		       :area-controls (frmt "~A-more" sub-data-type)
-		       (cl-who:str sub-data-type))
+		       (cl-who:str (getf field :label)))
 	      ))
   
        (let ((sub-item (getx item (getf field :name))))
@@ -641,7 +642,9 @@
 	    (cl-who:htm
 	     (:td )))
 	
-	(dolist (field (limit-fields (get-data-fields header-fields)))	  
+	(dolist (field (limit-fields (get-data-fields
+				      header-fields)
+				      parent-item))	  
 	  (cl-who:str (render-table-cell field item)))
 
 	
@@ -651,10 +654,14 @@
        
        (:tr 
 	(:td :colspan (if sub-fields
-			  (+ (length (limit-fields header-fields)) 2)
-			  (+ (length (limit-fields header-fields)) 1))		 
+			  (+ (length (limit-fields header-fields
+						   parent-item))
+			     2)
+			  (+ (length (limit-fields header-fields
+						   parent-item))
+			     1))		 
 	     (:form :class "card"
-		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;"
+		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;min-width:255px;"
 		   :id (string-downcase (frmt "grid-edit-~A"  data-type))
 
 		   (:div
@@ -688,8 +695,10 @@
 
 			  (when (equalp (complex-type field)
 					:item)
-			    (cl-who:str
-			     (render-grid-edit-more field item))))))
+			  
+			    (when (data-type-access-p (digx field :db-type :data-type))
+			      (cl-who:str
+			       (render-grid-edit-more field item)))))))
 		   
 		   (when (getcx data-type :validation-errors)
 		     (let ((errors (getcx data-type :validation-errors)))
@@ -725,10 +734,12 @@
 		      (frmt "~A" data-type))
 	     (js-pair "action" "grid-col-filter")))))
 
-(defun limit-fields (fields)
-  (if (> (length fields) 7)
-      (subseq fields 0 7)
-      fields))
+(defun limit-fields (fields parent-item)
+  (if parent-item
+      (subseq fields 0 2)
+      (if (> (length fields) 7)
+	  (subseq fields 0 7)
+	  fields)))
 
 (defun rough-half-list (list &optional (half-if-length 2))
   (when list
@@ -780,7 +791,8 @@
 	       (cl-who:htm (:th)))
 	   
 	   
-	   (dolist (field (limit-fields (get-header-fields fields)))
+	   (dolist (field (limit-fields (get-header-fields fields)
+					nil))
 		 (let* ((name (getf field :name)))
 						
 		   (cl-who:htm
@@ -797,8 +809,10 @@
 
 (defun render-header-row (data-type fields subs sup-p)
   (let ((header-fields (if sup-p
-			   (limit-sub-fields (get-header-fields fields))
-			   (limit-fields (get-header-fields fields)))))
+			   (limit-sub-fields (get-header-fields fields)
+					     )
+			   (limit-fields (get-header-fields fields)
+					 nil))))
     (with-html-string
       
       (:tr :class "bg-light"
@@ -1044,7 +1058,8 @@
 (defun render-item-row (subs data-type item fields hierarchy sub-p)
   (let ((row-fields (if sub-p
 			 (limit-sub-fields (get-data-fields fields))
-			 (limit-fields (get-data-fields fields)))))
+			 (limit-fields (get-data-fields fields)
+				       nil))))
     (with-html-string
       (:tbody
        :class "grow"
@@ -1098,7 +1113,8 @@
 		 (:tr
 		  (:td)
 	
-		  (dolist (field (limit-fields fields))
+		  (dolist (field (limit-fields fields
+					       t))
 		    (cl-who:str (render-table-cell field item)))
 
 		  (:td :style "width:50px;"
@@ -1123,7 +1139,9 @@
 		:id (frmt "ajax-select-from-group-~A"
 			  (dig sub :db-type :data-type))
 		(:tr
-		 (:td :colspan (+ (length (limit-fields fields)) 2)
+		 (:td :colspan (+ (length (limit-fields fields
+							t))
+				  2)
 		      (:span :class "font-weight-bold"
 		       (cl-who:str
 			  (frmt "Select ~A to add..."
@@ -1167,7 +1185,9 @@
 	
 	(:tbody :style "display:table-row-group;"
 		(:tr
-		 (:td :colspan (+ (length (limit-fields fields)) 2)
+		 (:td :colspan (+ (length (limit-fields fields
+							t))
+				  2)
 		      (:table
 		       (cl-who:str (render-select-item-row
 				    (dig sub :db-type :data-type)
@@ -1209,7 +1229,7 @@
 		      (cl-who:htm
 		       (:div :class "card"
 			     :id sub-data-spec
-			     :style "border-left-style: dotted;border-width:2px; border-left-color:#48C9B0;"
+			     :style "border-left-style: dotted;border-width:2px; border-left-color:#48C9B0;min-width:255px;"
 			     (:h5 :class "card-header"
 				  (cl-who:str
 				   (frmt "~A" (string-capitalize
@@ -1223,27 +1243,28 @@
 			     (:div :class "card-block"
 				   (:div  :class "row"
 					  (:div :class "col"
-						(:table :class "grid-table-stuff"
-							:style "width:100%;"
+						(:table
+						 :class "grid-table-stuff"
+						 ;;:style "width:100%;"
 
-							(:tbody
-							 :style "display:none"
-							 :id (frmt "ajax-edit-nil" ))
-							(:tbody
-							 (cl-who:str
-							  (render-grid-header
-							   sub-data-spec
-							   t)))
-							
-							(cl-who:str
-							 
-							 (render-grid-data
-							  sub-data-spec
-							  (getfx item sub) 
-							  (+ sub-level 1)
-							  item
-							  data-type
-							  hierarchy))))))
+						 (:tbody
+						  :style "display:none"
+						  :id (frmt "ajax-edit-nil" ))
+						 (:tbody
+						  (cl-who:str
+						   (render-grid-header
+						    sub-data-spec
+						    t)))
+								    
+						 (cl-who:str
+								     
+						  (render-grid-data
+						   sub-data-spec
+						   (getfx item sub) 
+						   (+ sub-level 1)
+						   item
+						   data-type
+						   hierarchy))))))
 			     
 			     (cl-who:str
 			      (render-select-from-grid
@@ -1279,10 +1300,12 @@
 	      (:tr
 	       (:td :colspan (if subs
 				 (+ (length
-				     (limit-fields header-fields))
+				     (limit-fields header-fields
+						   sub-level-p))
 				    2)
 				 (+ (length
-				     (limit-fields header-fields))
+				     (limit-fields header-fields
+						   sub-level-p))
 				    1))
 			   
 		    (cl-who:str (render-expand data-type item subs
@@ -1292,11 +1315,13 @@
 
 (defun render-new-edit (data-type fields parent-item parent-spec hierarchy)
   (with-html-string
-    (:div :id (frmt "ajax-new-~A" data-type)
-	  
-	  (when (and (getcx data-type :edit-item)
-		     (not (item-hash (getcx data-type :edit-item))))
-	    (when (and (and (equalp (parameter "action") "save")
+
+    (:tbody ;;:style "display:none"
+	    :id (frmt "ajax-new-~A" data-type)
+	    
+	    (when (and (getcx data-type :edit-item)
+		       (not (item-hash (getcx data-type :edit-item))))
+	      (when (and (and (equalp (parameter "action") "save")
 			      (getcx data-type :edit-object)
 			      (getcx data-type :validation-errors))
 			 (string-equal (parameter "data-type")
@@ -1349,6 +1374,7 @@
 		    
 	(dolist (field fields)
 	  (when (sub-grid-p field)
+	 
 	    (when (data-type-access-p (getf (getf field :db-type)
 					    :data-type))
 	     
@@ -2036,16 +2062,17 @@
 		      :id data-type
 		      (:div :class "row"
 			    (:div :class "col"
-				  (:table :class "grid-table-stuff"
-					  :style "width:100%;"
-					  
-					  (:tbody
-					   (cl-who:str
-					    (render-grid-header data-type nil)))
-					  (cl-who:str
-					   (render-grid-data
-					    data-type page-items 0 nil nil
-					    nil))))))
+				  (:table
+				   :class "grid-table-stuff"
+				   :style "width:100%;"
+						      
+				   (:tbody
+				    (cl-who:str
+				     (render-grid-header data-type nil)))
+				   (cl-who:str
+				    (render-grid-data
+				     data-type page-items 0 nil nil
+				     nil))))))
 
 		(:div :class "card-footer"
 		      (:div :class "row"
@@ -2369,7 +2396,7 @@
       (return-from find-contained-item item))))
 
 (defun synq-value (field edit-item parent-item value)
-  (cond ((equalp (complex-type field) :collection)
+(cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
 	       (wfx-fetch-context-item
 		(dig field :db-type :collection)
@@ -2390,6 +2417,17 @@
 		value
 		(accessor-value parent-item
 				(digx field :db-type :container-accessor)) )))
+	((equalp (complex-type field) :item)
+	 (let* ((sub-data-type (digx field :db-type :data-type))
+	       (more-item (or (getfx edit-item field)
+				 (make-item :data-type
+					    sub-data-type))))
+	   (synq-item-values sub-data-type
+			     (getcx sub-data-type :fields)
+			     edit-item
+			     more-item)
+
+	   (setf (getfx edit-item field) more-item)))
 	(t	
 	 (setf (getfx edit-item field) value))))
 
@@ -2430,7 +2468,8 @@
       (list t nil)))
 
 (defun synq-item-values (data-type fields parent-item edit-item)
-  (dolist (field fields)	  
+  (dolist (field fields)
+
     (when (and (digx field :attributes :editable)
 	       (getf field :db-type)
 	       (not (sub-grid-p field)))
@@ -2447,6 +2486,7 @@
 			(list t nil))))
 	      
 	(unless (first valid)
+	  
 	  (pushnew 
 	   (list field-name (second valid))
 	   (getcx data-type :validation-errors)))
@@ -2456,7 +2496,7 @@
 	  (synq-value field edit-item parent-item
 		      (or (parameter (string-downcase field-name))
 			  (parameter field-name))))))	  
-	 
+  
     (when (getf field :key-p)	   
       (when (empty-p (parameter (getf field :name)))
 	(pushnew
@@ -2479,7 +2519,8 @@
   (unless (getcx data-type :validation-errors)
     (let ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*)))))
-      
+    
+      (setf (getx root-item :user) (getx (current-user) :email))
       (unless collection
 	(pushnew 
 	 "No default store found check if license is selected."

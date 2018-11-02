@@ -6,7 +6,11 @@
 	(accessors (if (listp (getf field :db-type))
 		       (dig field :db-type :accessor))))
 
-
+    (when (listp val)
+    ;;  (break "~A" (first val))
+	(setf val (first val))
+	)
+    
     (if (if accessors
 	    (accessor-value val accessors)
 	    val)
