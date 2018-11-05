@@ -854,7 +854,7 @@
 	      :class "container-fluid"
 	      (:div :class "row"
 		    (:div
-		     :class "collapse col-md col-md-auto show d-print-none"
+		     :class "collapse show d-print-none "
 		     :id "exNavbarLeft"
 		     (:br)
 		     (cl-who:str (render-left-user-menu)))

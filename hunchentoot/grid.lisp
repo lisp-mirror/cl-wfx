@@ -4,7 +4,6 @@
 (defparameter *limit-columns* 7)
 
 
-
 (defun complex-type (field)
   (if (listp (getf field :db-type))
       (or (dig field :db-type :complex-type)
@@ -637,79 +636,80 @@
 			(if item
 			    (item-hash item)
 			    nil))	
-       (:tr :class "bg-light"
-	(if sub-fields
-	    (cl-who:htm
-	     (:td )))
+	      (:tr :class "bg-light"
+		  ;; (break "~A" sub-fields)
+		   (if sub-fields
+		       (cl-who:htm
+			(:td :style "width: 25px;" )))
 	
-	(dolist (field (limit-fields (get-data-fields
-				      header-fields)
-				      parent-item))	  
-	  (cl-who:str (render-table-cell field item)))
+		   (dolist (field (limit-fields (get-data-fields
+						 header-fields)
+						parent-item))	  
+		     (cl-who:str (render-table-cell field item)))
 
 	
 
-	(:td :style "width:50px;"
-	 (cl-who:str (render-edit-buttons data-type hierarchy))))
+		   (:td :style "min-width:30px;"
+			(cl-who:str (render-edit-buttons data-type hierarchy))))
        
-       (:tr 
-	(:td :colspan (if sub-fields
-			  (+ (length (limit-fields header-fields
-						   parent-item))
-			     2)
-			  (+ (length (limit-fields header-fields
-						   parent-item))
-			     1))		 
-	     (:form :class "card"
-		   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;min-width:255px;"
-		   :id (string-downcase (frmt "grid-edit-~A"  data-type))
+	      (:tr 
+	       (:td :colspan (if sub-fields
+				 (+ (length (limit-fields header-fields
+							  parent-item))
+				    2)
+				 (+ (length (limit-fields header-fields
+							  parent-item))
+				    1))		 
+		    (:form :class "card"
+			   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;box-shadow: 0px 5px 10px;min-width:255px;"
+			   :id (string-downcase (frmt "grid-edit-~A"  data-type))
 
-		   (:div
-		    :class "card-block"
+			   (:div
+			    :class "card-block"
 
-		    (:div :class "row" 
-			  :id (frmt "~A" data-type)
-			  (:div :class "col" 
-				(dolist (field fields)
-				  (let* ((name (getf field :name))
-					 (label (getf field :label)))
+			    (:div :class "row" 
+				  :id (frmt "~A" data-type)
+				  (:div :class "col" 
+					(dolist (field fields)
+					  (let* ((name (getf field :name))
+						 (label (getf field :label)))
 					
-				    (when (and (digx field :attributes :display) 
-					       (not (sub-grid-p field)))
+					    (when (and (digx field :attributes :display) 
+						       (not (sub-grid-p field)))
 
-				      (unless (equalp (complex-type field)
-						  :item)
+					      (unless (equalp (complex-type field)
+							      :item)
 					
 					  
-					  (cl-who:str
-					   (render-grid-edit-row
-					    data-type name
-					    field label
-					    item parent-item)))
+						(cl-who:str
+						 (render-grid-edit-row
+						  data-type name
+						  field label
+						  item parent-item)))
 				      
-				      )))))
+					      )))))
 		    
-		    (dolist (field fields)
-		      (when (and (digx field :attributes :display) 
-				   (not (sub-grid-p field)))
+			    (dolist (field fields)
+			      (when (and (digx field :attributes :display) 
+					 (not (sub-grid-p field)))
 
-			  (when (equalp (complex-type field)
-					:item)
+				(when (equalp (complex-type field)
+					      :item)
 			  
-			    (when (data-type-access-p (digx field :db-type :data-type))
-			      (cl-who:str
-			       (render-grid-edit-more field item)))))))
+				  (when (data-type-access-p (digx field :db-type :data-type))
+				    (cl-who:str
+				     (render-grid-edit-more field item)))))))
 		   
-		   (when (getcx data-type :validation-errors)
-		     (let ((errors (getcx data-type :validation-errors)))
-		       (setf (getcx data-type :validation-errors) nil)
-		       (cl-who:htm
-			(:div :class "card-footer"
-			      (:div :class "row"
-				    (:div :clas "col"
-					  (cl-who:str
-					   (frmt "Errors ~S"
-						 errors)))))))))))))))
+			   (when (getcx data-type :validation-errors)
+			     (let ((errors (getcx data-type :validation-errors)))
+			       (setf (getcx data-type :validation-errors) nil)
+			       (cl-who:htm
+				(:div :class "card-footer"
+				      (:div :class "row"
+					    (:div :clas "col"
+						  (cl-who:str
+						   (frmt "Errors ~S"
+							 errors)))))))))))))))
 
 (defun render-grid-col-filter (data-type col-name)
   (with-html-string
@@ -809,8 +809,7 @@
 
 (defun render-header-row (data-type fields subs sup-p)
   (let ((header-fields (if sup-p
-			   (limit-sub-fields (get-header-fields fields)
-					     )
+			   (limit-sub-fields (get-header-fields fields))
 			   (limit-fields (get-header-fields fields)
 					 nil))))
     (with-html-string
@@ -834,7 +833,7 @@
 					    (format nil "~A" name) 
 					    :test #'equalp)))))))))
 	   (cl-who:htm
-	    (:th :width "50px;"
+	    (:th :style "min-width:30px;"
 		 (:div :class :row
 		       
 		       (:div :class "col form-check-label"
@@ -848,7 +847,7 @@
 				 :onclick "gridSelectAll();"
 				 :value "All"
 				 :checked (parameter "grid-select-all"))
-				"Select All"))))))))))
+				"All"))))))))))
 
 (defun render-grid-header (data-type sub-p)
   (let ((fields (getcx	data-type :fields))
@@ -1013,47 +1012,47 @@
        (:td
 
 	:style (cond
-		     ((or (equalp (simple-type field) :integer)
-			  (equalp (simple-type field) :number))
-		      "text-align:right;")
-		     (t
-		      "text-align:left;"))
-	    (cond
-	      ((empty-p val)
-	       (cl-who:str val))
-	      ((equalp (complex-type field) :script)
-	       (cl-who:htm
-		(:textarea :readonly "readonly" :style "width:100%;"
-			   (cl-who:str val))))
+		 ((or (equalp (simple-type field) :integer)
+		      (equalp (simple-type field) :number))
+		  "text-align:right;width:15%;")
+		 (t
+		  "text-align:left;width:15%;"))
+	(cond
+	  ((empty-p val)
+	   (cl-who:str val))
+	  ((equalp (complex-type field) :script)
+	   (cl-who:htm
+	    (:textarea :readonly "readonly" :style "width:100%;"
+		       (cl-who:str val))))
 	      
-	      ((equalp (complex-type field) :text)
-	       (cl-who:htm
-		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
-		      (cl-who:str val)
-		      )))
-	      ((and (or (equalp (complex-type field) :string)
-			(equalp (complex-type field) :link)
-			(equalp (complex-type field) :list)
-			(equalp (complex-type field) :collection))
-		    (or (> (length val) 15)
-			(and
-			 (> (length val) 15)
-			 (> (length val) (length (getf field :label))))))
+	  ((equalp (complex-type field) :text)
+	   (cl-who:htm
+	    (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
+		  (cl-who:str val)
+		  )))
+	  ((and (or (equalp (complex-type field) :string)
+		    (equalp (complex-type field) :link)
+		    (equalp (complex-type field) :list)
+		    (equalp (complex-type field) :collection))
+		(or (> (length val) 15)
+		    (and
+		     (> (length val) 15)
+		     (> (length val) (length (getf field :label))))))
 	       
-	       (cl-who:htm
-		(:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
-		      (cl-who:str val))))
-	      ((or (equalp (complex-type field) :number)
-			(equalp (complex-type field) :integer))
-	       (cl-who:str val))
-	      (t
+	   (cl-who:htm
+	    (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
+		  (cl-who:str val))))
+	  ((or (equalp (complex-type field) :number)
+	       (equalp (complex-type field) :integer))
+	   (cl-who:str val))
+	  (t
 	       
-	       (cl-who:htm
+	   (cl-who:htm
 		 
-		(:div
-		 :style "display:table-cell;height:25px;vertical-align:middle;width:100%;"
+	    (:div
+	     :style "display:table-cell;height:25px;vertical-align:middle;width:100%;"
 			    
-		 (cl-who:str val))))))))))
+	     (cl-who:str val))))))))))
 
 (defun render-item-row (subs data-type item fields hierarchy sub-p)
   (let ((row-fields (if sub-p
@@ -1090,7 +1089,7 @@
 	(dolist (field row-fields)
 	  (cl-who:str (render-table-cell field item)))
 
-	(:td :style "width:50px;"
+	(:td :style "min-width:30px;"
 	     (:div :class "btn-group float-right"
 		   
 		   (when (not *rendering-shit*)
@@ -1117,7 +1116,7 @@
 					       t))
 		    (cl-who:str (render-table-cell field item)))
 
-		  (:td :style "width:50px;"
+		  (:td :style "min-width:30px;"
 		       (:div :class "btn-group float-right"
 			     (when (check-top-level-p data-type)	       
 			       (cl-who:str
@@ -1245,7 +1244,7 @@
 					  (:div :class "col"
 						(:table
 						 :class "grid-table-stuff"
-						 ;;:style "width:100%;"
+					
 
 						 (:tbody
 						  :style "display:none"
@@ -2064,7 +2063,7 @@
 			    (:div :class "col"
 				  (:table
 				   :class "grid-table-stuff"
-				   :style "width:100%;"
+				  
 						      
 				   (:tbody
 				    (cl-who:str

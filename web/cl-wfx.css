@@ -24,7 +24,7 @@ html {
 .grid-table-stuff th, td {
     border: 1px solid lightgrey;
     word-break: keep-all;
-    width:100%;
+    /* width:100%;*/
 
 }
 
