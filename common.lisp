@@ -140,7 +140,9 @@ is replaced with replacement."
    (not value)
    (null value)
    (equal value "")
-   (string-equal value "NIL")
+   (if (stringp value)
+       (string-equal value "NIL")
+       )
    (equal (trim-whitespace (princ-to-string value)) "")))
 
 ;;#####################DATES
