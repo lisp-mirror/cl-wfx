@@ -649,7 +649,7 @@
 
 	
 
-		   (:td :style "min-width:30px;"
+		   (:td 
 			(cl-who:str (render-edit-buttons data-type hierarchy))))
        
 	      (:tr 
@@ -832,22 +832,28 @@
 				(substitute #\Space  (character "-")  
 					    (format nil "~A" name) 
 					    :test #'equalp)))))))))
-	   (cl-who:htm
-	    (:th :style "min-width:30px;"
-		 (:div :class :row
-		       
-		       (:div :class "col form-check-label"
-			     (when (check-top-level-p data-type)
-			       (cl-who:htm
-				(:input
-				 :class "float-right"
-				 :type "checkbox"
-				 :id "grid-select-all"
-				 :name "grid-select-all"
-				 :onclick "gridSelectAll();"
-				 :value "All"
-				 :checked (parameter "grid-select-all"))
-				"All"))))))))))
+
+	   (:th 
+	    )
+	   
+	   (when (check-top-level-p data-type)
+	     
+	     (cl-who:htm
+	      
+	      (:th :width "5px"
+		   (cl-who:htm
+		    (:input
+		     :class "float-right"
+		     :type "checkbox"
+		     :id "grid-select-all"
+		     :name "grid-select-all"
+		     :onclick "gridSelectAll();"
+		     :value "All"
+		     :checked (parameter "grid-select-all"))
+		    ;;	"All"
+		    )
+		   
+		   )))))))
 
 (defun render-grid-header (data-type sub-p)
   (let ((fields (getcx	data-type :fields))
@@ -889,7 +895,7 @@
     (when action-list 
       (with-html-string
 	;;TODO: float right fucks up dropdown menu positioning
-	  (:div ;;:class " float-right"
+	  (:div :class " float-right"
 		:id "select-stuff"
 		:name "select-stuff"
 		(cl-who:str
@@ -1014,9 +1020,9 @@
 	:style (cond
 		 ((or (equalp (simple-type field) :integer)
 		      (equalp (simple-type field) :number))
-		  "text-align:right;width:15%;")
+		  "text-align:right;")
 		 (t
-		  "text-align:left;width:15%;"))
+		  "text-align:left;"))
 	(cond
 	  ((empty-p val)
 	   (cl-who:str val))
@@ -1089,16 +1095,22 @@
 	(dolist (field row-fields)
 	  (cl-who:str (render-table-cell field item)))
 
-	(:td :style "min-width:30px;"
-	     (:div :class "btn-group float-right"
+	(:td 
+	      (:div :class "btn-group float-right"
 		   
 		   (when (not *rendering-shit*)
 		     (cl-who:str			      
 		      (render-grid-buttons data-type item hierarchy)))
 		   
-		   (when (check-top-level-p data-type)	       
-		     (cl-who:str
-		      (render-select-button item))))))))))
+		   ))
+	(when (check-top-level-p data-type)
+	  (cl-who:htm
+	   (:td :width "5px"
+	    
+	    (cl-who:str
+	     (render-select-button item)))))
+	
+	)))))
 
 
 
@@ -1116,7 +1128,7 @@
 					       t))
 		    (cl-who:str (render-table-cell field item)))
 
-		  (:td :style "min-width:30px;"
+		  (:td :width "5px"
 		       (:div :class "btn-group float-right"
 			     (when (check-top-level-p data-type)	       
 			       (cl-who:str
@@ -1204,7 +1216,10 @@
    
     (with-html-string
       (:div :class "row"
-	    (:div :class "col card-columns"
+	   ;; (break "~A ~A " sub-level sub-level-p)
+	    (:div :class (if (> sub-level 0)
+			     "col card-groups"
+			     "col card-columns")
 		  (dolist (sub subs)
 		    (let* ((sub-data-spec (dig sub :db-type :data-type)))
 
@@ -1244,7 +1259,7 @@
 					  (:div :class "col"
 						(:table
 						 :class "grid-table-stuff"
-					
+						 :style "width: 100%;"
 
 						 (:tbody
 						  :style "display:none"
@@ -1907,7 +1922,7 @@
 		       :data-toggle "collapse"
 		       :href "#collapseFilter" 
 		       :aria-expanded "false"
-		       :aria-controls="collapseFilter"
+		       :onclick (grid-js-render-new data-type nil)
 		       :aria-pressed "false"
 		       (:i :class "fa fa-plus-square"))
 		      (:button
@@ -2030,7 +2045,7 @@
 		  
 		      
 		       
-		       (:div :class "col-1"
+		       (:div :class "col-2"
 			     (:table :class "float-right"
 			      (:tr
 			       (:td
@@ -2063,7 +2078,7 @@
 			    (:div :class "col"
 				  (:table
 				   :class "grid-table-stuff"
-				  
+				   :style "width: 100%;"
 						      
 				   (:tbody
 				    (cl-who:str
@@ -2083,7 +2098,7 @@
 				   :onclick 
 				   (grid-js-render-new data-type nil)
 				   (cl-who:str "+")))
-			    (:div :class "col-2"
+			    (:div :class "col"
 				  (cl-who:str
 				   (render-select-actions
 				    data-type)))))

@@ -239,7 +239,8 @@
 
 (defun context-access-p (context)
   (let ((access-p))
-  
+
+   
     (when (and (active-user)
 	       (digx (active-user) :selected-licenses))
       (cond ((getx (current-user) :super-user-p)
@@ -254,7 +255,7 @@
 		     (when (equalp context
 				   (digx permission
 					 :context-spec))
-		       
+		    
 		       (setf access-p t))))))))
     access-p))
 
@@ -332,11 +333,12 @@
 (defun data-menu (menu-items)
   (let ((items))
     (dolist (item menu-items)
+   
       (when (and
 	     (digx item :context-spec)
 	     (context-access-p
 	      (digx item :context-spec))
-	     (getx (digx item :context-spec) :collection))
+	     (item-collection (digx item :context-spec) ))
 	(pushnew item items)))
     (reverse items)))
 
@@ -386,10 +388,11 @@
 		   :data-toggle "collapse"
 		   :href "#data-menu"
 		   (:strong "Data")))
-	      
+	  
 	      (cl-who:htm
 	       (:div :id "data-menu" :class "expand"
 		     (:ul :class "nav flex-column ml"
+			  
 			  (dolist (item (data-menu (digx menu :menu-items)))
 			  
 			    (cl-who:htm
@@ -410,7 +413,7 @@
 				     :class (frmt "fa ~A"
 						   (digx item :context-spec
 							 :icon))))
-				 
+				   
 				   (cl-who:str (render-menu-item item))))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
