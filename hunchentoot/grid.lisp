@@ -466,7 +466,7 @@
 	       (cl-who:htm
 		(:i 
 		 :name "edit"
-		 :class "fa fa-remove fa-2x text-danger"
+		 :class "fa fa-times fa-2x text-danger"
 		 :onclick
 		 (frmt "if(confirm(\"Are you sure you want to delete?\")){~A}"
 		       (grid-js-render-delete data-type
@@ -519,7 +519,7 @@
 	   :update)
       (cl-who:htm
        (:i :name "save" 				   	 
-	   :class "fa fa-floppy-o fa-2x text-success"
+	   :class "fa fa-save fa-2x text-success"
 	   :onclick
 	   (frmt "if(document.getElementById(\"grid-edit-~A\").checkValidity()) {~A}else console.log(\"invalid form\");"
 		 data-type
