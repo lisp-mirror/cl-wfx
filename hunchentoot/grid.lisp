@@ -2176,6 +2176,7 @@
 	   (setf list (sort (copy-list list) #'string<
 			    :key (lambda (item)
 				   (accessor-value item accessors))))
+	   
 	   (dolist (option list)
 	     (cl-who:htm
 	      (:span :class "auto-complete-item nav-link"

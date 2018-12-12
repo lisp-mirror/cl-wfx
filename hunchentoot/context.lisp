@@ -338,7 +338,9 @@
 	     (digx item :context-spec)
 	     (context-access-p
 	      (digx item :context-spec))
-	     (item-collection (digx item :context-spec) ))
+	     (item-collection (digx item :context-spec)
+			      )
+	     (not (getx (digx item :context-spec) :report)))
 	(pushnew item items)))
     (reverse items)))
 
@@ -410,7 +412,7 @@
 				    :aria-pressed "false"
 				    (:i
 				    
-				     :class (frmt "fa ~A"
+				     :class (frmt "fa far ~A"
 						   (digx item :context-spec
 							 :icon))))
 				   
@@ -423,7 +425,28 @@
 	       (:div :id "report-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (report-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item  item))))))
+			    (cl-who:htm
+			     (:div :class "btn-group "
+				  
+				   (:button
+				    
+				    :class "btn btn-light"
+				    :name "filter-grid" 
+				    
+				    :data-toggle "collapse"
+				    :href "#collapseFilter" 
+				    :aria-expanded "false"
+				    :aria-controls="collapseFilter"
+				    :aria-pressed "false"
+				    (:i
+				    
+				     :class (frmt "fa far ~A"
+						   (digx item :context-spec
+							 :icon))))
+				   
+				   (cl-who:str (render-menu-item item))))
+			    
+			    ))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -602,10 +625,7 @@
 (defmethod page-css :around ((system hunch-system) &key &allow-other-keys)
   
   (with-html-string
-    (:link :rel "stylesheet"
-	   :href (frmt "~Aweb/font-awesome-4.7.0/css/font-awesome.min.css"
-		       (site-url system)))
-    
+ 
     (:link :rel "stylesheet"
 	   :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
 	   :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
@@ -617,9 +637,13 @@
 	   :type "text/css")
 
     (:link :rel "stylesheet"
-	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
+	   :href "https://use.fontawesome.com/releases/v5.6.0/css/all.css"
+	   :integrity "sha384-aOkxzJ5uQz7WBObEZcHvV5JvRW3TUc2rNPA7pe3AwnsUohiw1Vj2Rgx2KSOkF5+h"
+	   :crossorigin "anonymous")
 
-    
+  
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
     
        #|
       (cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
