@@ -268,3 +268,47 @@ that override others to the correct level."
 					item)))))))))))
   
     (first (remove-if #'not items))))
+
+(defun in-place-subst (file refs)
+  (let ((backup-file (format nil "~A.shash.bak" file)))
+    (fad:copy-file file backup-file)
+    (with-open-file (in-stream backup-file)
+      (with-open-file (out-stream file :direction :output :if-exists :supersede)
+        (loop for line = (read-line in-stream nil)
+           while line do
+	     (dolist (ref refs)
+	       (setf line (cl-ppcre:regex-replace-all (frmt " ~A" (fourth ref)) line (frmt " ~A" (third ref)))))
+             (write-line line out-stream))))))
+
+(defun replace-refs (dir refs)
+  (let ((files (directory (format nil "~A**/*.log" dir))))
+    (dolist (file files)
+      (in-place-subst file refs)
+      )
+    ))
+
+
+(defun sanitize-data-file (collection-name path)
+    (let ((items (cl-wfx:wfx-fetch-items
+		  collection-name
+		  :test (lambda (item)
+			  item))))
+      (when (probe-file
+	       (frmt "~A/~A/~A.old" path collection-name collection-name))
+	  (fad:copy-file (frmt "~A/~A/~A.old" path collection-name collection-name)
+			 (frmt "~A/~A/~A.old.old" path collection-name collection-name)
+			 :overwrite t))
+
+      (fad:copy-file (frmt "~A/~A/~A.log" path collection-name collection-name)
+		       (frmt "~A/~A/~A.old" path collection-name collection-name)
+		       :overwrite t)
+      
+      (dolist (item items)
+	(cl-naive-store::persist item
+				 :file (frmt "~A/~A/~A.new" path collection-name
+					     collection-name)
+				 :new-file-p t))
+      (fad:copy-file (frmt "~A/~A/~A.new" path collection-name collection-name)
+		       (frmt "~A/~A/~A.log" path collection-name collection-name)
+		       :overwrite t)
+      ))
