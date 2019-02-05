@@ -240,6 +240,7 @@ that override others to the correct level."
 					 (funcall test item)
 					 item))))
 			 :result-type result-type))))))
+    
       items))
 
 (defun wfx-fetch-context-item (collection &key test)

@@ -14,22 +14,39 @@ html {
 
 .grid-table-stuff table {
     border-collapse: collapse;
-    /*table-layout:fixed;*/
+   /* table-layout:fixed;*/
     width: 100% !important;
-    min-width: 600px;
+    /*display:table;*/
+    min-width: 250px;
 }
+
+
 
 .grid-table-stuff th, td {
     border: 1px solid lightgrey;
     word-break: keep-all;
+    /* width:100%;*/
 
 }
+
+.grid-table-stuff tbody {
+    box-sizing: content-box;
+   
+
+}
+
 
 .grid-card-header {
     height:12px;
 
 
 }
+
+
+.grow tr:hover td {
+    background-color: #00000008;
+    cursor : pointer;} `
+
 
 /*
 h1 {

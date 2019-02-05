@@ -6,7 +6,11 @@
 	(accessors (if (listp (getf field :db-type))
 		       (dig field :db-type :accessor))))
 
-
+    (when (listp val)
+    ;;  (break "~A" (first val))
+	(setf val (first val))
+	)
+    
     (if (if accessors
 	    (accessor-value val accessors)
 	    val)
@@ -210,7 +214,18 @@
 (defmethod print-item-val ((type (eql :collection-items))
 			   field item &key default-value
 					&allow-other-keys)
-  (print-item-val-s* field item))
+ 
+  (let ((item-val (getfx item field))
+	(accessor (dig field :db-type :accessor)))
+    
+    (when (listp item-val)
+      (when item-val
+	
+	(frmt "~A"
+	      (accessor-value (first item-val) (dig field :db-type :accessor))
+	      ))))
+  ;;(print-item-val-s* field item)
+  )
 
 (defmethod print-item-val ((type (eql :contained-item)) field item
 			   &key default-value
@@ -323,7 +338,7 @@
 	  (:textarea 
 	   :class "form-control"
 	   :id name
-	   :name name :cols 50 :rows 10
+	   :name name :cols 50 :rows 3
 	   :disabled "disabled"
 	   (cl-who:str (print-item-val 
 			type
@@ -335,7 +350,7 @@
 	  (:textarea 
 	   :class "form-control"
 	   :id name
-	   :name name :cols 50 :rows 10
+	   :name name :cols 50 :rows 3
 	   :required (if (getf field :key-p)
 			 "required")
 	   (cl-who:str

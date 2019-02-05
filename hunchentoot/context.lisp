@@ -239,7 +239,8 @@
 
 (defun context-access-p (context)
   (let ((access-p))
-  
+
+   
     (when (and (active-user)
 	       (digx (active-user) :selected-licenses))
       (cond ((getx (current-user) :super-user-p)
@@ -254,7 +255,7 @@
 		     (when (equalp context
 				   (digx permission
 					 :context-spec))
-		       
+		    
 		       (setf access-p t))))))))
     access-p))
 
@@ -315,46 +316,31 @@
 				      (digx item :context-spec :name)))
 				 (cl-who:str (digx item :name))))))))))))))
 
-(defun render-entity-display ()
+(defun render-header-display (text)
   (with-html-string
     (:span :class
 	   (concatenate
 	    'string
 	    "navbar-text mr-auto font-weight-bold "
-	    (theme-element-attribute
+	    (tea
 	     (theme *system*)
 	     :nav-toggler-left
 	     :text-color-class)			     )
 	   	   
 	   (cl-who:str
-	    (frmt
-	     "Entities: ~A"
-	     (when (active-user)
-	       (let ((entities))
-	
-		 (dolist (license-code (digx (active-user)
-					     :selected-licenses))	
-		   (dolist (entity (available-entities license-code))
-		       (dolist (selected (getx (active-user)
-					       :selected-entities))
-			 (when (equalp (item-hash entity)
-				       selected)
-			   (if (not entities)
-			       (setf entities (getx entity :name))
-			       (setf entities
-				     (frmt "~A|~A"
-					   entities
-					   (getx entity :name) )))))))
-		 entities)))))))
+	    text))))
 
 (defun data-menu (menu-items)
   (let ((items))
     (dolist (item menu-items)
+   
       (when (and
 	     (digx item :context-spec)
 	     (context-access-p
 	      (digx item :context-spec))
-	     (getx (digx item :context-spec) :collection))
+	     (item-collection (digx item :context-spec)
+			      )
+	     (not (getx (digx item :context-spec) :report)))
 	(pushnew item items)))
     (reverse items)))
 
@@ -383,12 +369,14 @@
 
 (defun render-menu-item (item)
   (with-html-string
-    (:li :class "nav-item"
-	 (:a :class "nav-link bg-light text-dark border border-secondary rounded "
-	     :style "text-overflow: ellipsis;overflow: hidden;"
+
+    
+    (:a :class "btn btn-outline-light text-dark w-100 text-left"
+	:role "button"
+	    
 	     :href (context-url
 		    (digx item :context-spec :name))
-	     (cl-who:str (digx item :name))))))
+	     (cl-who:str (digx item :name)))))
 
 (defun render-left-user-menu ()
   (with-html-string
@@ -402,12 +390,33 @@
 		   :data-toggle "collapse"
 		   :href "#data-menu"
 		   (:strong "Data")))
-	      
+	  
 	      (cl-who:htm
 	       (:div :id "data-menu" :class "expand"
 		     (:ul :class "nav flex-column ml"
+			  
 			  (dolist (item (data-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item item))))))
+			  
+			    (cl-who:htm
+			     (:div :class "btn-group "
+				  
+				   (:button
+				    
+				    :class "btn btn-light"
+				    :name "filter-grid" 
+				    
+				    :data-toggle "collapse"
+				    :href "#collapseFilter" 
+				    :aria-expanded "false"
+				    :aria-controls="collapseFilter"
+				    :aria-pressed "false"
+				    (:i
+				    
+				     :class (frmt "fa far ~A"
+						   (digx item :context-spec
+							 :icon))))
+				   
+				   (cl-who:str (render-menu-item item))))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -416,7 +425,28 @@
 	       (:div :id "report-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (report-menu (digx menu :menu-items)))
-			    (cl-who:str (render-menu-item  item))))))
+			    (cl-who:htm
+			     (:div :class "btn-group "
+				  
+				   (:button
+				    
+				    :class "btn btn-light"
+				    :name "filter-grid" 
+				    
+				    :data-toggle "collapse"
+				    :href "#collapseFilter" 
+				    :aria-expanded "false"
+				    :aria-controls="collapseFilter"
+				    :aria-pressed "false"
+				    (:i
+				    
+				     :class (frmt "fa far ~A"
+						   (digx item :context-spec
+							 :icon))))
+				   
+				   (cl-who:str (render-menu-item item))))
+			    
+			    ))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -564,6 +594,14 @@
 (defun theme-element-attribute (theme element attribute)
   (dig theme element attribute))
 
+(defun tea (theme element attribute &optional default)
+  (let ((attribute 
+	 (theme-element-attribute theme element attribute)))
+    (if attribute
+	attribute
+	default)))
+
+
 (defun theme-style (theme element)
   (let ((style-string ""))
     (dolist (style (dig theme element :style))
@@ -572,7 +610,12 @@
 		    (frmt "~A: ~A;" (first style) (second style)))))
     style-string))
 
-
+(defun ts (theme element &optional default)
+  (let ((style
+	 (theme-style theme element)))
+    (if (not (empty-p style))
+	style
+	default)))
 
 (defgeneric page-css (system &key &allow-other-keys))
 
@@ -582,10 +625,7 @@
 (defmethod page-css :around ((system hunch-system) &key &allow-other-keys)
   
   (with-html-string
-    (:link :rel "stylesheet"
-	   :href (frmt "~Aweb/font-awesome-4.7.0/css/font-awesome.min.css"
-		       (site-url system)))
-    
+ 
     (:link :rel "stylesheet"
 	   :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
 	   :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
@@ -597,9 +637,13 @@
 	   :type "text/css")
 
     (:link :rel "stylesheet"
-	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
+	   :href "https://use.fontawesome.com/releases/v5.6.0/css/all.css"
+	   :integrity "sha384-aOkxzJ5uQz7WBObEZcHvV5JvRW3TUc2rNPA7pe3AwnsUohiw1Vj2Rgx2KSOkF5+h"
+	   :crossorigin "anonymous")
 
-    
+  
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
     
        #|
       (cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
@@ -699,6 +743,11 @@
 
     (:script :type "text/javascript"
 	     (cl-who:str
+	      "prep_expands();"))
+
+    
+    (:script :type "text/javascript"
+	     (cl-who:str
 	      (frmt	      
 	       "function ajax_call(func, callback, args, widget_args) {
 
@@ -767,13 +816,13 @@
 	     (:nav 
 	      :class "navbar sticky-top d-print-none justify-content-between bg-white"
 	      :style
-	      (if (theme-element
-		     (theme system) :main-nav-bg-image)
-		(frmt "background-image: url(~Acor/web/images/~A);background-size: cover;box-shadow: 0px 5px 10px;"
+	      (if (tea (theme system) :main-nav-bar :bg-image)
+		(frmt "background-image: url(~Acor/web/images/~A);~A"
 		      (site-url system)
-		      (theme-element
-		       (theme system) :main-nav-bg-image))
-		"box-shadow: 0px 5px 10px;")
+		      (tea (theme system) :main-nav-bar :bg-image)
+		      (ts (theme system) :main-nav-bg-image))
+		(ts (theme system) :main-nav-bar
+		    "background-size: cover;box-shadow: 0px 1px 2px"))
 	      
 	      (if (current-user)
 		  (cl-who:htm 
@@ -781,7 +830,7 @@
 			    (concatenate
 			     'string
 			     "navbar-toggler navbar-toggler-left "
-			     (theme-element-attribute
+			     (tea
 			      (theme system)
 			      :nav-toggler-left
 			      :text-color-class))
@@ -796,14 +845,17 @@
 	      
 	      (:a :class "navbar-brand" :href "#" 
 		  (:img
-		   :style (theme-style (theme system) :main-nav-logo)
+		   :style (ts (theme system) :main-nav-logo
+			      "height:50px;")
 		   :src (frmt "~Acor/web/images/~A"
 			      (site-url system)
-			      (theme-element-attribute
-			       (theme system) :main-nav-logo :src)))
+			      (tea
+			       (theme system)
+			       :main-nav-logo
+			       :src)))
 		  (name system))
 
-	      (cl-who:str (render-entity-display))
+	      (cl-who:str (render-header-display ""))
 	      
 	      (cl-who:str (render-user-admin-menu))
 	      
@@ -829,7 +881,7 @@
 	      :class "container-fluid"
 	      (:div :class "row"
 		    (:div
-		     :class "collapse col-md-2 col-md-auto show d-print-none"
+		     :class "collapse show d-print-none "
 		     :id "exNavbarLeft"
 		     (:br)
 		     (cl-who:str (render-left-user-menu)))
