@@ -138,15 +138,15 @@
 		    :autocomplete "off"
 		    :placeholder
 		    (or select-prompt
-			"Press enter for list or start typing and then press enter for list...")
+			"Press Ctrl for list or start typing and then press Ctrl for list...")
 		    :name (frmt "~A-drop" field-name) 
 		    :id (frmt "~A-drop" field-name)
 		    :value (html-value (or selected-value ""))
 		    :onkeydown
-		    ;;fires ajax call on enter (13)
+		    ;;fires ajax call on Ctrl (13)
 		    (js-render-event-key 
 		     (frmt "~A-drop" field-name)
-		     13
+		     17
 		     "cl-wfx:ajax-auto-complete-x"
 		     (frmt "~A-drop-div" field-name)
 		     (js-pair "data-type"
@@ -189,17 +189,17 @@
 		    :autocomplete "off"
 		    :placeholder
 		    (or select-prompt
-			"Press enter for list or start typing and then press enter for list...")
+			"Press Ctrl for list or start typing and then press Ctrl for list...")
 		    :name (frmt "~A-drop" field-name) 
 		    :id (frmt "~A-drop" field-name)
 		    :value (html-value (or selected-value ""))
 		    :required (if required-p
 				  "required")		    
 		    :onkeydown
-		    ;;fires ajax call on enter (13)
+		    ;;fires ajax call on Ctrl (13)
 		    (js-render-event-key 
 		     (frmt "~A-drop" field-name)
-		     13
+		     17
 		     "cl-wfx:ajax-auto-complete"
 		     (frmt "~A-drop-div" field-name)
 		     (js-pair "data-type"
@@ -441,8 +441,9 @@
 		 (if (user-context-permission-p
 				  (getx (context-spec *context*) :name)
 				  :update)
-		     "fa fa-edit fa-2x text-primary"
-		     "fa fa-file-o fa-2x text-primary")
+		     "fa fa-edit fa-2x "
+		     "fa fa-file-o fa-2x ")
+		 :style "color:#5DADE2  "
 		 :aria-pressed 
 		 (if (and (parameter "item-id")
 			  (string-equal 
@@ -466,7 +467,8 @@
 	       (cl-who:htm
 		(:i 
 		 :name "edit"
-		 :class "fa fa-times fa-2x text-danger"
+		 :class "fa fa-times fa-2x "
+		  :style "color:#EC7063  "
 		 :onclick
 		 (frmt "if(confirm(\"Are you sure you want to delete?\")){~A}"
 		       (grid-js-render-delete data-type
@@ -735,11 +737,13 @@
 	     (js-pair "action" "grid-col-filter")))))
 
 (defun limit-fields (fields parent-item)
-  (if parent-item
-      (subseq fields 0 2)
-      (if (> (length fields) 7)
-	  (subseq fields 0 7)
-	  fields)))
+  (if (> (length fields) 1)
+      (if parent-item
+	  (subseq fields 0 2)
+	  (if (> (length fields) 7)
+	      (subseq fields 0 7)
+	      fields))
+      fields))
 
 (defun rough-half-list (list &optional (half-if-length 2))
   (when list
