@@ -125,39 +125,41 @@
 				context-state-selected
 				select-prompt))))
     (with-html-string
-      (:div :class "auto-complete"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" field-name)
-		    :value (html-value (or
-					(parameter (frmt "~A" field-name))
-					selected-value
-					"")))
+      (:div :class "col"
 	    
-	    (:input :class "form-control auto-complete-text"
-		    :type "text"
-		    :autocomplete "off"
-		    :placeholder
-		    (or select-prompt
-			"Press Ctrl for list or start typing and then press Ctrl for list...")
-		    :name (frmt "~A-drop" field-name) 
-		    :id (frmt "~A-drop" field-name)
-		    :value (html-value (or selected-value ""))
-		    :onkeydown
-		    ;;fires ajax call on Ctrl (13)
-		    (js-render-event-key 
-		     (frmt "~A-drop" field-name)
-		     17
-		     "cl-wfx:ajax-auto-complete-x"
-		     (frmt "~A-drop-div" field-name)
-		     (js-pair "data-type"
-			      data-type)
-		     (js-pair "field-name"
-			      (frmt "~A" field-name))
-		     (js-pair "collection"
-			      (frmt "~A" collection))
-		     (js-pair "action" "auto-complete")))
-	    
-	    (:div :id (frmt "~A-drop-div" field-name) :class "auto-list")))))
+       (:div :class "auto-complete"
+	     (:input :type "hidden" :class "selected-value" 
+		     :name (frmt "~A" field-name)
+		     :value (html-value (or
+					 (parameter (frmt "~A" field-name))
+					 selected-value
+					 "")))
+	     
+	     (:input :class "form-control auto-complete-text"
+		     :type "text"
+		     :autocomplete "off"
+		     :placeholder
+		     (or select-prompt
+			 "Press Ctrl for list or start typing and then press Ctrl for list...")
+		     :name (frmt "~A-drop" field-name) 
+		     :id (frmt "~A-drop" field-name)
+		     :value (html-value (or selected-value ""))
+		     :onkeydown
+		     ;;fires ajax call on Ctrl (13)
+		     (js-render-event-key 
+		      (frmt "~A-drop" field-name)
+		      17
+		      "cl-wfx:ajax-auto-complete-x"
+		      (frmt "~A-drop-div" field-name)
+		      (js-pair "data-type"
+			       data-type)
+		      (js-pair "field-name"
+			       (frmt "~A" field-name))
+		      (js-pair "collection"
+			       (frmt "~A" collection))
+		      (js-pair "action" "auto-complete")))
+	     
+	     (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
 
 (defun render-item-list-auto-complete (data-type field-name selected
@@ -174,41 +176,43 @@
 				select-prompt))))
 
     (with-html-string
-      (:div :class "auto-complete"
-	    (:input :type "hidden" :class "selected-value" 
-		    :name (frmt "~A" field-name)
-		    :value (html-value (or
-					(parameter (frmt "~A" field-name))
-					(if (equalp (type-of selected) 'item)
-					    (item-hash selected)
-					    selected-value)
-					"")))
+      (:div :class "col"
 	    
-	    (:input :class "form-control auto-complete-text"
-		    :type "text"
-		    :autocomplete "off"
-		    :placeholder
-		    (or select-prompt
-			"Press Ctrl for list or start typing and then press Ctrl for list...")
-		    :name (frmt "~A-drop" field-name) 
-		    :id (frmt "~A-drop" field-name)
-		    :value (html-value (or selected-value ""))
-		    :required (if required-p
-				  "required")		    
-		    :onkeydown
-		    ;;fires ajax call on Ctrl (13)
-		    (js-render-event-key 
-		     (frmt "~A-drop" field-name)
-		     17
-		     "cl-wfx:ajax-auto-complete"
-		     (frmt "~A-drop-div" field-name)
-		     (js-pair "data-type"
-			      data-type)
-		     (js-pair "field-name"
-			      (frmt "~A" field-name))
-		     (js-pair "action" "grid-auto-complete")))
-	    
-	    (:div :id (frmt "~A-drop-div" field-name) :class "auto-list")))))
+	    (:div :class "auto-complete"
+		  (:input :type "hidden" :class "selected-value" 
+			  :name (frmt "~A" field-name)
+			  :value (html-value (or
+					      (parameter (frmt "~A" field-name))
+					      (if (equalp (type-of selected) 'item)
+						  (item-hash selected)
+						  selected-value)
+					      "")))
+		  
+		  (:input :class "form-control auto-complete-text"
+			  :type "text"
+			  :autocomplete "off"
+			  :placeholder
+			  (or select-prompt
+			      "Press Ctrl for list or start typing and then press Ctrl for list...")
+			  :name (frmt "~A-drop" field-name) 
+			  :id (frmt "~A-drop" field-name)
+			  :value (html-value (or selected-value ""))
+			  :required (if required-p
+					"required")		    
+			  :onkeydown
+			  ;;fires ajax call on Ctrl (13)
+			  (js-render-event-key 
+			   (frmt "~A-drop" field-name)
+			   17
+			   "cl-wfx:ajax-auto-complete"
+			   (frmt "~A-drop-div" field-name)
+			   (js-pair "data-type"
+				    data-type)
+			   (js-pair "field-name"
+				    (frmt "~A" field-name))
+			   (js-pair "action" "grid-auto-complete")))
+		  
+		  (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
 (defun accessor-value (item accessors)
   (let ((value))
@@ -562,13 +566,13 @@
 	    (format nil "~A" name) 
 	    :test #'equalp)))))
     (or
-	   (cl-who:str
-	    (render-input-val 
-	     (complex-type field) 
-	     field item
-	     :parent-item
-	     parent-item
-	     :data-type data-type))))))
+     (cl-who:str
+      (render-input-val 
+       (complex-type field) 
+       field item
+       :parent-item
+       parent-item
+       :data-type data-type))))))
 
 
 (defun render-grid-edit-more (field item)
