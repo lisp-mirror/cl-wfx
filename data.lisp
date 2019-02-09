@@ -156,7 +156,6 @@ items override earlier ones. See append-items."
 	     (destinations collection))
 	 ))
     (dolist (dest (list :core :system :license))
-      (when (find dest destinations :test #'equalp)
 	(cond ((equalp dest :core)
 	       (setf core-store (core-store)))
 	      ((equalp dest :system)
@@ -271,14 +270,27 @@ that override others to the correct level."
 
 (defun in-place-subst (file refs)
   (let ((backup-file (format nil "~A.shash.bak" file)))
-    (fad:copy-file file backup-file)
+    (fad:copy-file file backup-file :overwrite t)
     (with-open-file (in-stream backup-file)
       (with-open-file (out-stream file :direction :output :if-exists :supersede)
         (loop for line = (read-line in-stream nil)
            while line do
 	     (dolist (ref refs)
-	       (setf line (cl-ppcre:regex-replace-all (frmt " ~A" (fourth ref)) line (frmt " ~A" (third ref)))))
+	       (setf line (cl-ppcre:regex-replace-all (fourth ref)  line (third ref))))
              (write-line line out-stream))))))
+
+
+(defun read-shash-error-refs (file)
+  (let ((refs))
+    (with-open-file (in file :if-does-not-exist :create)
+      (with-standard-io-syntax              
+	(when in
+
+	  (loop for line = (read in nil)
+	   while line
+	   do (push line refs))
+	  (close in))))
+    refs))
 
 (defun replace-refs (dir refs)
   (let ((files (directory (format nil "~A**/*.log" dir))))
