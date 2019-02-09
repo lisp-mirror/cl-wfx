@@ -6,8 +6,9 @@
 	(accessors (if (listp (getf field :db-type))
 		       (dig field :db-type :accessor))))
 
-    (when (listp val)
-    ;;  (break "~A" (first val))
+    (when (and (listp val)
+	       (listp (first val)))
+     ;; (break "~A" (first val))
 	(setf val (first val))
 	)
     
@@ -195,7 +196,9 @@
       (dolist (x val)
 	(setf final-val 
 	      (if final-val
-		  (concatenate 'string final-val delimiter 
+		  (concatenate 'string final-val (if (stringp delimiter)
+						     delimiter
+						     (eval delimiter)) 
 			       (if (equalp (dig field :db-type :type)
 					   :keyword)
 				   (string-downcase (frmt "~S" x))
@@ -660,6 +663,10 @@
   (let* ((name (getf field :name))
 	 (delimiter (dig field :db-type :delimiter)))
 
+    (if (stringp delimiter)
+	delimiter
+	(setf delimiter (eval delimiter)))
+
     (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
@@ -672,9 +679,12 @@
 			field 
 			item)))
 	  (:span 
-	   (cl-who:str (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-						 "#\Space"
-						 delimiter)))))
+	   (cl-who:str (frmt "Delimit by ~A" (cond ((string-equal delimiter " ")
+						    "#\Space")
+						   ((string-equal delimiter (frmt "~%"))
+						    "#\Return")
+						   (t
+						    (frmt "~S" delimiter)))))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
@@ -687,7 +697,10 @@
 			field 
 			item)))
 	  (:span (cl-who:str
-		  (frmt "Delimit by ~A" (if (string-equal delimiter " ")
-					    "#\Space"
-					    delimiter))))))))
+		  (frmt "Delimit by ~A" (cond ((string-equal delimiter " ")
+						    "#\Space")
+						   ((string-equal delimiter (frmt "~%"))
+						    "#\Return")
+						   (t
+						    (frmt "~S" delimiter))))))))))
 
