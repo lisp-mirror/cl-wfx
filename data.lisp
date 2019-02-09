@@ -156,6 +156,7 @@ items override earlier ones. See append-items."
 	     (destinations collection))
 	 ))
     (dolist (dest (list :core :system :license))
+      (when (find dest destinations :test #'equalp)
 	(cond ((equalp dest :core)
 	       (setf core-store (core-store)))
 	      ((equalp dest :system)

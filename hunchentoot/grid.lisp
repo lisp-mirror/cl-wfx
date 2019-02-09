@@ -547,7 +547,7 @@
     (if (digx field
 	      :attributes :editable)
 	"form-group"
-	"form-group row disabled")
+	"form-group disabled")
     (:label
      :for name 
      :class "col-form-label font-weight-bold"
@@ -561,15 +561,14 @@
 	    (character "-")  
 	    (format nil "~A" name) 
 	    :test #'equalp)))))
-    (:div :class "col"
-	  (or
+    (or
 	   (cl-who:str
 	    (render-input-val 
 	     (complex-type field) 
 	     field item
 	     :parent-item
 	     parent-item
-	     :data-type data-type)))))))
+	     :data-type data-type))))))
 
 
 (defun render-grid-edit-more (field item)

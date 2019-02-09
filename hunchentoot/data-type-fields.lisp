@@ -294,13 +294,12 @@
 		  :name name 
 		  :type "text"		  
 		  :value
-		  (cl-who:str
-		   (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item)))
+			       (item-default-val* field item))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -310,12 +309,12 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item))))))))
+			       (item-default-val* field item)))))))
 
 (defmethod render-input-val ((type (eql :symbol)) field item
 			     &key &allow-other-keys)
@@ -417,25 +416,27 @@
 			     &key  &allow-other-keys)
 
   (with-html-string
-    (:div :class "row"	  
-	  :id (string-downcase
-	       (frmt "file-upload-row-~A" (item-data-type item)))
-	  :name (string-downcase
-		 (frmt "file-upload-row-~A" (item-data-type item)))
-	  (cl-who:str (render-image field item))
-	  )))
+    (:div :class "col"
+	  (:div :class "row"	  
+		:id (string-downcase
+		     (frmt "file-upload-row-~A" (item-data-type item)))
+		:name (string-downcase
+		       (frmt "file-upload-row-~A" (item-data-type item)))
+		(cl-who:str (render-image field item))
+		))))
 
 (defmethod render-input-val ((type (eql :file)) field item
 			     &key &allow-other-keys)
 
   (with-html-string
-    (:div :class "row"	  
-	  :id (string-downcase
-	       (frmt "file-upload-row-~A" (item-data-type item)))
-	  :name (string-downcase
-		 (frmt "file-upload-row-~A" (item-data-type item)))
-	  (cl-who:str (render-image field item))
-	  ))
+    (:div :class "col"
+	  (:div :class "row"	  
+		:id (string-downcase
+		     (frmt "file-upload-row-~A" (item-data-type item)))
+		:name (string-downcase
+		       (frmt "file-upload-row-~A" (item-data-type item)))
+		(cl-who:str (render-image field item))
+		)))
   #|
 (with-html-string
     (:div :class "row"
@@ -463,19 +464,21 @@
   (let ((name (getf field :name)))
     (if (not (digx field :attributes :editable))
 	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name 
-		  :type "number"
-		  :step "any"		  
-		  :value
-		  (cl-who:str (print-item-val 
+		      
+		      (:input :class "form-control"
+			      :id name
+			      :name name 
+			      :type "number"
+			      :step "any"		  
+			      :value
+			      (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item)))
-		  :disabled "disabled"))
+			       (item-default-val* field item))
+			      :disabled "disabled"))
+	
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
@@ -485,12 +488,12 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item))))))))
+			       (item-default-val* field item)))))))
 
 (defmethod render-input-val ((type (eql :integer)) field item
 			     &key &allow-other-keys)
@@ -503,12 +506,12 @@
 		  :type "number"
 		  :step "any"		  
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item)))
+			       (item-default-val* field item))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -536,12 +539,12 @@
 		  :name name 
 		  :type "date"	     
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item)))
+			       (item-default-val* field item))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -551,12 +554,12 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item))))))))
+			       (item-default-val* field item)))))))
 
 (defmethod render-input-val ((type (eql :time)) field item
 			     &key &allow-other-keys)
@@ -568,12 +571,12 @@
 		  :name name 
 		  :type "time"	     
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item)))
+			       (item-default-val* field item))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -583,12 +586,12 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (cl-who:str (print-item-val 
+		  (print-item-val 
 			       type
 			       field 
 			       item
 			       :default-value
-			       (item-default-val* field item))))))))
+			       (item-default-val* field item)))))))
 
 (defmethod render-input-val ((type (eql :boolean)) field item
 			     &key &allow-other-keys)
