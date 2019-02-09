@@ -243,6 +243,7 @@
    
     (when (and (active-user)
 	       (digx (active-user) :selected-licenses))
+      
       (cond ((getx (current-user) :super-user-p)
 	     (setf access-p t))
 	    (t (dolist (lic (digx (active-user)
@@ -303,18 +304,20 @@
 			  (when (or (equalp (digx item :name) "Logout")
 				    (context-access-p
 				     (digx item :context-spec)))
-			    (cl-who:htm
-			  
-			     (:a :class "dropdown-item"
-				 :href 
-				 (if parameters
-				     (frmt "~A&~A" 
-					   (context-url 
-					     (digx item :context-spec :name))
-					   parameters)
-				     (context-url 
-				      (digx item :context-spec :name)))
-				 (cl-who:str (digx item :name))))))))))))))
+
+			    (when (system-context-p (digx item :context-spec))
+			      (cl-who:htm
+			       
+			       (:a :class "dropdown-item"
+				   :href 
+				   (if parameters
+				       (frmt "~A&~A" 
+					     (context-url 
+					      (digx item :context-spec :name))
+					     parameters)
+				       (context-url 
+					(digx item :context-spec :name)))
+				   (cl-who:str (digx item :name)))))))))))))))
 
 (defun render-header-display (text)
   (with-html-string
@@ -368,15 +371,29 @@
     (reverse items)))
 
 (defun render-menu-item (item)
-  (with-html-string
-
-    
+  (with-html-string    
     (:a :class "btn btn-outline-light text-dark w-100 text-left"
 	:role "button"
 	    
 	     :href (context-url
 		    (digx item :context-spec :name))
 	     (cl-who:str (digx item :name)))))
+
+;;When super-user has selected the system license then exclude grids which dont have collections
+;; that have a system/core function ie destination
+(defun system-context-p (context)
+  (if (find (name *system*) (getx (active-user) :selected-licenses) :test 'equalp)
+      (if (getx  context :collection)
+	  (or (find :core
+		    (getf (find-collection-def *system* (getx  context :collection))
+			  :destinations)
+		    :test 'equalp)
+	      (find :system
+		    (getf (find-collection-def *system* (getx  context :collection))
+			  :destinations)
+		    :test 'equalp))
+	  )
+      t))
 
 (defun render-left-user-menu ()
   (with-html-string
@@ -390,33 +407,36 @@
 		   :data-toggle "collapse"
 		   :href "#data-menu"
 		   (:strong "Data")))
-	  
+
+	      
 	      (cl-who:htm
 	       (:div :id "data-menu" :class "expand"
 		     (:ul :class "nav flex-column ml"
-			  
+			 
 			  (dolist (item (data-menu (digx menu :menu-items)))
-			  
-			    (cl-who:htm
-			     (:div :class "btn-group "
-				  
-				   (:button
-				    
-				    :class "btn btn-light"
-				    :name "filter-grid" 
-				    
-				    :data-toggle "collapse"
-				    :href "#collapseFilter" 
-				    :aria-expanded "false"
-				    :aria-controls="collapseFilter"
-				    :aria-pressed "false"
-				    (:i
-				    
-				     :class (frmt "fa far ~A"
-						   (digx item :context-spec
-							 :icon))))
-				   
-				   (cl-who:str (render-menu-item item))))))))
+
+			    (when (system-context-p (digx item :context-spec))
+			      
+			      (cl-who:htm
+			       (:div :class "btn-group "
+				     
+				     (:button
+				      
+				      :class "btn btn-light"
+				      :name "filter-grid" 
+				      
+				      :data-toggle "collapse"
+				      :href "#collapseFilter" 
+				      :aria-expanded "false"
+				      :aria-controls="collapseFilter"
+				      :aria-pressed "false"
+				      (:i
+				       
+				       :class (frmt "fa far ~A"
+						    (digx item :context-spec
+							  :icon))))
+				     
+				     (cl-who:str (render-menu-item item)))))))))
 	      (cl-who:htm
 	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
 		   :data-toggle "collapse"
@@ -425,26 +445,27 @@
 	       (:div :id "report-menu" :class "collapse"
 		     (:ul :class "nav flex-column ml"			 
 			  (dolist (item (report-menu (digx menu :menu-items)))
-			    (cl-who:htm
-			     (:div :class "btn-group "
-				  
-				   (:button
-				    
-				    :class "btn btn-light"
-				    :name "filter-grid" 
-				    
-				    :data-toggle "collapse"
-				    :href "#collapseFilter" 
-				    :aria-expanded "false"
-				    :aria-controls="collapseFilter"
-				    :aria-pressed "false"
-				    (:i
-				    
-				     :class (frmt "fa far ~A"
-						   (digx item :context-spec
-							 :icon))))
-				   
-				   (cl-who:str (render-menu-item item))))
+			    (when (system-context-p (digx item :context-spec))
+			      (cl-who:htm
+			       (:div :class "btn-group "
+				     
+				     (:button
+				      
+				      :class "btn btn-light"
+				      :name "filter-grid" 
+				      
+				      :data-toggle "collapse"
+				      :href "#collapseFilter" 
+				      :aria-expanded "false"
+				      :aria-controls="collapseFilter"
+				      :aria-pressed "false"
+				      (:i
+				       
+				       :class (frmt "fa far ~A"
+						    (digx item :context-spec
+							  :icon))))
+				     
+				     (cl-who:str (render-menu-item item)))))
 			    
 			    ))))
 	      (cl-who:htm
@@ -473,6 +494,13 @@
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
 		     (cl-who:str (or selected-value "")))
+
+	   
+	    (when (getx (current-user) :super-user-p)
+	    
+	      (setf list (append (list (name (system-store))) list))
+		)
+	    
 	    (:div :class "dropdown-menu w-100"
 		  (dolist (option list)
 		    (cl-who:htm
@@ -513,11 +541,10 @@
 	  (:div :class "row bg-light"
 		(:div :class "col bg-light font-weight-bold"
 		      "Accessible Entities"))
-
-	  
 	  
 	  (dolist (license-code (digx (active-user) 
 				      :selected-licenses))
+	    
 	    (when (or (license-user license-code)
 		      (getx (current-user) :super-user-p))	      
 	      (cl-who:str
@@ -981,9 +1008,12 @@
 
   (when (and (parameter "action") (parameter "script")
 	     (not (empty-p (parameter "script"))))
-    (let ((result (script-eval
-		   (read-no-eval
-		     (parameter "script")))))
+    (let ((result
+	   (handler-case (script-eval
+			  (read-no-eval
+			   (parameter "script")))
+	     (error (c)
+	       (list NIL c)))))
       
       (setf (gethash :repl-result (cache *context*))	   
 	    (or (first result) (second result)) ))))
@@ -1116,7 +1146,8 @@
 	     "<!doctype html>"
 	     (cl-who:str
 	      (render-page system
-			   (if (context-access-p context-spec)
+			   (if (or (context-access-p context-spec)
+				   (getx (current-user) :super-user-p))
 			       (render-grid 
 				(getx context-spec :collection))
 			       "Access Denied")
@@ -1127,7 +1158,8 @@
 	     "<!doctype html>"
 	     (cl-who:str
 	      (render-page system
-			   (if (context-access-p context-spec)
+			   (if (or (context-access-p context-spec)
+				   (getx (current-user) :super-user-p))
 			       (render-report
 				:html 
 				(digx context-spec :report))
@@ -1140,7 +1172,8 @@
 	       "<!doctype html>"
 	       (cl-who:str
 		(render-page system
-			     (if (context-access-p context-spec)
+			     (if (or (context-access-p context-spec)
+				   (getx (current-user) :super-user-p))
 				 (render-repl)
 				 "Access Denied")
 			     :menu-p t))))
