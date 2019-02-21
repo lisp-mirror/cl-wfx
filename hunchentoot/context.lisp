@@ -637,9 +637,24 @@
 		    (frmt "~A: ~A;" (first style) (second style)))))
     style-string))
 
+(defun theme-attribute-style (theme element attribute)
+  (let ((style-string ""))
+    (dolist (style (dig (theme-element-attribute theme element attribute) :style))
+      (setf style-string
+       (concatenate 'string style-string
+		    (frmt "~A: ~A;" (first style) (second style)))))
+    style-string))
+
 (defun ts (theme element &optional default)
   (let ((style
 	 (theme-style theme element)))
+    (if (not (empty-p style))
+	style
+	default)))
+
+(defun tsa (theme element attribute &optional default)
+  (let ((style
+	 (theme-attribute-style theme element attribute)))
     (if (not (empty-p style))
 	style
 	default)))
@@ -847,7 +862,7 @@
 		(frmt "background-image: url(~Acor/web/images/~A);~A"
 		      (site-url system)
 		      (tea (theme system) :main-nav-bar :bg-image)
-		      (ts (theme system) :main-nav-bg-image))
+		      (ts (theme system) :main-nav-bar))
 		(ts (theme system) :main-nav-bar
 		    "background-size: cover;box-shadow: 0px 1px 2px"))
 	      
