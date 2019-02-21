@@ -534,10 +534,11 @@
   (let ((name (getf field :name)))
     (if (not (digx field :attributes :editable))
 	(with-html-string
-	  (:input :class "form-control"
+	  (:input :class "form-control "
 		  :id name
 		  :name name 
-		  :type "date"	     
+		  :type "date"
+		 
 		  :value
 		  (print-item-val 
 			       type
@@ -547,7 +548,7 @@
 			       (item-default-val* field item))
 		  :disabled "disabled"))
 	(with-html-string
-	  (:input :class "form-control"
+	  (:input :class "form-control date"
 		  :id name
 		  :name name 
 		  :type "date"

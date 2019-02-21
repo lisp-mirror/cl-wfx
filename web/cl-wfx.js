@@ -12,7 +12,7 @@ function prep_auto_completes () {
     $(document).on('click', '.auto-complete-item', function(){
 	var selVal = $(this).children().first();
 	var selText = $(this).text();
-	
+
 	$(this).parents('.auto-complete').find('.auto-complete-text').val($.trim(selText));
 	$(this).parents('.auto-complete').find('.selected-value').val($(selVal).val());
 	$(this).parents('.auto-complete').find('.auto-list').empty();

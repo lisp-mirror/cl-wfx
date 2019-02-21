@@ -26,13 +26,23 @@
 	  id
           args-scripts))
 
-(defun js-render-event-key (source-id event-key renderer id &rest args-scripts)
+(defun js-render-event-key-x (source-id event-key renderer id &rest args-scripts)
   (format nil "ajax_render_event_key(~s, ~s, ~s, ~s, ~s~@[, [~{~a~^,~}]~])"
 	  (context-uri)
 	  renderer
 	  source-id
 	  event-key         
 	  id
+          args-scripts))
+
+(defun js-render-event-key (source-id event-key renderer id form-name &rest args-scripts)
+  (format nil "ajax_render_event_key(~s, ~s, ~s, ~s, ~s, get_form_values(~s)~@[.concat([~{~a~^,~}])~])"
+	  (context-uri)
+	  renderer
+	  source-id
+	  event-key         
+	  id
+	  form-name
           args-scripts))
 
 (defun js-render-form-values (renderer id form-name

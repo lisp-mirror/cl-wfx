@@ -89,8 +89,34 @@
 (defmethod render-input-val ((type (eql :value-list)) field item
 			     &key &allow-other-keys)
   (let* ((name (getf field :name))
+	 (list (or
+		(and (dig field :db-type :values-script)
+		     (eval (dig field :db-type :values-script)))
+
+		(dig field :db-type :values)))
+	  
+	 (selected ))
+    
+    (if (functionp list)
+	(setf list (funcall (eval (dig field :db-type :values-script)) item)))
+
+  
+    (setf selected (find (getfx item field) list :test #'equalp))
+    (with-html-string
+      (cl-who:str (render-dropdown name selected list)))))
+
+;;delete this
+(defmethod render-input-val-x ((type (eql :value-list)) field item
+			       &key &allow-other-keys)
+  (let* ((name (getf field :name))
 	 (list (or (and (dig field :db-type :values-script)
-			(eval (dig field :db-type :values-script)))
+			(cond ((equalp (first (dig field :db-type :values-script))
+				       'cl-wfx::get-named-list-sorted-values)
+			       (eval (dig field :db-type :values-script)))
+			      ((equalp (first (dig field :db-type :values-script))
+				       'cl:lambda)
+			 
+			       )))
 		   (dig field :db-type :values)))
 	 (selected (find (getfx item field) list :test #'equalp)))
 
@@ -151,6 +177,7 @@
 		      17
 		      "cl-wfx:ajax-auto-complete-x"
 		      (frmt "~A-drop-div" field-name)
+		      nil
 		      (js-pair "data-type"
 			       data-type)
 		      (js-pair "field-name"
@@ -162,12 +189,15 @@
 	     (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
 
-(defun render-item-list-auto-complete (data-type field-name selected
+(defun render-item-list-auto-complete (data-type field item selected
 				       &key  select-prompt
 					 value-func
 					 context-state-selected
-					 required-p)
-  (let ((selected-value (if selected
+					 required-p
+					 hierarchy)
+  (declare (ignore hierarchy))
+  (let* ((field-name (dig field :name))
+	(selected-value (if selected
 			    (if value-func
 				(funcall value-func selected)
 				selected)
@@ -198,61 +228,144 @@
 			  :id (frmt "~A-drop" field-name)
 			  :value (html-value (or selected-value ""))
 			  :required (if required-p
-					"required")		    
+					"required")
 			  :onkeydown
-			  ;;fires ajax call on Ctrl (13)
+			  ;;fires ajax call on Ctrl (17)
 			  (js-render-event-key 
-			   (frmt "~A-drop" field-name)
-			   17
-			   "cl-wfx:ajax-auto-complete"
-			   (frmt "~A-drop-div" field-name)
-			   (js-pair "data-type"
-				    data-type)
-			   (js-pair "field-name"
-				    (frmt "~A" field-name))
-			   (js-pair "action" "grid-auto-complete")))
+				 (frmt "~A-drop" field-name)
+				 17
+				 "cl-wfx:ajax-auto-complete"
+				 (frmt "~A-drop-div" field-name)
+				 (string-downcase
+				  (frmt "grid-edit-~A"  data-type))
+				 (js-pair "data-type"
+					  data-type)
+				 (js-pair "field-name"
+					  (frmt "~A" field-name))
+				 (js-pair "action" "grid-auto-complete")))
 		  
 		  (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
 (defun accessor-value (item accessors)
   (let ((value))
-    (if (listp accessors)
-	(if (listp (first accessors))
-	    (let ((values))
-	      (dolist (accessor accessors)
-		(push
-		 (apply #'digx
-			item
-			accessor)
-		 values))
-	      (setf value (format nil
-				  "~{~a~^ ~}"
-				  (reverse values))))
+    (if accessors
+	(if (listp accessors)
+	    (if (listp (first accessors))
+		(let ((values))
+		  (dolist (accessor accessors)
+		    (push
+		     (apply #'digx
+			    item
+			    accessor)
+		     values))
+		  (setf value (format nil
+				      "~{~a~^ ~}"
+				      (reverse values))))
+		(setf value (apply #'digx
+				   item
+				   accessors)))
 	    (setf value (apply #'digx
 			       item
-			       accessors)))
-	(setf value (apply #'digx
-			   item
-			   (list accessors))))))
+			       (list accessors))))
+	item)))
 
-(defmethod render-input-val ((type (eql :collection)) field item 
-			     &key data-type &allow-other-keys)
+(defun fetch-contained-item-list (field edit-item)
+  
+  (let ((list-containers
+	 (wfx-fetch-context-items
+	  (dig field :db-type :collection)
+	  :test (lambda (itemx)
+		 
+		  (if (getf field :filter)
+		      (funcall
+		       (eval (getf field :filter))
+		       itemx
+		       edit-item)
+		      t))))
+	      
+	(container-accessors (dig field :db-type :container-accessor))
+	(accessors (dig field :db-type :accessor))
+	(list))
+
+    
+    (when (not (dig field :db-type :container-fetch))
+      (dolist (list-item list-containers)
+	(setf list (pushnew (accessor-value list-item container-accessors) list))))
+
+
+    (when  (dig field :db-type :container-fetch) 
+      
+      (dolist (list-item list-containers)
+	
+	(setf list
+	      (append list (funcall
+			    (eval (dig field :db-type :container-fetch))
+			    (accessor-value list-item container-accessors)
+			    edit-item)))))
+    
+    (sort (copy-list list) #'string<
+	  :key (lambda (item)
+		 (accessor-value item accessors)))
+    
+   
+	   
+    ))
+
+
+(defmethod render-input-val ((type (eql :collection-contained-item)) field item 
+			     &key data-type hierarchy &allow-other-keys)
 
   (let* ((name (getf field :name))
-	 (list (wfx-fetch-context-items (dig field :db-type :collection)))
+	
+	 (list (fetch-contained-item-list field item))
+	 (selected)
+	 (accessors (dig field :db-type :accessor)))
+
+    (setf selected (find (getx item name)  
+			 list :test #'equalp))
+    
+    
+    (with-html-string
+      (cl-who:str (render-item-list-auto-complete
+		   data-type field item selected
+		   :value-func (lambda (item)
+				 (accessor-value item accessors))
+		   :context-state-selected (getcx 
+					    (dig field :db-type :data-type)
+					    (frmt "~A-drop" name))
+		   :required-p (getf field :key-p)
+		   :hierarchy hierarchy)))))
+
+
+
+
+(defmethod render-input-val ((type (eql :collection)) field item 
+			     &key data-type hierarchy &allow-other-keys)
+
+  (let* ((name (getf field :name))
+	 (list (wfx-fetch-context-items (dig field :db-type :collection)
+					:test (lambda (itemx)
+							(if (getf field :filter)
+							    (funcall
+							     (eval (getf field :filter))
+							     itemx
+							     item)
+							    t))))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
     
     (with-html-string
       (cl-who:str (render-item-list-auto-complete
-		   data-type name selected
+		   data-type field item selected
 		   :value-func (lambda (item)
 				 (accessor-value item accessors))
 		   :context-state-selected (getcx 
 					    (dig field :db-type :data-type)
 					    (frmt "~A-drop" name))
-		   :required-p (getf field :key-p))))))
+		   :required-p (getf field :key-p)
+		   :hierarchy hierarchy
+		    )))))
 
 (defmethod render-input-val ((type (eql :contained-item)) field item 
 			     &key parent-item &allow-other-keys)
@@ -544,7 +657,7 @@
 		       (item-hash (getcx data-type :edit-item))))))
 
 
-(defun render-grid-edit-row (data-type name field label item parent-item)
+(defun render-grid-edit-row (data-type name field label item parent-item hierarchy)
   (with-html-string
    (:div
     :class
@@ -572,10 +685,11 @@
        field item
        :parent-item
        parent-item
-       :data-type data-type))))))
+       :data-type data-type
+       :hierarchy hierarchy))))))
 
 
-(defun render-grid-edit-more (field item)
+(defun render-grid-edit-more (field item hierarchy)
   (with-html-string
     (let* ((sub-data-type
 	    (digx field :db-type
@@ -618,7 +732,8 @@
 		       sub-field
 		       (getf sub-field :label)
 		       sub-item
-		       item)))
+		       item
+		       hierarchy)))
 		   
 		   )))))
        ))))
@@ -690,7 +805,8 @@
 						 (render-grid-edit-row
 						  data-type name
 						  field label
-						  item parent-item)))
+						  item parent-item
+						  hierarchy)))
 				      
 					      )))))
 		    
@@ -703,7 +819,7 @@
 			  
 				  (when (data-type-access-p (digx field :db-type :data-type))
 				    (cl-who:str
-				     (render-grid-edit-more field item)))))))
+				     (render-grid-edit-more field item hierarchy)))))))
 		   
 			   (when (getcx data-type :validation-errors)
 			     (let ((errors (getcx data-type :validation-errors)))
@@ -735,6 +851,7 @@
 	     13
 	     "cl-wfx:ajax-grid"
 	     (gethash :collection-name (cache *context*))
+	     nil
 	     (js-pair "data-type"
 		      (frmt "~A" data-type))
 	     (js-pair "action" "grid-col-filter")))))
@@ -1137,17 +1254,18 @@
 
 		  (:td :width "5px"
 		       (:div :class "btn-group float-right"
-			     (when (check-top-level-p data-type)	       
-			       (cl-who:str
-				(render-select-button item)))))))))))
+			     (cl-who:str
+				(render-select-button item))))))))))
 
 (defun render-select-from-grid (data-type sub sub-data-spec hierarchy)
+ 
   (when (and (equalp (parameter "action")
 		     "select-from")
 	     (string-equal
 	      (parameter "data-type")
 	      (frmt "~A" sub-data-spec)))
-				   
+
+
     (let ((*rendering-shit* t)
 	  (fields (get-data-fields
 		   (getcx (dig sub :db-type :data-type) :fields))))
@@ -1205,14 +1323,17 @@
 		(:tr
 		 (:td :colspan (+ (length (limit-fields fields
 							t))
-				  2)
+				  2)		      
 		      (:table
 		       (cl-who:str (render-select-item-row
 				    (dig sub :db-type :data-type)
 				    (wfx-fetch-context-items
 				     (dig sub :db-type :collection)
-				     :test (filter-function
-					    (dig sub :db-type :data-type)))
+				     :test (lambda (item)
+					     (if (getf sub :filter)
+						 (funcall
+						  (eval (getf sub :filter)) item (first (last (car hierarchy))))
+						 item)))
 				    fields))))))))))
 
 (defun render-expand (data-type item subs sub-level sub-level-p hierarchy)
@@ -1388,6 +1509,7 @@
   (let ((sub-level-p (not (equalp data-type 
 				  (gethash :data-type (cache *context*)))))
 	(data-items))
+
     
     (with-html-string
       (let ((fields (getcx data-type :fields))
@@ -1440,6 +1562,7 @@
 	     13
 	     "cl-wfx:ajax-grid"
 	     (gethash :collection-name (cache *context*))
+	     nil
 	     (js-pair "data-type"
 		      (frmt "~A" data-type))	     
 	     (js-pair "action" "grid-sizing")))))
@@ -1462,6 +1585,7 @@
 	      13
 	      "cl-wfx:ajax-grid"
 	      (gethash :collection-name (cache *context*))
+	      nil
 	      (js-pair "data-type"
 		       (frmt "~A" data-type))
 	      (js-pair "action" "grid-search")))))
@@ -1606,20 +1730,21 @@
 			   data-type :search)))
 	 (search-p (not (empty-p search-term)))
 	 (filter-p (getcx data-type :filter)))
-    
+
     (unless (or search-p filter-p)
       (setf items (wfx-fetch-context-items collection-name
 					   :test test)))
-     
+
     (when (or search-p filter-p (getcx data-type :filter-fields))
       (when (getcx 
 	     data-type 
 	     :filter-fields)
-	  
+
 	(setf items
 	      (wfx-fetch-context-items collection-name
 				       :test (filter-function data-type)))
 	(when items
+
 	  (setf items
 		(find-items-in-item-list
 		 items
@@ -1627,7 +1752,7 @@
       (unless (getcx 
 	       data-type 
 	       :filter-fields)
-	 
+
 	(setf items
 	      (wfx-fetch-context-items collection-name
 				       :test (search-function
@@ -2003,6 +2128,7 @@
 			       13
 			       "cl-wfx:ajax-grid"
 			       (gethash :collection-name (cache *context*))
+			       nil
 			       (js-pair "data-type"
 					(frmt "~A" data-type))	     
 			       (js-pair "action" "grid-sizing"))))
@@ -2164,18 +2290,34 @@
 	(setf field fieldx)))
 
     (when field
+      
       (let* ((accessors (dig field :db-type :accessor))
-	     (list (wfx-fetch-context-items		   
+	     (list ))
+	(cond ((equalp (complex-type field) :collection-contained-item)
+	       
+	       (setf list (fetch-contained-item-list field (getcx data-type :edit-item))))
+	      
+	      (t
+
+	       (setf list (wfx-fetch-context-items		   
 		    (dig field :db-type :collection)
 		    :test (lambda (item)
-			    (or
-			     (string-equal (parameter
-					    (frmt "~A-drop" field-name))
-					   "")
-			     (search (parameter
-				      (frmt "~A-drop" field-name))
-				     (accessor-value item accessors)
-				     :test #'string-equal))))))
+			    (and
+			     (if (getf field :filter)
+				 (funcall
+				  (eval (getf field :filter))
+				  item
+				  (getcx data-type :edit-item) )
+				 t)
+			     			  
+			     (or
+			      (string-equal (parameter
+					     (frmt "~A-drop" field-name))
+					    "")
+			      (search (parameter
+				       (frmt "~A-drop" field-name))
+				      (accessor-value item accessors)
+				      :test #'string-equal))))))))
 
 	(with-html-string
 	  (:div
@@ -2183,15 +2325,18 @@
 	   (setf list (sort (copy-list list) #'string<
 			    :key (lambda (item)
 				   (accessor-value item accessors))))
+
+	   (setf list (append (list nil) list))
 	   
 	   (dolist (option list)
 	     (cl-who:htm
 	      (:span :class "auto-complete-item nav-link"
 		     (:input :type "hidden"
-			     :value (frmt "~A" (item-hash option)))
+			     :value (frmt "~A" (if option (item-hash option))))
 		     (cl-who:str
-		      (trim-whitespace
-		       (accessor-value option accessors))))))))))))
+		      (if option
+			  (trim-whitespace
+			   (accessor-value option accessors)))))))))))))
 
 (defun ajax-auto-complete-x (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
@@ -2417,21 +2562,26 @@
     (when (equalp (item-hash item) (ensure-parse-integer hash))
       (return-from find-contained-item item))))
 
+
+
+
+
 (defun synq-value (field edit-item parent-item value)
-(cond ((equalp (complex-type field) :collection)
+  (cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
 	       (wfx-fetch-context-item
 		(dig field :db-type :collection)
 		:test (lambda (item)
 			(equalp (item-hash item)
 				(ensure-parse-integer value))))))
+	
 	((equalp (complex-type field) :collection-contained-item)
 	 (setf (getfx edit-item field)
 	       (find-contained-item
 		value
-		(accessor-value parent-item
-				(digx field :db-type :container-accessor))
-	 )))
+		(fetch-contained-item-list
+		 field
+		 edit-item))))
 	
 	((equalp (complex-type field) :contained-item)
 	 (setf (getfx edit-item field)
@@ -2441,9 +2591,9 @@
 				(digx field :db-type :container-accessor)) )))
 	((equalp (complex-type field) :item)
 	 (let* ((sub-data-type (digx field :db-type :data-type))
-	       (more-item (or (getfx edit-item field)
-				 (make-item :data-type
-					    sub-data-type))))
+		(more-item (or (getfx edit-item field)
+			       (make-item :data-type
+					  sub-data-type))))
 	   (synq-item-values sub-data-type
 			     (getcx sub-data-type :fields)
 			     edit-item
@@ -2467,15 +2617,18 @@
 		      :test (lambda (item)
 			      (equalp (item-hash item)
 				      (ensure-parse-integer value))))))
+	    
 	    ((equalp (complex-type field) :collection-contained-item)
 	     (validate-sfx (complex-type field)
 			   field 
 			   edit-item 
 			   (parameter field-name)
 			   :items
-			   (accessor-value parent-item
-				(digx field :db-type :container-accessor))
+			   (fetch-contained-item-list field edit-item )
+			   
 			   ))
+
+	    
 	    ((equalp (complex-type field) :contained-item)
 	     (validate-sfx (complex-type field)
 			   field 

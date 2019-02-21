@@ -772,7 +772,7 @@
 	     (cl-who:str
 	      "prep_expands();"))
 
-    
+
     (:script :type "text/javascript"
 	     (cl-who:str
 	      (frmt	      

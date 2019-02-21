@@ -223,6 +223,7 @@ that override others to the correct level."
 			     (digx collection :collection :name)))
 	(stores (collection-stores *system* collection-name)))
 
+
     (dolist (store stores)
       (let ((collection (get-collection
 				  store 
