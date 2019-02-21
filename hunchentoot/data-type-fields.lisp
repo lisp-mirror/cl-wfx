@@ -1,5 +1,7 @@
 (in-package :cl-wfx)
 
+
+
 (defun print-item-val-s* (field item &key default-value)
   (let ((*print-case* :downcase)
 	(val (if item (getfx item field)))
@@ -21,18 +23,19 @@
 	    ""))))
 
 (defun print-item-val-a* (field item &key default-value)
-  (let ((*print-case* :downcase)
+  (let* ((*print-case* :downcase)
 	(val (if item (getfx item field)))
 	(accessors (if (listp (getf field :db-type))
-		       (dig field :db-type :accessor))))
+		       (dig field :db-type :accessor)))
+	(final-val (if val
+		    (frmt "~A" (if accessors
+				   (accessor-value val accessors)
+				   val))
+		    (if default-value
+			default-value
+			""))) )
 
-    (if val
-	(frmt "~A" (if accessors
-	    (accessor-value val accessors)
-	    val))
-	(if default-value
-	    default-value
-	    ""))))
+    (replace-all (replace-all final-val "'" "&#39;") "\"" "&#34;")))
 
 (defmethod print-item-val ((type (eql :symbol)) field item
 			   &key default-value &allow-other-keys)

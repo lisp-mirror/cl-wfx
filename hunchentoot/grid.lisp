@@ -36,7 +36,9 @@
   (cond ((symbolp value)
 	 (frmt "~S" value))
 	((stringp value)
-	 value)
+	 (if (search "'" value)
+	     (replace-all (replace-all value "'" "&#39;") "\"" "&#34;")
+	     value))
 	((numberp value)
 	 value)
 	(t
@@ -1350,9 +1352,18 @@
     (with-html-string
       (:div :class "row"
 	   ;; (break "~A ~A " sub-level sub-level-p)
-	    (:div :class (if (> sub-level 0)
+	    (:div :class (if (> (length subs) 0)
+			     "col card-columns"
 			     "col card-groups"
-			     "col card-columns")
+			     )
+		  :style (cond ((= (length subs) 0)
+				"")
+			       ((= (length subs) 1)
+				"column-count:1;")
+			       ((= (length subs) 2)
+				"column-count:2;;")
+			       (t "column-count:3;")
+			   )
 		  (dolist (sub subs)
 		    (let* ((sub-data-spec (dig sub :db-type :data-type)))
 
