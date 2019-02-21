@@ -1168,10 +1168,15 @@
 		    (and
 		     (> (length val) 15)
 		     (> (length val) (length (getf field :label))))))
-	       
-	   (cl-who:htm
-	    (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
-		  (cl-who:str val))))
+
+	   (if (equalp (complex-type field) :link)
+		(cl-who:htm
+		 (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
+		       (:a :target "_blank" :href val (cl-who:str val))))
+		(cl-who:htm
+		 (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
+		       (cl-who:str val))))
+	   )
 	  ((or (equalp (complex-type field) :number)
 	       (equalp (complex-type field) :integer))
 	   (cl-who:str val))
