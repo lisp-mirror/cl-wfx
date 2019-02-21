@@ -1068,6 +1068,10 @@
 			:name (getf field :name)
 			:accessor (if (sub-grid-p field)
 				      (dig field :db-type :accessor)
+				      (if (find (complex-type field)
+						(list :collection
+						      :collection-contained-items))
+					  (dig field :db-type :accessor))
 				      )))))))
     keys))
 
@@ -1077,8 +1081,9 @@
 	     (dolist (key keys)
 	       (let* ((accessor (getf key :accessor))
 		      (val (if accessor
-			       (accessor-value item accessor)
+			       (accessor-value (getx item (getf key :name)) accessor)
 			       (getx item (getf key :name)))))
+		
 		 (setf values (frmt "~A~A" values val))))	    
 	     values)))
     (sort (copy-list items) #'string-lessp :key #'sort-val)))
@@ -1527,6 +1532,7 @@
 	(data-items))
 
     
+    
     (with-html-string
       (let ((fields (getcx data-type :fields))
 	    (subs))
@@ -1539,6 +1545,7 @@
 	     
 	      (pushnew field subs))))
 
+	
 	(setf data-items (sort-by-keys page-items (keysx fields)))	
 
 	(dolist (item data-items)
@@ -1606,54 +1613,67 @@
 		       (frmt "~A" data-type))
 	      (js-pair "action" "grid-search")))))
 
-(defun fetch-grid-page-data (data-type items)  
-  (setf (getcx data-type :data-count) (length items))
-  
-  (setf (getcx data-type :show-pages-count) 
-	(if (not (empty-p (parameter "pages")))
-	    (parse-integer (parameter "pages"))
-	    (or (getcx 
-		 data-type :show-pages-count)
-		50)))
-  
-  (setf (getcx data-type :active-page)
-	(if (not (empty-p (parameter "page")))
-	    (parse-integer (parameter "page"))
-	    (or (getcx 
-		 data-type :active-page)
-		1)))
+(defun fetch-grid-page-data (data-type items)
 
-  (multiple-value-bind (page-count rem)
-      (floor (getcx data-type :data-count) 
-	     (getcx data-type :show-pages-count))
+  (let* ((keys (keysx (getcx 
+		      data-type 
+		      :fields)))
+
+	 (sorted-items (sort-by-keys items keys)))
     
-    (setf (getcx data-type :page-count) page-count)
-    (setf (getcx data-type :page-count-remaining) rem))
-  
-  (setf (getcx data-type :start-page-count) 
-	(- (* (getcx 
-	       data-type :active-page) 
-	      (getcx 
-	       data-type :show-pages-count)) 
-	   (getcx 
-	    data-type :show-pages-count)))
-  
-  (setf (getcx data-type :end-page-count) 
-	(if (< (* (getcx 
+    (setf (getcx data-type :show-pages-count) 
+	  (if (not (empty-p (parameter "pages")))
+	      (parse-integer (parameter "pages"))
+	      (or (getcx 
+		   data-type :show-pages-count)
+		  50)))
+    
+    (setf (getcx data-type :active-page)
+	  (if (not (empty-p (parameter "page")))
+	      (parse-integer (parameter "page"))
+	      (or (getcx 
 		   data-type :active-page)
-		  (getcx 
-		   data-type :show-pages-count)) 
-	       (getcx 
-		data-type :data-count))
-	    (* (getcx 
-		data-type :active-page)
-	       (getcx 
-		data-type :show-pages-count))))
-  
-  (when items
-    (subseq items 
-	    (getcx data-type :start-page-count) 
-	    (getcx data-type :end-page-count))))
+		  1)))
+
+    (multiple-value-bind (page-count rem)
+	(floor (getcx data-type :data-count) 
+	       (getcx data-type :show-pages-count))
+      
+      (setf (getcx data-type :page-count) page-count)
+      (setf (getcx data-type :page-count-remaining) rem))
+    
+    (setf (getcx data-type :start-page-count) 
+	  (- (* (getcx 
+		 data-type :active-page) 
+		(getcx 
+		 data-type :show-pages-count)) 
+	     (getcx 
+	      data-type :show-pages-count)))
+    
+    (setf (getcx data-type :end-page-count) 
+	  (if (< (* (getcx 
+		     data-type :active-page)
+		    (getcx 
+		     data-type :show-pages-count)) 
+		 (getcx 
+		  data-type :data-count))
+	      (* (getcx 
+		  data-type :active-page)
+		 (getcx 
+		  data-type :show-pages-count))))
+    
+    (when (or (not (getcx data-type :end-page-count))
+	      (>= (getcx data-type :end-page-count)
+		  (length sorted-items)))
+      (setf (getcx data-type :end-page-count) (length sorted-items)))
+
+
+    (setf (getcx data-type :data-subset-count) (length items))
+    
+    (when items
+      (subseq sorted-items 
+	      (getcx data-type :start-page-count) 
+	      (getcx data-type :end-page-count)))))
 
 (defun found-nil-p (list)
   (dolist (item list)
@@ -1748,17 +1768,22 @@
 	 (filter-p (getcx data-type :filter)))
 
     (unless (or search-p filter-p)
-      (setf items (wfx-fetch-context-items collection-name
-					   :test test)))
+
+      (multiple-value-bind (itemsx count)
+	    (wfx-fetch-context-items collection-name
+					   :test test)
+	  (setf (getcx data-type :data-count) count)
+	  (setf items itemsx)))
 
     (when (or search-p filter-p (getcx data-type :filter-fields))
       (when (getcx 
 	     data-type 
 	     :filter-fields)
-
-	(setf items
-	      (wfx-fetch-context-items collection-name
-				       :test (filter-function data-type)))
+	(multiple-value-bind (itemsx count)
+	    (wfx-fetch-context-items collection-name
+				     :test (filter-function data-type))
+	  (setf (getcx data-type :data-count) count)
+	  (setf items itemsx))
 	(when items
 
 	  (setf items
@@ -1769,10 +1794,14 @@
 	       data-type 
 	       :filter-fields)
 
-	(setf items
-	      (wfx-fetch-context-items collection-name
+	(multiple-value-bind (itemsx count)
+	    (wfx-fetch-context-items collection-name
 				       :test (search-function
-					      data-type search-term)))))
+					      data-type search-term))
+	  (setf (getcx data-type :data-count) count)
+	  (setf items itemsx))))
+
+    
     
     (fetch-grid-page-data data-type (if (listp items)
 					items
@@ -1797,7 +1826,10 @@
 			       (if (> (getcx data-type :data-count)
 				      (cl-wfx::parse-integer
 				       (or (parameter "pages") "50")))
-				   (or (parameter "pages") 50)
+				   (if (< (getcx data-type :data-subset-count)
+					  (or (and (parameter "pages") (parse-integer (parameter "pages"))) 50))
+				       (getcx data-type :data-subset-count)
+				       (or (parameter "pages") 50))
 				   (getcx data-type :data-count))
 			       (getcx data-type :data-count))))
 		 (:span "&nbsp"))
@@ -2207,19 +2239,7 @@
 				 (grid-js-render-new data-type nil)
 				 (cl-who:str "+")))
 			       (:td
-				(cl-who:str (render-grid-menu data-type))
-				
-				
-				)
-			       
-			       ))
-			     
-			     
-			     
-			     
-			     
-			     
-			     )))
+				(cl-who:str (render-grid-menu data-type))))))))
 	
 		(:div :class "card-block"		    
 		      :id data-type

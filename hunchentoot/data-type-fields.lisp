@@ -9,8 +9,11 @@
 		       (dig field :db-type :accessor))))
 
     (when (and (listp val)
-	       (listp (first val)))
-     ;; (break "~A" (first val))
+	       (or (listp (first val))
+		   (equalp (type-of (first val))
+			   'item)))
+      (when (equalp (type-of val)
+		    'item))
 	(setf val (first val))
 	)
     

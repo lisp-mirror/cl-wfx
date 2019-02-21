@@ -218,6 +218,7 @@ that override others to the correct level."
 
 (defun wfx-fetch-context-items (collection &key test (result-type 'list))
   (let* ((items)
+	 (item-count 0)
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name)))
@@ -237,12 +238,13 @@ that override others to the correct level."
 			 :test (lambda (item)
 				 (when item				  
 				   (when (match-context-entities item)
+				     (incf item-count)
 				     (if test
 					 (funcall test item)
 					 item))))
 			 :result-type result-type))))))
     
-      items))
+    (values items item-count)))
 
 (defun wfx-fetch-context-item (collection &key test)
   (let* ((items)
