@@ -7,6 +7,8 @@
 }
 */
 
+@media print{@page {size: landscape}}
+
 html {
      font-size: 14px;
 }
