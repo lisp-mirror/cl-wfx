@@ -5,7 +5,9 @@
   
   (:export
    ;;#### common.lisp
-   
+
+   :*system*
+   :*context*
    :current-user
    :active-user
    :getx   
@@ -15,9 +17,13 @@
    :empty-p
    :ensure-parse-integer
    :parse-date
+   :format-date
+   :date-diff
+   :replace-all
 
    
    ;;#### data.lisp
+   :init-license-universe
    :core-store
    :core-collection
    :system-store
@@ -28,9 +34,15 @@
    :wfx-fetch-item
    :wfx-context-fetch-items
    :wfx-context-fetch-item
+   :sanitize-data-file
    
    ;;????
    :system 
+
+
+   ;;### Request
+   :action-handler
+   :parameter
    
    ;;#### context.lisp
    
@@ -54,8 +66,26 @@
    :core-collection
    :system-collection
    :license-collecton
+
+   ;;### System
    
    :hunch-system
+   :site-url
+   :ajax-process
+   :ajax-url
+   :image-processor
+   :image-url
+   :default-context
+   :request-exclusions
+   :action-parameter-allowed-values
+   :action-parameters
+   :theme
+
+   :start-sys
+  
+   ;;### Session
+   :current-user
+   :active-user
 
    ;;#### license.lisp
    :get-license
@@ -72,16 +102,27 @@
    ;;user.lisp
    :get-user
    :get-license-user
+   :make-user
+   :change-user
+   :add-user
+   
    
    ;;#### context-spec.lisp
    :get-context-spec
 
    ;;#### hunchentoot/common.lisp
+   :hunch-request
    :with-html
    :with-html-string
    
    ;;#### hunchentoot/context.lisp
    :setup-context
+   :tea
+   :ts
+   :tsa
+   :custom-render-context
+   :render-page
+   
    ))
 
 

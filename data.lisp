@@ -193,13 +193,15 @@ that override others to the correct level."
     (append merged-items more-items)))
 
 (defun wfx-fetch-items (collection &key test (result-type 'list))
+  
   (let ((items)
 	(collection-name (if (stringp collection)
 			     collection
 			     (name collection))))
-    
+  
     (dolist (store (collection-stores *system* collection-name))      
       (when (get-collection store collection-name)
+	
 	(setf items (append-items
 		     items
 		     (fetch-items (get-collection store collection-name)
@@ -304,10 +306,11 @@ that override others to the correct level."
     ))
 
 
-(defun sanitize-data-file (collection-name path)
-    (let ((items (cl-wfx:wfx-fetch-items
-		  collection-name
+(defun sanitize-data-file (store collection-name path)
+    (let ((items (fetch-items 
+		  (get-collection store  collection-name)
 		  :test (lambda (item)
+			 
 			  item))))
       (when (probe-file
 	       (frmt "~A/~A/~A.old" path collection-name collection-name))
@@ -318,13 +321,14 @@ that override others to the correct level."
       (fad:copy-file (frmt "~A/~A/~A.log" path collection-name collection-name)
 		       (frmt "~A/~A/~A.old" path collection-name collection-name)
 		       :overwrite t)
-      
-      (dolist (item items)
-	(cl-naive-store::persist item
-				 :file (frmt "~A/~A/~A.new" path collection-name
-					     collection-name)
-				 :new-file-p t))
-      (fad:copy-file (frmt "~A/~A/~A.new" path collection-name collection-name)
-		       (frmt "~A/~A/~A.log" path collection-name collection-name)
-		       :overwrite t)
+      (when items
+	(dolist (item items)
+	
+	  (cl-naive-store::persist item
+				   :file (frmt "~A~A/~A.new" path collection-name
+					       collection-name)
+				   :new-file-p t))
+	(fad:copy-file (frmt "~A~A/~A.new" path collection-name collection-name)
+		       (frmt "~A~A/~A.log" path collection-name collection-name)
+		       :overwrite t))
       ))

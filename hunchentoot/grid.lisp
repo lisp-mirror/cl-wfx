@@ -186,7 +186,7 @@
 			       (frmt "~A" field-name))
 		      (js-pair "collection"
 			       (frmt "~A" collection))
-		      (js-pair "action" "auto-complete")))
+		      (js-pair "wfxaction" "auto-complete")))
 	     
 	     (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
@@ -244,7 +244,7 @@
 					  data-type)
 				 (js-pair "field-name"
 					  (frmt "~A" field-name))
-				 (js-pair "action" "grid-auto-complete")))
+				 (js-pair "wfxaction" "grid-auto-complete")))
 		  
 		  (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
 
@@ -404,7 +404,7 @@
      (js-pair "data-type"
 	      (frmt "~A" data-type))
      
-     (js-pair "action" (or action ""))
+     (js-pair "wfxaction" (or action ""))
 
      (js-pair "action-script" (or action-script ""))
      (js-pair "action-data" (or action-data ""))
@@ -426,7 +426,7 @@
      (js-pair "data-type"
 	      (frmt "~A" data-type))
      (js-pair "field-name" field-name)
-     (js-pair "action" "upload-file")))
+     (js-pair "wfxaction" "upload-file")))
 
 (defun grid-js-render (data-type &key action item-id)
   (let ((active-page (getcx data-type :active-page)))
@@ -435,7 +435,7 @@
 	       (gethash :collection-name (cache *context*))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
-	       (js-pair "action" (or action ""))
+	       (js-pair "wfxaction" (or action ""))
 	       
 	       (js-pair "item-id" (frmt "~A" (or item-id "")))
 
@@ -446,9 +446,9 @@
 
 (defun render-expand-buttons (subs data-type item)
   (if subs
-      (if (equalp (ensure-parse-integer 
-		   (getcx data-type :expand-id)) 
-		  (item-hash item))
+      (if (string-equal
+	  (frmt "~A" (getcx data-type :expand-id)) 
+	  (frmt "~A" (item-hash item)))
 	  (with-html-string
 	    (:button
 	     :name "expand" :type "submit" 
@@ -485,7 +485,7 @@
 	       (gethash :collection-name (cache *context*))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
-	       (js-pair "action" "delete")
+	       (js-pair "wfxaction" "delete")
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
 	       (js-pair "item-hierarchy"
@@ -503,7 +503,7 @@
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
 	       
-	       (js-pair "action" "item-action")
+	       (js-pair "wfxaction" "item-action")
 	       (js-pair "action-name" (string-downcase (frmt "~A" (or action ""))))
 
 		       
@@ -538,7 +538,7 @@
 	       (frmt "ajax-edit-~A" (item-hash item))	      
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
-	       (js-pair "action" (string-downcase (frmt "~A" (or action ""))))
+	       (js-pair "wfxaction" (string-downcase (frmt "~A" (or action ""))))
 	     
 	       
 	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
@@ -856,7 +856,7 @@
 	     nil
 	     (js-pair "data-type"
 		      (frmt "~A" data-type))
-	     (js-pair "action" "grid-col-filter")))))
+	     (js-pair "wfxaction" "grid-col-filter")))))
 
 (defun limit-fields (fields parent-item)
   (if (> (length fields) 1)
@@ -1040,7 +1040,7 @@
 		     (gethash :collection-name
 			      (cache *context*))
 		     (frmt "~A" data-type)
-		     (js-pair "action"
+		     (js-pair "wfxaction"
 			      "grid-select-action")
 		     
 		     (js-pair "action-data"
@@ -1100,7 +1100,7 @@
 	       (frmt "ajax-new-~A" data-type)	      
 	       (js-pair "data-type" (frmt "~A" data-type))
 	       
-	       (js-pair "action" "new")
+	       (js-pair "wfxaction" "new")
 	       
 	       (js-pair "item-hierarchy"
 			(hierarchy-string items))
@@ -1212,9 +1212,8 @@
        :data-pages (or (parameter "pages") 50)
        :data-page (or (getcx data-type :active-page)  1)
        :data-collection (gethash :collection-name (cache *context*))
-       :data-expanded (if (equalp (ensure-parse-integer 
-				   (getcx data-type :expand-id)) 
-				  (item-hash item))
+       :data-expanded (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+					(frmt "~A" (item-hash item)))
 			  "Yes"
 			  "No")
        :data-subs (if subs
@@ -1271,7 +1270,7 @@
 
 (defun render-select-from-grid (data-type sub sub-data-spec hierarchy)
  
-  (when (and (equalp (parameter "action")
+  (when (and (equalp (parameter "wfxaction")
 		     "select-from")
 	     (string-equal
 	      (parameter "data-type")
@@ -1320,7 +1319,7 @@
 			   (js-pair "data-type"
 				    (frmt "~A" sub-data-spec))
 		       
-			   (js-pair "action" "add-selection")
+			   (js-pair "wfxaction" "add-selection")
 			   (js-pair "add-selection-field"
 				    (frmt "~A" (dig sub :name)))
 			   (js-pair "item-hierarchy"
@@ -1349,9 +1348,9 @@
 				    fields))))))))))
 
 (defun render-expand (data-type item subs sub-level sub-level-p hierarchy)
-  (when (equalp (ensure-parse-integer
-		 (getcx data-type :expand-id)) 
-		(item-hash item))
+
+  (when (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+		      (frmt "~A" (item-hash item)))
 
    
     (with-html-string
@@ -1450,14 +1449,12 @@
 	
 	(:tbody
 	 :id (frmt "ajax-expand-row-~A" (item-hash item))
-	 :style (if (and (equalp (ensure-parse-integer
-				  (getcx data-type :expand-id)) 
-				 (item-hash item)))
+	 :style (if (and (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+				       (frmt "~A" (item-hash item))))
 		    "display:table-row-group"
 		    "display:none")
-	 (if (equalp (ensure-parse-integer
-		      (getcx data-type :expand-id)) 
-		     (item-hash item))
+	 (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+			   (frmt "~A" (item-hash item)))
 		    
 	     (cl-who:htm
 	      (:tr
@@ -1484,7 +1481,7 @@
 	    
 	    (when (and (getcx data-type :edit-item)
 		       (not (item-hash (getcx data-type :edit-item))))
-	      (when (and (and (equalp (parameter "action") "save")
+	      (when (and (and (equalp (parameter "wfxaction") "save")
 			      (getcx data-type :edit-object)
 			      (getcx data-type :validation-errors))
 			 (string-equal (parameter "data-type")
@@ -1588,7 +1585,7 @@
 	     nil
 	     (js-pair "data-type"
 		      (frmt "~A" data-type))	     
-	     (js-pair "action" "grid-sizing")))))
+	     (js-pair "wfxaction" "grid-sizing")))))
 
 (defun render-grid-search (data-type)
   (with-html-string
@@ -1611,7 +1608,7 @@
 	      nil
 	      (js-pair "data-type"
 		       (frmt "~A" data-type))
-	      (js-pair "action" "grid-search")))))
+	      (js-pair "wfxaction" "grid-search")))))
 
 (defun fetch-grid-page-data (data-type items)
 
@@ -1851,7 +1848,7 @@
 			     (js-pair "page"
 				      (if (> active-page 1)
 					  (- active-page 1)))
-			     (js-pair "action" "page-previous"))
+			     (js-pair "wfxaction" "page-previous"))
 		  "Previous"))
 	    
 	    (let ((real-page-count (if (>  how-many-rem 0)
@@ -1874,7 +1871,7 @@
 					   (or (parameter "pages") 50))
 				  (js-pair "page"
 					   (+ i 1))				 
-				  (js-pair "action" "page"))
+				  (js-pair "wfxaction" "page"))
 		       (cl-who:str (+ i 1))))))
 	      
 	      (cl-who:htm
@@ -1895,7 +1892,7 @@
 				(js-pair "page"
 					 (if (< active-page real-page-count)
 					     (+ active-page 1)))
-				(js-pair "action" "page-next"))
+				(js-pair "wfxaction" "page-next"))
 		     "Next")))))))))
 
 (defmethod action-handler ((action (eql :add-selection)) 
@@ -1915,10 +1912,9 @@
 	      (getcx (parameter "data-type")
 		     :collection-name)
 	      :test (lambda (item)
-		      (equalp
-		       (item-hash item)
-		       (ensure-parse-integer
-			(second spliff)))))
+		      (string-equal
+		       (frmt "~A" (item-hash item))
+		       (frmt "~A" (second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
 		   (intern (string-upcase (parameter "add-selection-field"))
 
@@ -1958,10 +1954,9 @@
 	     (wfx-fetch-context-item 
 	      (gethash :collection-name (cache *context*))
 	      :test (lambda (item)				      
-		      (equalp
-		       (item-hash item)
-		       (ensure-parse-integer
-			(second spliff)))))
+		      (string-equal
+		       (frmt "~A" (item-hash item))
+		       (frmt "~A" (second spliff)))))
 	     selected)))))
     
     (setf (getcx (parameter "data-type") :selected-grid-items) selected)
@@ -1988,9 +1983,9 @@
 	 (item (wfx-fetch-context-item 
 		(gethash :collection-name (cache *context*))
 		:test (lambda (item)				      
-			(equalp
-			 (item-hash item)
-			 (parse-integer (parameter "item-id")))))))
+			(string-equal
+			 (frmt "~A" (item-hash item))
+			 (frmt "~A" (parameter "item-id")))))))
     
 
     (when item
@@ -2019,29 +2014,29 @@
 	(setf (gethash indicator (cache *context*)) value))))
 
 (defun set-grid-search (data-type)
-  (when (or (equalp (parameter "action") "filter")
-	    (equalp (parameter "action") "un-filter"))
+  (when (or (equalp (parameter "wfxaction") "filter")
+	    (equalp (parameter "wfxaction") "un-filter"))
     
-    (when (equalp (parameter "action") "filter")
+    (when (equalp (parameter "wfxaction") "filter")
       (if (empty-p (parameter "search"))
 	  (setf (getcx data-type :search)
 		(parameter "search"))))
     
-    (when (equalp (parameter "action") "un-filter")
+    (when (equalp (parameter "wfxaction") "un-filter")
       (setf (getcx data-type :search) nil)))
 
-  (unless (or (equalp (parameter "action") "filter")
-	      (equalp (parameter "action") "un-filter"))
+  (unless (or (equalp (parameter "wfxaction") "filter")
+	      (equalp (parameter "wfxaction") "un-filter"))
     (if (and (parameter "search") (not (empty-p (parameter "search"))))
 	(setf (getcx data-type :search) (parameter "search"))
 	(if (string-equal (parameter "search") "")
 	    (setf (getcx data-type :search) nil)))))
 
 (defun set-grid-filter (data-type)
-  (when (equalp (parameter "action") "filter")
+  (when (equalp (parameter "wfxaction") "filter")
     (setf (getcx data-type :filter) t))
   
-  (when (equalp (parameter "action") "un-filter")
+  (when (equalp (parameter "wfxaction") "un-filter")
     (setf (getcx data-type :filter) nil))
 
   (let ((fields (getcx data-type :filter-fields)))
@@ -2068,14 +2063,14 @@
     (setf  (gethash :collection-name (cache *context*)) collection-name)
     (setf  (gethash :data-type (cache *context*)) data-type)
     
-    (unless (equalp (parameter "action") "save")
+    (unless (equalp (parameter "wfxaction") "save")
       (setf (getcx data-type :root-item) nil))))
 
 (defun set-grid-expand ()  
-  (when (equalp (parameter "action") "expand")
+  (when (equalp (parameter "wfxaction") "expand")
     (setf (getcx (parameter "data-type") :expand-id) (parameter "item-id")))
   
-  (when (equalp (parameter "action") "unexpand")    
+  (when (equalp (parameter "wfxaction") "unexpand")    
     (setf (getcx (parameter "data-type") :expand-id) nil)))
 
 
@@ -2179,7 +2174,7 @@
 			       nil
 			       (js-pair "data-type"
 					(frmt "~A" data-type))	     
-			       (js-pair "action" "grid-sizing"))))
+			       (js-pair "wfxaction" "grid-sizing"))))
 	))))
 
 (defun render-grid (collection-name)
@@ -2291,7 +2286,6 @@
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-
    (render-grid (getx (context-spec *context*) :name)))
 
 (defun get-child (fields parent-item data-type hash)
@@ -2299,7 +2293,8 @@
     (when (sub-grid-p field)
       (when (string-equal data-type (dig field :db-type :data-type))
 	(dolist (item (getx parent-item (getf field :name)))
-	    (when (equalp (item-hash item) (ensure-parse-integer hash))
+	  (when (string-equal (frmt "~A" (item-hash item))
+			      (frmt "~A" hash))
 	      (return-from get-child (list (getf field :name) item))))
 
 	(return-from get-child (list (getf field :name)
@@ -2311,8 +2306,8 @@
   (let ((collection-name (gethash :collection-name (cache *context*))))   
      (wfx-fetch-context-item  collection-name
 		      :test (lambda (item)
-			      (when (equalp (item-hash item)
-					    hash)
+			      (when (string-equal (frmt "~A" (item-hash item))
+						  (frmt "~A" hash))
 				item)))))
 
 (defun ajax-auto-complete (&key id from-ajax)
@@ -2537,9 +2532,8 @@
 		     (gethash :collection-name (cache *context*)))))
 
     (unless hash
-      (let* ((keys (index-keys-x fields
-			      (item-values edit-item)))
-	    (hashx (sxhash keys)))
+      (let* (
+	    (hashx (uuid:make-v4-uuid)))
 	(setf hash hashx)))
     
     (dolist (field fields)
@@ -2595,7 +2589,8 @@
 
 (defun find-contained-item (hash list)
   (dolist (item list)
-    (when (equalp (item-hash item) (ensure-parse-integer hash))
+    (when (string-equal (frmt "~A" (item-hash item))
+			(frmt "~A" hash))
       (return-from find-contained-item item))))
 
 
@@ -2608,8 +2603,8 @@
 	       (wfx-fetch-context-item
 		(dig field :db-type :collection)
 		:test (lambda (item)
-			(equalp (item-hash item)
-				(ensure-parse-integer value))))))
+			(string-equal (frmt "~A" (item-hash item))
+				      (frmt "~A" value))))))
 	
 	((equalp (complex-type field) :collection-contained-item)
 	 (setf (getfx edit-item field)
@@ -2651,8 +2646,8 @@
 	      :items (wfx-fetch-context-items
 		      (dig field :db-type :collection)
 		      :test (lambda (item)
-			      (equalp (item-hash item)
-				      (ensure-parse-integer value))))))
+			      (string-equal (frmt "~A" (item-hash item))
+					    (frmt "~A" value))))))
 	    
 	    ((equalp (complex-type field) :collection-contained-item)
 	     (validate-sfx (complex-type field)
@@ -2791,8 +2786,8 @@
 	  (let ((clean-list (getx parent-item parent-slot)))
 	    
 	    (dolist (item clean-list)
-	      (when (equalp (item-hash item)
-			    (ensure-parse-integer (parameter "item-id")))
+	      (when (string-equal (frmt "~A" (item-hash item))
+				  (frmt "~A" (parameter "item-id")))
 		
 		(setf clean-list (remove item clean-list))
 		(setf clean-list (pushnew edit-item clean-list))))
@@ -2847,6 +2842,7 @@
 	(grid-append-child data-type parent-slot parent-item
 			   edit-item)
 
+
 	(grid-persist-item data-type root-item)
 
 	(fire-context-event context :save root-item edit-item)
@@ -2866,8 +2862,8 @@
       (when (and edit-item parent-slot)
 	(let ((clean-list (getx parent-item parent-slot)))
 	  (dolist (item clean-list)
-	    (when (equalp (item-hash item)
-			  (ensure-parse-integer (parameter "item-id")))
+	    (when (string-equal (frmt "~A" (item-hash item))
+				(frmt "~A" (parameter "item-id")))
 	      (setf clean-list
 		    (remove item clean-list))
 	      (let* ((collection (wfx-get-collection

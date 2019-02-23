@@ -30,11 +30,21 @@ because hunchentoot does not have vhosts by default.")
     :accessor request-exclusions
     :initform nil
     :documentation "Hunchentoot scripts/pages not to be processed by request handler. Does partial matching of these with search against script-name.")
-   (action-handler-triggers
-    :initarg :action-handler-triggers
-    :accessor action-handler-triggers
+   (action-parameter-allowed-values
+    :initarg :action-parameter-allowed-values
+    :accessor action-parameter-allowed-values
     :initform nil
-    :documentation "Must return handler to use based on logic applied to parameters.")
+    :documentation "Page submits by wfx often produce a post parameter named 'wfxaction' which
+is used to choose what action-handler to call. In the case of accidetal use of this parameter by 
+other web components wfx currates the list of action parameter values that it tries to handle. 
+action-parameter-allowed-values gives the consumer of wfx the opportunity to add to the curated 
+list of action parameter values. ")
+   (action-parameters
+    :initarg :action-parameter-allowed-values
+    :accessor action-parameters
+    :initform nil
+    :documentation "Page submits by wfx need to be assigned an action-handler, wfx uses the 'wfxaction' parameter
+but if a consumer of wfx wants to add other post parameters to check this is the place. Choose a unique parameter name to avoid clashes with other web components. Any parameters specified here are not constrained by action-parameter-allowed-values!")
    (theme :initarg :theme
 	  :accessor theme
 	  :initform nil)))

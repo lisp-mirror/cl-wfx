@@ -10,11 +10,6 @@
   (hunchentoot:abort-request-handler))
 
 
-(defun ajax-request-p (request)
-  (alexandria:starts-with-subseq 
-   (ajax-url (hunchentoot:request-acceptor request))
-                                 (hunchentoot:script-name request)))
-
 (defmethod request-context ((request hunch-request) &key &allow-other-keys)
   (let* ((split
 	    (split-sequence:split-sequence
@@ -33,41 +28,49 @@
 (defgeneric action-handler (action context request
 				&key &allow-other-keys))
 
+
+
+
 (defmethod process-sys-request ((system hunch-system)
 				(context context) 
 				(request hunch-request)
 				&key &allow-other-keys)
 
-  ;;TODO:: How to register actions? Contexs spec permissions?
 
-  (dolist (trigger (action-handler-triggers system))
-    (let ((handler (eval trigger)))
-      (when handler
-	(action-handler handler context request))))
-  
-  
-    (cond ((find (parameter "action") 
-		 (list "save" "delete" "login" "logout"
-		       "assign-campaign" "select-action" "grid-select-action"
-		       "add-selection" "eval-repl" "set-password"
-		       "item-action") 
-		 :test #'string-equal)
-	   ;;TODO: why do we check against a list of actions and not just fire
-	   ;;the action
-	   (action-handler (intern (string-upcase (parameter "action")) :keyword)
-			   context
-			   request))
-	  ((parameter "set-licenses")
-	   ;;TODO: this is not used any more an ajax call ajax-license-select
-	   ;;handles this ... check to delete
-	 ;;  (break "~A" (hunchentoot:post-parameters*))
-	   (action-handler :set-licenses
-			   context
-			   request))
-	  ((parameter "set-entities")	   
-	   (action-handler :set-entities
-			   context
-			   request))))
+  (let ((allowed-actions (list "save" "delete" "login" "logout"
+			       "assign-campaign" "select-action" "grid-select-action"
+			       "add-selection" "eval-repl" "set-password"
+			       "item-action"))
+	(action-parameters (list "wfxaction" "set-entities")))
+
+    (when (action-parameter-allowed-values system)
+      (setf allowed-actions (append allowed-actions (action-parameter-allowed-values system))))
+
+    (when (action-parameters system)
+      (setf action-parameters (append action-parameters (action-parameters system))))
+
+    
+    (dolist (action-parameter action-parameters)
+      (when (parameter action-parameter)
+	(if (string-equal action-parameter "wfxaction")
+	    (progn
+	    
+	      (when (find (parameter action-parameter) allowed-actions :test 'string-equal)
+		
+		(action-handler (intern (string-upcase (parameter action-parameter)) :keyword)
+				context
+				request)))
+	    (action-handler (intern (string-upcase (parameter action-parameter)) :keyword)
+		    context
+		    request)
+
+	    )))
+     ))
+
+(defun ajax-request-p (request)
+  (alexandria:starts-with-subseq 
+   (ajax-url (hunchentoot:request-acceptor request))
+   (hunchentoot:script-name request)))
 
 (defmethod system-request ((acceptor hunch-system) (request hunch-request) 
 			   &key &allow-other-keys)
@@ -161,31 +164,24 @@
 	   (bad-request *request*))))
 
 (defun load-default-ajax (system)
-;;  (nid-ajax system)
-;;  (rid-ajax system)
-;;  (table-ajax system)
-;;  (grid-test-ajax system)
-;;  (grid-depend-ajax system)
   
   (define-ajax system cl-ajax-render (script-name renderer id)
     (declare (ignore script-name))
     (setf (hunchentoot:content-type*) "text/json")
  
-	;;(setf (slot-value *request* 'script-name) script-name)
 	(let ((*context* (find-request-context)))
-	    (declare (special *context*))
-	    (with-debugging
+	  (declare (special *context*))
 
-	      ;;(map-cache #'synq-cache *sfx-context*)
-	      ;;  (map-dom #'synq-data)
-	      ;;(map-cache-events *sfx-context*)
+	  
+	  
+	  (with-debugging
 
 	      (when renderer
-		  ;;  (enable-notifications)
+		
 		(json:encode-json-to-string
 		 (list (render-to-string* renderer 
 					  :id id :from-ajax t)
-		       ;;(deferred-js)
+		      
 		       )))))))
 
 (defmethod load-context-specs :after ((system hunch-system)

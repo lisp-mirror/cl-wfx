@@ -20,28 +20,32 @@ function prep_auto_completes () {
 }
 
 function active_element(){
-  var anchor = window.getSelection().anchorNode;
-  if(anchor.nodeType == 3){
-        return anchor.parentNode;
-  }else if(anchor.nodeType == 1){
-        return anchor;
-  }
+ 
+    var anchor = window.getSelection().anchorNode;
+    if(anchor){
+	if(anchor.nodeType == 3){
+            return anchor.parentNode;
+	}else if(anchor.nodeType == 1){
+            return anchor;
+	}
+    }
 }
 
 function prep_expands () {
     $(document).on('click', '.grow', function(){
 
+	
 	var shit = active_element();
 	//alert(shit.children[0]);
 	
-	if (!shit.children[0]){
+	if (shit && !shit.children[0]){
 	    
 	    if(this.dataset.expanded == "No"){
 		ajax_render("/mwc/s-wfx?cs=" + this.dataset.collection,
 			    "cl-wfx:ajax-grid",
 			    this.dataset.collection,
 			    [["data-type", this.dataset.type],
-			     ["action", "expand"],
+			     ["wfxaction", "expand"],
 			     ["item-id", this.dataset.hash],
 			     ["pages", this.dataset.pages],
 			     ["page", this.dataset.page]]);
@@ -54,7 +58,7 @@ function prep_expands () {
 			    "cl-wfx:ajax-grid",
 			    this.dataset.collection,
 			    [["data-type", this.dataset.type],
-			     ["action", "unexpand"],
+			     ["wfxaction", "unexpand"],
 			     ["item-id", ""],
 			     ["pages", this.dataset.pages],
 			     ["page", this.dataset.page]]); 
@@ -292,7 +296,7 @@ function ajax_render (script_name, renderer, id, args) {
 	useOverlay  : false
     });*/
 
-
+      
     if (renderer) {
 	args.push(['context-uri',script_name]);
         cl_ajax_render(script_name, renderer ,id, args,

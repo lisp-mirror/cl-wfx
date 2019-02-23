@@ -34,7 +34,7 @@
 					   :id "password"
 					   :placeholder "Password"
 					   :value ""))
-			     (:button :name "action"
+			     (:button :name "wfxaction"
 				      :class "btn btn-primary"
 				      :type "submit"
 				      :value "login"
@@ -973,7 +973,7 @@
 					  (cl-who:str
 					   (or (parameter "script") ""))))
 				   
-				   (:button :name "action"
+				   (:button :name "wfxaction"
 					    :class "btn btn-primary"
 					    :type "submit"
 					    :value "eval-repl"
@@ -1021,7 +1021,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (when (and (parameter "action") (parameter "script")
+  (when (and (parameter "wfxaction") (parameter "script")
 	     (not (empty-p (parameter "script"))))
     (let ((result
 	   (handler-case (script-eval
@@ -1063,7 +1063,7 @@
 					     :placeholder "Password"
 					     :value ""))
 				   
-				   (:button :name "action"
+				   (:button :name "wfxaction"
 					    :class "btn btn-primary"
 					    :type "submit"
 					    :value "set-password"
