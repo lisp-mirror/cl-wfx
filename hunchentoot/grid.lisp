@@ -595,7 +595,7 @@
 					      :hierarchy hierarchy)))))))
       
       
-    ;;  (break "~A" (getf   (getcx data-type :data-type) :item-actions))
+
       (dolist (action (getf (getcx data-type :data-type) :item-actions))
 	(cond ((equalp (getf action :type) :button)
 	       (cl-who:htm
@@ -759,7 +759,7 @@
 			    (item-hash item)
 			    nil))	
 	      (:tr :class "bg-light"
-		  ;; (break "~A" sub-fields)
+
 		   (if sub-fields
 		       (cl-who:htm
 			(:td :style "width: 25px;" )))
@@ -822,17 +822,19 @@
 				  (when (data-type-access-p (digx field :db-type :data-type))
 				    (cl-who:str
 				     (render-grid-edit-more field item hierarchy)))))))
-		   
+
+			   
 			   (when (getcx data-type :validation-errors)
 			     (let ((errors (getcx data-type :validation-errors)))
 			       (setf (getcx data-type :validation-errors) nil)
 			       (cl-who:htm
 				(:div :class "card-footer"
 				      (:div :class "row"
-					    (:div :clas "col"
-						  (cl-who:str
-						   (frmt "Errors ~S"
-							 errors)))))))))))))))
+					    (:div :class "col text-danger"
+						  (:strong
+						   (cl-who:str
+						    (frmt "Errors ~S"
+							  errors))))))))))))))))
 
 (defun render-grid-col-filter (data-type col-name)
   (with-html-string
@@ -1355,7 +1357,7 @@
    
     (with-html-string
       (:div :class "row"
-	   ;; (break "~A ~A " sub-level sub-level-p)
+
 	    (:div :class (if (> (length subs) 0)
 			     "col card-columns"
 			     "col card-groups"
@@ -1437,40 +1439,53 @@
 
 
 (defun render-row-goodies (subs sub-level-p sub-level data-type
-			   item fields
+			   item  parent-item parent-spec
+			   fields
 			   hierarchy)
   (unless *rendering-shit*
     (let ((header-fields (get-header-fields fields)))
 
       (with-html-string
-
-	(:tbody :style "display:none"
-		:id (frmt "ajax-edit-~A" (item-hash item)))
 	
-	(:tbody
-	 :id (frmt "ajax-expand-row-~A" (item-hash item))
-	 :style (if (and (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-				       (frmt "~A" (item-hash item))))
-		    "display:table-row-group"
-		    "display:none")
-	 (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-			   (frmt "~A" (item-hash item)))
+	(if (and (equalp (parameter "wfxaction") "save")
+		 (getcx data-type :edit-object)
+		 (getcx data-type :validation-errors))
+	    
+	    (cl-who:str (render-grid-edit data-type
+					  fields
+					  item
+					  parent-item
+					  parent-spec
+					  hierarchy
+					  ))
+	    (cl-who:htm (:tbody :style "display:none"
+				:id (frmt "ajax-edit-~A" (item-hash item)))
+			(:tbody
+			 :id (frmt "ajax-expand-row-~A" (item-hash item))
+			 :style (if (and (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+						       (frmt "~A" (item-hash item))))
+				    "display:table-row-group"
+				    "display:none")
+			 (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
+					   (frmt "~A" (item-hash item)))
 		    
-	     (cl-who:htm
-	      (:tr
-	       (:td :colspan (if subs
-				 (+ (length
-				     (limit-fields header-fields
-						   sub-level-p))
-				    2)
-				 (+ (length
-				     (limit-fields header-fields
-						   sub-level-p))
-				    1))
+			     (cl-who:htm
+			      (:tr
+			       (:td :colspan (if subs
+						 (+ (length
+						     (limit-fields header-fields
+								   sub-level-p))
+						    2)
+						 (+ (length
+						     (limit-fields header-fields
+								   sub-level-p))
+						    1))
 			   
-		    (cl-who:str (render-expand data-type item subs
-					       sub-level sub-level-p
-					       hierarchy)))))))))))
+				    (cl-who:str (render-expand data-type item subs
+							       sub-level sub-level-p
+							       hierarchy)))))))))
+	
+	))))
 
 
 (defun render-new-edit (data-type fields parent-item parent-spec hierarchy)
@@ -1481,12 +1496,13 @@
 	    
 	    (when (and (getcx data-type :edit-item)
 		       (not (item-hash (getcx data-type :edit-item))))
+
 	      (when (and (and (equalp (parameter "wfxaction") "save")
 			      (getcx data-type :edit-object)
 			      (getcx data-type :validation-errors))
 			 (string-equal (parameter "data-type")
 				       (frmt "~A" data-type)))
-
+		
 		(cl-who:str
 		 (render-grid-edit data-type fields
 				   (getcx data-type :edit-item)
@@ -1549,16 +1565,19 @@
 	  (let ((item-hierarchy (append hierarchy (list (list :data-type
 							     data-type
 							     :item item)))))
-	  
-	    (cl-who:str
-	     (render-item-row subs data-type item fields
-			      item-hierarchy (> sub-level 0)))
+
+	    (unless (and (equalp (parameter "wfxaction") "save")
+			 (getcx data-type :edit-object)
+			 (getcx data-type :validation-errors))
+	      (cl-who:str
+	       (render-item-row subs data-type item fields
+				item-hierarchy (> sub-level 0))))
 
 	    
 	    (cl-who:str
 	     (render-row-goodies subs sub-level-p
 				 sub-level data-type
-				 item fields
+				 item parent-item parent-spec fields
 				 item-hierarchy))))
 		    
 	(cl-who:str (render-new-edit data-type fields
@@ -1742,7 +1761,7 @@
 			    (setf found t)))))))))
 
 	   
-	  ;;  (break "~S" field)
+
 	    (let ((val (print-item-val 
 			(complex-type field) field item)))
 	      
@@ -1900,7 +1919,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
   (let ((persist-p))
-;;    (break "~A" (hunchentoot:post-parameters*))
+
     (dolist (param (hunchentoot:post-parameters*))
       (when (equalp (first param) "grid-selection")
 	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
@@ -1927,7 +1946,7 @@
 			    (second (first hierarchy))))
 	     (root-item
 	      (fetch-grid-root-edit-item root-hash)))
-;;	(break "~A" root-item)
+
 	(persist-item
 	 (wfx-get-collection	
 	  (gethash :collection-name (cache *context*)))
@@ -2484,8 +2503,6 @@
     (unless root-item
       (setf root-item (make-item :data-type data-type)))
 
-   ;; (break "~A~%~A~%~A" root-item hierarchy (hunchentoot::post-parameters*))
-    
     (when root-item
       (setf edit-objects (list (list :data-type root-type :item root-item)))
 
@@ -2669,6 +2686,9 @@
 			   (accessor-value parent-item
 				(digx field :db-type :container-accessor))
 			   ))
+	    ((getf field :validation)
+	     (if (functionp (getf field :validation))
+		 (funcall (eval (getf field :validation)) edit-item value)))
 	    (t
 	     (list t nil)))
       (list t nil)))
@@ -2832,20 +2852,36 @@
 	(prepare-edit-objects)
 
       (when fields
+	
 	(unless edit-item
 	  (setf edit-item (make-item :data-type data-type)))
 
-	(synq-item-values data-type fields parent-item edit-item)
+	
+	(when (dig (getcx data-type :data-type) :data-type :client-validation)
+	    (let ((valid (funcall (eval (dig (getcx data-type :data-type) :data-type :client-validation))
+				  root-item
+				  edit-item)))
+	      (unless (first valid)
+		
+		(pushnew 
+		 (list data-type (second valid))
+		 (getcx data-type :validation-errors)))))
 
-	(move-uploaded-file fields edit-item)   
-      
-	(grid-append-child data-type parent-slot parent-item
-			   edit-item)
+	(unless (getcx data-type :validation-errors)
+
+	  
+	  (synq-item-values data-type fields parent-item edit-item)
+
+	  
+	  (move-uploaded-file fields edit-item)   
+	  
+	  (grid-append-child data-type parent-slot parent-item
+			     edit-item)
 
 
-	(grid-persist-item data-type root-item)
+	  (grid-persist-item data-type root-item)
 
-	(fire-context-event context :save root-item edit-item)
+	  (fire-context-event context :save root-item edit-item))
 	
 
 	))))
