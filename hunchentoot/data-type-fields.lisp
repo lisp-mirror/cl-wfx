@@ -315,12 +315,14 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item)))))))
+		  (or
+		   (parameter name)
+		   (print-item-val 
+		    type
+		    field 
+		    item
+		    :default-value
+		    (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :symbol)) field item
 			     &key &allow-other-keys)
@@ -362,12 +364,14 @@
 	   :required (if (getf field :key-p)
 			 "required")
 	   (cl-who:str
-	    (print-item-val 
-	     type
-	     field 
-	     item
-	     :default-value
-	     (item-default-val* field item))))))))
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item
+	      :default-value
+	      (item-default-val* field item)))))))))
 
 (defun render-image (field item)
   (let* ((collection (wfx-get-collection
@@ -467,39 +471,44 @@
 
 (defmethod render-input-val ((type (eql :number)) field item
 			     &key &allow-other-keys)
+
   (let ((name (getf field :name)))
     (if (not (digx field :attributes :editable))
 	(with-html-string
 		      
-		      (:input :class "form-control"
-			      :id name
-			      :name name 
-			      :type "number"
-			      :step "any"		  
-			      :value
-			      (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item))
-			      :disabled "disabled"))
+	    (:input :class "form-control"
+		    :id name
+		    :name name 
+		    :type "number"
+		    :step "any"		  
+		    :value
+		    (print-item-val 
+		     type
+		     field 
+		     item
+		     :default-value
+		     (item-default-val* field item))
+		    :disabled "disabled"))
 	
 	(with-html-string
-	  (:input :class "form-control"
-		  :id name
-		  :name name		  
-		  :type "number"
-		  :step "any"
-		  :required (if (getf field :key-p)
-				"required")
-		  :value
-		  (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item)))))))
+	    (:input :class "form-control"
+		    :id name
+		    :name name		  
+		    :type "number"
+		    :step "any"
+		    :min (digx field :min)
+		    :max (digx field :max)
+		    :required (if (getf field :key-p)
+				  "required")
+		    :value
+		    (or (parameter name)
+			(print-item-val 
+			 type
+			 field 
+			 item
+			 :default-value
+			 (item-default-val* field item))
+			))))))
 
 (defmethod render-input-val ((type (eql :integer)) field item
 			     &key &allow-other-keys)
@@ -528,12 +537,14 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (cl-who:str (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item))))))))
+		  (or (parameter name)
+		      (print-item-val 
+		       type
+		       field 
+		       item
+		       :default-value
+		       (item-default-val* field item))
+		      ))))))
 
 (defmethod render-input-val ((type (eql :date)) field item
 			     &key &allow-other-keys)
@@ -561,12 +572,15 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item)))))))
+		  (or
+		   (parameter name)
+		   (print-item-val 
+		    type
+		    field 
+		    item
+		    :default-value
+		    (item-default-val* field item))
+		   ))))))
 
 (defmethod render-input-val ((type (eql :time)) field item
 			     &key &allow-other-keys)
@@ -593,12 +607,14 @@
 		  :required (if (getf field :key-p)
 				"required")
 		  :value
-		  (print-item-val 
-			       type
-			       field 
-			       item
-			       :default-value
-			       (item-default-val* field item)))))))
+		  (or
+		   (parameter name)
+		   (print-item-val 
+		    type
+		    field 
+		    item
+		    :default-value
+		    (item-default-val* field item))))))))
 
 (defmethod render-input-val ((type (eql :boolean)) field item
 			     &key &allow-other-keys)
@@ -631,12 +647,14 @@
 				   :name name
 				   :required (if (getf field :key-p)
 						 "required")
-				   :value (getsfx
-					   type
-					   field 
-					   item
-					   :default-value
-					   (item-default-val* field item))
+				   :value (or
+					   (parameter name)
+					   (getsfx
+					    type
+					    field 
+					    item
+					    :default-value
+					    (item-default-val* field item)))
 				   :checked print-val
 				   :aria-label "..."))))))))
 
@@ -663,10 +681,12 @@
 	   :required (if (getf field :key-p)
 			 "required")
 	   (cl-who:str
-	    (print-item-val 
-	     type
-	     field 
-	     item)))))))
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
 
 (defmethod render-input-val ((type (eql :value-string-list)) 
 			     field item &key &allow-other-keys)
@@ -702,10 +722,12 @@
 	   :name name :cols 20 :rows 3
 	   :required (if (getf field :key-p)
 			 "required")
-	   (cl-who:str (print-item-val 
-			:value-string-list
-			field 
-			item)))
+	   (cl-who:str (or
+			(parameter name)
+			(print-item-val 
+			 :value-string-list
+			 field 
+			 item))))
 	  (:span (cl-who:str
 		  (frmt "Delimit by ~A" (cond ((string-equal delimiter " ")
 						    "#\Space")
