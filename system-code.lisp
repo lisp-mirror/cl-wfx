@@ -166,19 +166,6 @@
    ))
 
 
-(defun lambda-eval (lambda)
-  (handler-case      
-      (values (read-eval (getx lambda :code)) (list :error nil :backtrace nil))
-    (error (c)
-      (values nil (list :error c :backtrace (sb-debug:list-backtrace))))))
-
-(defun call-lambda (name)
-  (let ((lambdax (wfx-fetch-items "lambdas"
-				 :test (lambda (item)
-					 (equalp (getx item :name) name)))))
-    (when lambdax
-      (funcall (getx lambdax :code)))))
-
 
 (defun apply-lambda (name args)
   (let ((lambdax (wfx-fetch-items "lambdas"
