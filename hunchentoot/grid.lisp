@@ -92,15 +92,15 @@
 			     &key &allow-other-keys)
   (let* ((name (getf field :name))
 	 (list (or
-		(and (dig field :db-type :values-script)
-		     (eval (dig field :db-type :values-script)))
+		(and (dig field :db-type :values-lambda)
+		     (eval (dig field :db-type :values-lambda)))
 
 		(dig field :db-type :values)))
 	  
 	 (selected ))
     
     (if (functionp list)
-	(setf list (funcall (eval (dig field :db-type :values-script)) item)))
+	(setf list (funcall (eval (dig field :db-type :values-lambda)) item)))
 
   
     (setf selected (find (getfx item field) list :test #'equalp))
@@ -111,11 +111,11 @@
 (defmethod render-input-val-x ((type (eql :value-list)) field item
 			       &key &allow-other-keys)
   (let* ((name (getf field :name))
-	 (list (or (and (dig field :db-type :values-script)
-			(cond ((equalp (first (dig field :db-type :values-script))
+	 (list (or (and (dig field :db-type :values-lambda)
+			(cond ((equalp (first (dig field :db-type :values-lambda))
 				       'cl-wfx::get-named-list-sorted-values)
-			       (eval (dig field :db-type :values-script)))
-			      ((equalp (first (dig field :db-type :values-script))
+			       (eval (dig field :db-type :values-lambda)))
+			      ((equalp (first (dig field :db-type :values-lambda))
 				       'cl:lambda)
 			 
 			       )))
@@ -215,7 +215,7 @@
 			  :name (frmt "~A" field-name)
 			  :value (html-value (or
 					      (parameter (frmt "~A" field-name))
-					      (if (equalp (type-of selected) 'item)
+					      (if (item-p selected)
 						  (item-hash selected)
 						  selected-value)
 					      "")))
@@ -390,7 +390,7 @@
 				      (accessor-value item accessors)))))))
 
 (defun grid-js-render-form-values (data-type form-id 
-				   &key action action-script
+				   &key action action-lambda
 				     action-data item-id
 				     hierarchy)
   (let ((active-page (getcx 
@@ -406,7 +406,7 @@
      
      (js-pair "wfxaction" (or action ""))
 
-     (js-pair "action-script" (or action-script ""))
+     (js-pair "action-lambda" (or action-lambda ""))
      (js-pair "action-data" (or action-data ""))
      
      (js-pair "item-id" (frmt "~A" (or item-id (getcx data-type :item-id)
@@ -522,9 +522,7 @@
 				    (frmt "(~A ~A)"
 					  (getf item :data-type)
 					  (if (getf item :item)
-					      (if (equalp (type-of
-							   (getf item :item))
-							  'item)
+					      (if (item-p (getf item :item))
 						  (item-hash (getf item :item))
 						  (getf item :item)
 						  )
@@ -791,7 +789,8 @@
 
 			    (:div :class "row" 
 				  :id (frmt "~A" data-type)
-				  (:div :class "col" 
+				  (:div :class "col"
+					
 					(dolist (field fields)
 					  (let* ((name (getf field :name))
 						 (label (getf field :label)))
@@ -1010,16 +1009,16 @@
 (defun render-select-actions (data-type)  
   (let ((action-list))
 
-    (dolist (script (getx (context-spec *context*) :scripts))
-      (when (string-equal (digx script :script :name) "Select Action List")
-	(setf action-list (eval (digx script :script :code)))))
+    (dolist (lambdax (getx (context-spec *context*) :lambdas))
+      (when (find :select-action-list (getx lambdax :events) :test 'equalp)
+	(setf action-list (eval (digx lambdax :lambda :code)))))
 
     (when (user-context-permission-p
 	   (getx (context-spec *context*) :name)
 	   :delete)
       (setf action-list (append action-list
 				(list (list :action-name "Delete Selected"
-					    :handler-script "Delete Selected")))))
+					    :handler-lambda :delete-selected)))))
     (when action-list 
       (with-html-string
 	;;TODO: float right fucks up dropdown menu positioning
@@ -1047,8 +1046,8 @@
 		     
 		     (js-pair "action-data"
 			      (or (getf action :data) ""))
-		     (js-pair "action-handler-script"
-			      (getf action :handler-script))
+		     (js-pair "action-handler-lambda"
+			      (getf action :handler-lambda))
 		     (js-pair "pages"
 			      (or (parameter "pages") 50))
 		     (js-pair "page"
@@ -1159,7 +1158,9 @@
 	(cond
 	  ((empty-p val)
 	   (cl-who:str val))
-	  ((equalp (complex-type field) :script)
+	  ((or (equalp (complex-type field) :lambda)
+	       (equalp (complex-type field) :lisp-code)
+	       (equalp (complex-type field) :java-script))
 	   (cl-who:htm
 	    (:textarea :readonly "readonly" :style "width:100%;"
 		       (cl-who:str val))))
@@ -1980,15 +1981,15 @@
     
     (setf (getcx (parameter "data-type") :selected-grid-items) selected)
     
-    (cond ((string-equal (parameter "action-handler-script")
-			 "Delete Selected")
+    (cond ((string-equal (parameter "action-handler-lambda")
+			 :delete-selected)
 	   (delete-selected selected))
 	  (t
-	   (dolist (script (getx (context-spec *context*) :scripts))
-	     
-	     (when (string-equal (digx script :script :name)
-				 "Select Action Handler")
-	       (eval (digx script :script :code))))))
+	   (dolist (lambdax (getx (context-spec *context*) :lambdas))	     
+	     (when (string-equal (digx lambdax :event)
+				 :select-action-handler)
+	       (eval (digx lambdax :lamda :code))))))
+    
     (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
 
 
@@ -2206,6 +2207,7 @@
 			       (dig collection :collection :data-type)))))   
 
       (set-grid-context collection-name data-type)
+      
 
       (set-type-context data-type)
 
@@ -2293,13 +2295,13 @@
 				   (render-grid-paging data-type))))))
 	  (:div
 	   
-	   (cl-who:str (gethash :context-script-event (cache *context*))))
+	   (cl-who:str (gethash :context-lambda-event (cache *context*))))
 	  (:div
 
-	   (cl-who:str (gethash :context-script-code (cache *context*))))
+	   (cl-who:str (gethash :context-lambda-code (cache *context*))))
 	  (:div
 
-	   (cl-who:str (gethash :context-script-result (cache *context*)))))))))
+	   (cl-who:str (gethash :context-lambda-result (cache *context*)))))))))
 
 
 
@@ -2478,7 +2480,6 @@
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
-  
   (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields )
 	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
@@ -2487,6 +2488,7 @@
 	 (root-item)
 	 (edit-objects))
 
+
     (setf (getcx data-type :edit-object) nil)
     
     (setf root-type (if  hierarchy
@@ -2494,10 +2496,9 @@
 						(first (first hierarchy))))))
     (setf root-hash (if hierarchy
 			(second (first hierarchy))))
-
+    
     (setf fields (getcx root-type :fields))
 
-    
     (setf root-item (fetch-grid-root-edit-item root-hash))
 
     (unless root-item
@@ -2522,23 +2523,25 @@
 				:field-name (first item))
 			  edit-objects)))
 	    (setf (getcx data-type :edit-object) edit-objects)
-	    
+
+	    	    
 	    (render-grid-edit item-type
 			      (getcx item-type :fields)
 			      (second item)
 			      root-item root-type
 			      (reverse edit-objects)))
 	  (progn
+	    
 	    (setf (getcx data-type :edit-object) edit-objects)
 	    (render-grid-edit root-type fields root-item nil nil
-			      (list (list :data-type data-type
-					  :item root-item))))))))
+				     (list (list :data-type data-type
+						 :item root-item))))))))
 
 (defun index-keys-x (fields item-values)
   (let ((keys))
     (dolist (field fields)
       (when (getf field :key-p)
-	(if (equalp (type-of (getf item-values (getf field :name))) 'item)
+	(if (item-p (getf item-values (getf field :name)))
 	    (push (item-hash (getf item-values (getf field :name))) keys)
 	    (push (getf item-values (getf field :name)) keys))))
     (reverse keys)))
@@ -2821,19 +2824,19 @@
 
 (defun fire-context-event (context event root-item edit-item)
   (let ((context-spec (context-spec context)))
-    (when (getx context-spec :scripts)
-      (dolist (script (getx context-spec :scripts))
-	(when (find event (getx script :events) :test 'equalp)
-	  (let* ((code (digx script :script :code))
-		 (result (script-eval
+    (when (getx context-spec :lambdas)
+      (dolist (lambdax (getx context-spec :lambdas))
+	(when (find event (getx lambdax :events) :test 'equalp)
+	  (let* ((code (digx lambdax :lambda :code))
+		 (result (lambda-eval
 			  `(let ((*root-item* ,root-item)
 				 (*edit-item* ,edit-item))
 			     ,code))))
-	    (setf (gethash :context-script-code (cache *context*))
+	    (setf (gethash :context-lambda-code (cache *context*))
 		  code)
-	    (setf (gethash :context-script-event (cache *context*))
+	    (setf (gethash :context-lambda-event (cache *context*))
 		  event)
-	    (setf (gethash :context-script-result (cache *context*))	   
+	    (setf (gethash :context-lambda-result (cache *context*))	   
 		  (or (first result) (second result)) )
 	    ))))))
 

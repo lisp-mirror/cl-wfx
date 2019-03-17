@@ -686,27 +686,64 @@
   
     (:link :rel "stylesheet"
 	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.standalone.min.css")
-    
-       #|
-      (cl-who:str (frmt  "<script src=\"~Aweb/codemirror/lib/codemirror.js\"></script>" (site-url *system*)))
-	
-      (cl-who:str
-      (frmt  "<link rel=\"stylesheet\" href=\"~Aweb/codemirror/lib/codemirror.css\">" (site-url *system*)))
-	
-      (cl-who:str
-      (frmt  "<script src=\"~Aweb/codemirror/mode/commonlisp/commonlisp.js\"></script>
-" (site-url *system*)))
-	
-      (cl-who:str
-      (frmt  "<script src=\"~Aweb/codemirror/addon/edit/closebrackets.js\"></script>
-" (site-url *system*)))
-	
-      (cl-who:str
-      (frmt  "<script src=\"~Aweb/codemirror/addon/edit/matchbrackets.js\"></script>
-" (site-url *system*)))
-      |#
-    
 
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/codemirror.js"
+      )
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/codemirror.css")
+
+    #|
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/comment/comment.js"
+      )
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/comment/continuecomment.js"
+      )
+
+   
+    
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/javascript/javascript.js"
+      )
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/css/css.js"
+      )
+ |#
+    #|
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/show-hint.css")
+    
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/show-hint.js"
+      )
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/css-hint.js"
+      )
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/javascript-hint.js"
+      )
+
+    
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/commonlisp/commonlisp.js"
+      )
+
+    |#
+    
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/edit/closebrackets.js"
+      )
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/edit/matchbrackets.js"
+      )
+    
+    
     (:link :rel "stylesheet"
 	   :href (frmt "~Aweb/cl-wfx.css" (site-url system)))
 
@@ -726,29 +763,36 @@
 (defmethod page-header-js :around ((system hunch-system) &key &allow-other-keys)
   (with-html-string
     (:script
+     :type "text/javascript"
       :src "https://code.jquery.com/jquery-3.3.1.min.js"
       :integrity "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
       :crossorigin "anonymous")
     
     (:script
+     :type "text/javascript"
      :src "https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
      :ingegrity "sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
      :crossorigin "anonymous")
     
     (:script
+     :type "text/javascript"
      :src "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
      :ingegrity "sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
      :crossorigin "anonymous")
     
     (:script
+     :type "text/javascript"
      :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/js/fileinput.min.js")
     
     (:script
+     :type "text/javascript"
      :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js")
     (:script
+     :type "text/javascript"
      :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js")
     
     (:script
+     :type "text/javascript"
      :src (frmt "~Aweb/cl-wfx.js" (site-url system)))
 
     (cl-who:str (call-next-method))
@@ -787,6 +831,17 @@
 	     (cl-who:str
 	      "prep_expands();"))
 
+    (:script :type "text/javascript"
+	     (cl-who:str "$(document).ready(function(){
+	
+    var code = $(\".wfx-lisp-code\")[0];
+    if(code){
+	var editor = CodeMirror.fromTextArea(code, {
+	    lineNumbers : true
+	});
+    }
+});")
+	     )
 
     (:script :type "text/javascript"
 	     (cl-who:str
@@ -958,20 +1013,20 @@
 		      
 		      (:div :class "card-block"
 			    (:h4 :class "card-title"
-				 "Run Script")
+				 "Lisp Code")
 			    (:form :method "post"
 				   :action ""			       
 				   (:input :type "hidden" :id "contextid" 
 					   :value (context-id *context*))
 				   (:div :class "form-group"
-					 (:label :for "script" "Script")
+					 (:label :for "repl-code" "Code")
 					 (:textarea
-					  :class "form-control wfx-script"
+					  :class "form-control wfx-lisp-code"
 					  :rows 20
-					  :name "script"
-					  :id "script"
+					  :name "repl-code"
+					  :id "repl-code"
 					  (cl-who:str
-					   (or (parameter "script") ""))))
+					   (or (parameter "repl-code") ""))))
 				   
 				   (:button :name "wfxaction"
 					    :class "btn btn-primary"
@@ -979,59 +1034,126 @@
 					    :value "eval-repl"
 					    "run")))
 		      (:div :class "card-footer"
-			    (cl-who:str
-			     (gethash :repl-result (cache *context*)))))))))
+			    (:div :class "col"
+				  (:div :class "row bg-secondary"
+					(:div :class :col
+					      (:strong "Result")))
+				  
+				  (:div :class "row"
+					(:div :class :col
+					      (cl-who:str
+					       (gethash :repl-result (cache *context*)))))
+				  (:div :class "row bg-secondary"
+					(:div :class :col
+					      (:strong "More Results")))
+				  (:div :class "row"
+					(:div :class :col
+					      (let ((more-results (gethash :repl-more-results (cache *context*)))
+						    (count 0))
+						
+						(dolist (result more-results)
+						  (incf count)
+						  (cl-who:htm
+						   (:div :class "row"
+							 (:div :class "col"
+							       (:a ;;:class "btn"
+								   :data-toggle "collapse"
+								   :href (frmt "#collapseMore-~A" count)
+								   :role "button"
+								   :aria-expanded "false"
+								   :aria-controls (frmt "collapseMore-~A" count)
+								   
+								   (:strong
+								    (cl-who:esc
+								     (frmt "~S" result)
+								     )))))
+						   
+						   (:div :class "row collapse"
+							 :id (frmt "collapseMore-~A" count)
+							 
+							 (:div :class "col bg-light"
+							       (cond ((and (symbolp result)
+									     (fboundp result))
+								      
+								      (let* ((stream (make-string-output-stream))
+									     (x (describe result stream))
+									     (splits (split-sequence:split-sequence
+										      
+										      #\newline
+										      (get-output-stream-string
+										       stream))))
+								
+									  (dolist (split splits)
+									    
+									    (cl-who:htm
+									     (:br)
+									     (cl-who:str split)))))
+								       (t
+									(pprint result)))))
+						   )))))
+				  (:div :class "row bg-secondary"
+					(:div :class :col
+					      (:strong "Backtrace")))
+				  (:div :class "row"
+					(:div :class :col
+					      (let ((backtrace (gethash :repl-backtrace (cache *context*)))
+						    (count 0)
+						    (limit-trace nil))
+						
+						(dolist (trace backtrace)
+						  
+						  (unless limit-trace
+						    (incf count)
+						    (cl-who:htm
+						     (:div :class "row"
+							   (:div :class "col"
+								 (:a ;;:class "btn"
+								  :data-toggle "collapse"
+								  :href (frmt "#collapseTrace-~A" count)
+								  :role "button"
+								  :aria-expanded "false"
+								  :aria-controls (frmt "collapseTrace-~A" count)
+								  
+								  (:strong
+								   (cl-who:str
+								    (frmt "~S" (first trace))
+								    )))))
+						     (dolist (trace-element (cdr trace))
+						       (cl-who:htm
+							(:div :class "row collapse"
+							      :id (frmt "collapseTrace-~A" count)
+							      (:div :class "col bg-white" 
+								    ;;	  (break (frmt "~S" trace-element))
+								    (cl-who:esc (frmt "~A" trace-element))))))
+						     (when (string-equal (frmt "~S" (first trace))
+									 "CL-WFX::READ-EVAL")
+						       (setf limit-trace t)))))))))))))))
 
-(defparameter *script-functions*
-  (list 'cl-wfx:frmt
-	'cl-wfx::wfx-fetch-context-item
-	'cl-wfx::wfx-fetch-context-items
-	'cl-wfx:with-html
-	'cl-wfx:with-html-string
-	'cl-wfx::render-report
-	'cl-wfx::parameter
-	'cl-who:htm
-	'cl-who:str
-	'cl-who:esc
-	'cl-naive-store:getx))
 
-(defun script-eval-safe (script)
-  (let* ((sandbox-impl::*allowed-extra-symbols*
-	    *script-functions*)
-	  (script-result (make-array '(0) :element-type 'base-char
-			    :fill-pointer 0 :adjustable t)))
-
-      (with-output-to-string (s script-result)
-	(let ((sandbox::*msg-value-prefix* "")
-	      (sandbox::*msg-error-prefix* "")
-	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
-	      (sandbox::*msg-no-value-message* "Nil"))
-	  
-	  (sandbox::read-eval-print script  s)
-	  script-result))))
-
-(defun script-eval (script)  
-  (handler-case      
-      (list (eval script) nil)
-    (error (c)
-       (list nil c))))
 
 (defmethod action-handler ((action (eql :eval-repl)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (when (and (parameter "wfxaction") (parameter "script")
-	     (not (empty-p (parameter "script"))))
-    (let ((result
-	   (handler-case (script-eval
-			  (read-no-eval
-			   (parameter "script")))
-	     (error (c)
-	       (list NIL c)))))
-      
+  (when (and (parameter "wfxaction")
+	     (parameter "repl-code")
+	     (not (empty-p (parameter "repl-code"))))
+
+    
+    (multiple-value-bind (result more-results error)
+	  (eval% 
+	   (parameter "repl-code")
+	   :package-name :wfx-repl)
+
+    ;;  (break "~S~%~S" result more-results)
       (setf (gethash :repl-result (cache *context*))	   
-	    (or (first result) (second result)) ))))
+	      (or result
+		  (and error (getf error :error))) )
+	(setf (gethash :repl-more-results (cache *context*))	   
+	      more-results )
+	(setf (gethash :repl-backtrace (cache *context*))	   
+	    (getf error :backtrace) ))))
 
 
 (defun render-set-password ()
@@ -1213,7 +1335,7 @@
 				      :menu-p nil))))
 	  ((not (empty-p (getx context-spec :renderer)))
 	   
-	   (script-eval
+	   (lambda-eval
 		   (read-no-eval
 		    (getx context-spec :renderer))))
 	  (t

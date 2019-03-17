@@ -9,120 +9,115 @@
 
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
 
-  (unless (get-context-spec (core-store) "Login")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Login"
 		    :permissions nil
-		    :for-everyone t)))
+		    :for-everyone t))
 
-  (unless (get-context-spec (core-store) "REPL")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "REPL"
 		    :permissions nil
-		    :for-everyone t)))
+		    :for-everyone t))
   
-  (unless (get-context-spec (core-store) "Set Password")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Set Password"
 		    :permissions nil
-		    :for-everyone t)))
+		    :for-everyone t))
   
-  (unless (get-context-spec (core-store ) "Data Types")
-    (persist-item (core-collection "context-specs")    
+  (persist-item (core-collection "context-specs")    
 		  '(:name "Data Types"
 		    :permissions (:filter :search)
-		    :collection "data-types")))
+		    :collection "data-types"))
   
-  (unless (get-context-spec (core-store) "Context Specs")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Context Specs"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "context-specs")))
+		    :collection "context-specs"))
   
-  (unless (get-context-spec (core-store) "Modules")
-	  (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 			'(:name "Modules"
 			  :permissions (:update :delete)
 			  :for-everyone t 
-			  :collection "modules")))
+			  :collection "modules"))
   
-  (unless (get-context-spec (core-store) "Licenses")
-	  (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 			'(:name "Licenses"
 			  :permissions (:update :delete)
 			  :for-everyone t 
-			  :collection "licenses")))
+			  :collection "licenses"))
   
-  (unless (get-context-spec (core-store) "Entities")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Entities"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entities")))
+		    :collection "entities"))
   
-  (unless (get-context-spec (core-store) "Users")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "users")))
+		    :collection "users"))
   
-  (unless (get-context-spec (core-store) "License Users")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "License Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "license-users")))
+		    :collection "license-users"))
   
-  (unless (get-context-spec (core-store) "Named Lists")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Named Lists"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "named-lists")))
+		    :collection "named-lists"))
   
-  (unless (get-context-spec (core-store) "Scripts")
-    (persist-item (core-collection "context-specs")
-		  '(:name "Scripts"
+  (persist-item (core-collection "context-specs")
+		  '(:name "Lambdas"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "scripts")))
+		    :collection "lambdas"))
 
-  (unless (get-context-spec (core-store) "Entity Scripts")
-    (persist-item (core-collection "context-specs")
-		  '(:name "Entity Scripts"
+  (persist-item (core-collection "context-specs")
+		  '(:name "Packages"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entity-scripts")))
+		    :collection "packages"))
 
-  (unless (get-context-spec (core-store) "Email Accounts")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
+		  '(:name "Java Scripts"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "java-scripts"))
+
+  (persist-item (core-collection "context-specs")
+		  '(:name "Stylesheets"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "style-sheets"))
+
+  (persist-item (core-collection "context-specs")
 		  '(:name "Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "email-accounts")))
+		    :collection "email-accounts"))
 
-  (unless (get-context-spec (core-store) "Entity Email Accounts")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Entity Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entity-email-accounts")))
+		    :collection "entity-email-accounts"))
   
-  (unless (get-context-spec (core-store) "Reports")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "reports")))
+		    :collection "reports"))
   
-  (unless (get-context-spec (core-store) "Entity Reports")
-    (persist-item (core-collection "context-specs")
+  (persist-item (core-collection "context-specs")
 		  '(:name "Entity Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entity-reports"))))
+		    :collection "entity-reports")))
 
 (defun make-menu-item (name context-spec)
   (make-item
@@ -142,7 +137,7 @@
 	(contexts (list
 			      ;;  (get-context-spec "theme")
 			      ;;(get-context-spec "Allsorts")
-			      ;; (get-context-spec "script")
+			      
 			      ;; (get-context-spec "repl")
 			      ;;(get-context-spec "Data Specs")
 			      (get-context-spec (core-store ) "Context Specs")
@@ -154,8 +149,11 @@
 			      (get-context-spec (core-store ) "Named Lists")
 			      (get-context-spec (core-store ) "Users")
 			      (get-context-spec (core-store ) "License Users")
-			      (get-context-spec (core-store ) "Scripts")
-			      (get-context-spec (core-store ) "Entity Scripts")
+			      (get-context-spec (core-store ) "Lambdas")
+			      (get-context-spec (core-store ) "Packages")
+			      (get-context-spec (core-store ) "Java Scripts")
+			      (get-context-spec (core-store ) "Stylesheets")
+			     			   
 			      (get-context-spec (core-store ) "Email Accounts")
 			      (get-context-spec (core-store )
 						"Entity Email Accounts")

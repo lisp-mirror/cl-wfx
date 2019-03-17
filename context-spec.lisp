@@ -2,27 +2,62 @@
 
 (add-core-definitions
  '((:data-type
-    (:name "context-script"
-     :label "Context Script"
+    (:name "context-lambda"
+     :label "Context Lambda"
      :top-level-p t
      :fields
-     ((:name :script
-	     :label "Script"
+     ((:name :lambda
+	     :label "Lambda"
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "script"
-			     :collection "scripts"
+			     :data-type "lambda"
+			     :collection "lambdas"
 			     :accessor :name)
 	     :attributes (:display t :editable t))
 
-      (:name :events 
+      (:name :events
 	     :label "Events"
 	     :key-p nil
 	     :db-type (:type :keyword
 			     :complex-type :value-string-list
-			     :values (:select :save :delete :new
-					      :export :search :filter)
+			     :values (:select :save
+					      :delete
+					      :new
+					      :export
+					      :search
+					      :filter
+					      :select-action-list
+					      :select-action)
+			     :delimiter " ")
+	     :attributes (:display t :editable t)))
+     :destinations (:core :system :license)))
+
+   (:data-type
+    (:name "context-js"
+     :label "Context js"
+     :top-level-p t
+     :fields
+     ((:name :java-script
+	     :label "Java Script"
+	     :key-p t
+	     :db-type (:type :list
+			     :complex-type :collection
+			     :data-type "java-script"
+			     :collection "java-scripts"
+			     :accessor :name)
+	     :attributes (:display t :editable t))
+      (:name :event 
+	     :label "Event"
+	     :key-p nil
+	     :db-type (:type :keyword
+			     :complex-type :value-string-list
+			     :values (:select :save
+					      :delete
+					      :new
+					      :export
+					      :search
+					      :filter)
 			     :delimiter " ")
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
@@ -59,12 +94,28 @@
 			     :complex-type :value-string-list
 			     :delimiter " ")
 	     :attributes (:display t :editable t))
-      (:name :scripts
-	     :label "Scripts"
+      (:name :lambdas
+	     :label "Lambdas"
 	     :db-type (:type :list
 			     :complex-type :list-items
-			     :data-type "context-script"
-			     :accessor (:script :name))			  
+			     :data-type "context-lambda"
+			     :accessor (:lambda :name))			  
+	     :attributes (:display t :editable t))
+      (:name :lambdas
+	     :label "Lambdas"
+	     :db-type (:type :list
+			     :complex-type :list-items
+			     :data-type "context-lambda"
+			     :accessor (:java-script :name))			  
+	     :attributes (:display t :editable t))
+      (:name :package
+	     :label "Package"
+	     :key-p t
+	     :db-type (:type :list
+			     :complex-type :collection
+			     :data-type "package"
+			     :collection "packages"
+			     :accessor :name)
 	     :attributes (:display t :editable t))
       (:name :url 
 	     :label "Url"

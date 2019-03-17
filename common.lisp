@@ -32,13 +32,148 @@ Notes:
 Dont set manually use with-system macro.")
 
 
+(defparameter *lambda-functions*
+  (list 'cl-wfx:frmt
+	'cl-wfx::wfx-fetch-context-item
+	'cl-wfx::wfx-fetch-context-items
+	'cl-wfx:with-html
+	'cl-wfx:with-html-string
+	'cl-wfx::render-report
+	'cl-wfx::parameter
+	'cl-who:htm
+	'cl-who:str
+	'cl-who:esc
+	'cl-naive-store:getx))
+
+(defun lambda-eval-safe (lambdax)
+  (let* ((sandbox-impl::*allowed-extra-symbols*
+	    *lambda-functions*)
+	  (lambda-result (make-array '(0) :element-type 'base-char
+			    :fill-pointer 0 :adjustable t)))
+
+      (with-output-to-string (s lambda-result)
+	(let ((sandbox::*msg-value-prefix* "")
+	      (sandbox::*msg-error-prefix* "")
+	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
+	      (sandbox::*msg-no-value-message* "Nil"))
+	  
+	  (sandbox::read-eval-print lambdax  s)
+	  lambda-result))))
+
+
+(defun read-s-expressions (expressions-string)
+  (let ((stream (make-string-input-stream expressions-string))
+	(expressions))
+    
+    (when stream
+      (loop with expr = nil
+	   do
+	   (setf expr (read stream nil))
+	   (when expr
+	     (setf expressions (push expr  expressions)))
+	   while expr)
+      (close stream))
+    
+    (reverse expressions)))
+
+
 (defun read-no-eval (value)
-  (let ((*read-eval* nil))
+  :documentation "Function to convert string to s-expressions. Any value that is not a string is returned as is. When the value to read is a string it could consist of multiple s-expresssions, the second parameter returned indicates if this is the case or not. If multiple a list of s-expressions is returned else a single s-expression."
+  (let ((*read-eval* nil)
+	(expressions ))
     (if value
 	(if (stringp value)
-	    (read-from-string value)
-	    (read value)))))
+	    (progn
+	      (setf expressions 
+		    (read-s-expressions value))
+	      (if (> (length expressions) 1)
+		  (values expressions t)
+		  (values (first expressions))))
+	    (values value nil)))))
 
+(defun evaluable-p (s-expression)
+  (fboundp (first s-expression)))
+
+
+
+(defun read-eval (expressions-string)
+  :documentation "Function converts a string to s-expressions and returns the results of evaluating each s-expression in turn. If the s-expression is not deemed to be evaluatable the expression is returned as is."
+  (let ((results)
+	(last-expression))
+    (handler-case
+	(let ((stream (make-string-input-stream expressions-string) ))
+	  
+	  (when stream
+	    (loop with expr = nil
+	       do
+		 (setf expr (read stream nil))
+		 (when expr
+		   (setf last-expression expr)
+		   (if (evaluable-p expr)
+	     	       (push (eval expr) results)
+		       (push expr results)))
+	       while expr)
+	    (close stream))
+	 ;; (setf results (reverse results))
+	  (values (car results)
+		  (cdr results)
+		  (list
+		   :error nil
+		   :backtrace nil)))
+      (error (c)
+	(values c
+		results
+		(list 
+		 :error c
+		 :backtrace (append (list (list last-expression)) (sb-debug:list-backtrace))))))))
+
+
+(defun eval-blob% (blob)
+  (read-eval (blob-string-value blob) ))
+
+(defun eval% (object &key package-name)
+  (cond  ((and (item-p object) (item-of-type-p object "lambda"))
+	  (let ((*package* (or (and package-name (or (find-package package-name)
+						     (make-package package-name)))
+			       *package*)))
+	    (eval-blob% (getx object :code))))
+	 ((and (item-p object) (item-of-type-p object "package"))
+	  (let ((*package* (or
+			    (and package-name (or (find-package package-name)
+						  (make-package package-name)))
+			    (and (getx object :package)
+				 (find-package (frmt "~A" (getx object :package))))
+			    (and (getx object :package)
+				 (make-package (frmt "~A" (getx object :package))))
+			    *package*)))
+	    (eval-blob% (getx object :code))))
+	 ((stringp object)
+	  (read-eval object))
+	 (t
+	  (eval object))))
+
+
+(defun load-blob% (blob)
+  (load (blob-string-value blob)))
+
+(defun load% (object &key package)
+
+  (cond  ((and (item-p object) (item-of-type-p object "lambda"))
+	  (let ((*package* (or package  *package*)))
+	    (load-blob% (getx object :code))))
+	 ((and (item-p object) (item-of-type-p object "package"))
+	  (let ((*package* (or
+			    package
+			    (and (getx object :package)
+				 (find-package (frmt "~A" (getx object :package))))
+			    (and (getx object :package)
+				 (make-package (frmt "~A" (getx object :package))))
+			    *package*)))
+	    (load-blob% (getx object :code))))
+	 ((stringp object)
+	  (load object))
+	 (t
+	  (load object))))
 
 
 ;;#############################STRINGS
@@ -68,6 +203,20 @@ Dont set manually use with-system macro.")
 	 ))
     (t
      (princ-to-string value))))
+
+
+(defun frmt-money (value &key (include-comma t)
+                            )
+  (typecase value
+        (null "")
+        (number
+         (multiple-value-bind (quot rem) (truncate (round value 1/100) 100)
+           (format nil "~@?.~2,'0d"
+                   (if include-comma "~:d" "~d")
+                   quot (abs rem))))
+        (t
+         (princ-to-string value))))
+
 
 ;;STRING MANIPULATION
 (defun trim-whitespace (string)

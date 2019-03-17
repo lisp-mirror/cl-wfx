@@ -122,6 +122,7 @@
 	  (progn
 	    (call-next-method))))))
 
+;;TODO: Is this still needed
 (defvar *widget-parameters*)
 
 (defun defer-js (format-arguments &rest args)

@@ -15,7 +15,7 @@
       (:name :path
 	     :label "path"
 	     :key-p nil
-	     :db-type :script
+	     :db-type :lambda
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
@@ -32,7 +32,7 @@
       (:name :code
 	     :label "Code"
 	     :key-p nil
-	     :db-type :script
+	     :db-type :lambda
 	     :attributes (:display t :editable t))
       (:name :permissions 
 	     :label "Permissions"
@@ -100,7 +100,7 @@
       (:name :code
 	     :label "Code"
 	     :key-p nil
-	     :db-type :script
+	     :db-type :lambda
 	     :attributes (:display t :editable t))
       (:name :permissions 
 	     :label "Permissions"
@@ -132,12 +132,7 @@
 	 )
 	:destinations (:license))))
 
-(defun call-data-script (name)
-  (let ((script (wfx-fetch-items "scripts"
-				 :test (lambda (item)
-					 (equalp (getx item :name) name)))))
-    (when script
-      (funcall (getx script :code)))))
+
 
 (defvar *item* nil)
 
@@ -252,8 +247,8 @@
 		 (cl-who:str (getf element :text)))))))
 
 (defun render-selection (report)
-  (when (digx report :code :selection-script)
-    (eval (digx report :code :selection-script))))
+  (when (digx report :code :selection-lambda)
+    (eval (digx report :code :selection-lambda))))
 
 (defmethod render-report ((type (eql :html)) report-name)
   (let* ((report (wfx-fetch-item "reports"

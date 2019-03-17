@@ -22,7 +22,7 @@
 	       (:file "system" :depends-on ("common"))
 	       (:file "session" :depends-on ("system"))
 	       (:file "data" :depends-on ("system"))
-	       (:file "script" :depends-on ("system" "data"))
+	       (:file "system-code" :depends-on ("system" "data"))
 	       
 	       (:file "named-list" :depends-on ("data"))
 
@@ -32,7 +32,7 @@
 	       (:file "license" :depends-on ("data"))
 	       (:file "entity" :depends-on ("license"))
 	       (:file "context" :depends-on ("system"))
-	       (:file "context-spec" :depends-on ("data" "script"))
+	       (:file "context-spec" :depends-on ("data" "system-code"))
 	       (:file "module" :depends-on ("system" "context-spec"))
 	       (:file "request" :depends-on ("context" "context-spec" "module"))
 	       
@@ -48,7 +48,7 @@
 		      :depends-on ("hunchentoot/request"))
 	       (:file "hunchentoot/context" 
 		      :depends-on ("hunchentoot/grid"))
-	       (:file "report" :depends-on ("script" "hunchentoot/context"))
+	       (:file "report" :depends-on ("system-code" "hunchentoot/context"))
 	       (:file "system-load" :depends-on ("request" "hunchentoot/context"))
 	       ))
 

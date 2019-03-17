@@ -31,6 +31,17 @@ function active_element(){
     }
 }
 
+$(document).ready(function(){
+	
+    var code = $(".wfx-lambda")[0];
+    if(code){
+	var editor = CodeMirror.fromTextArea(code, {
+	    lineNumbers : true
+	});
+    }
+});
+
+    
 function prep_expands () {
     $(document).on('click', '.grow', function(){
 
@@ -83,23 +94,78 @@ function prep_expands () {
 }
 */
 
-function prep_codemirror () {
+
+
+function prep_codemirror_lisp () {
     $(document).ready(function() {
-        $('.wfx-script').each(function(i,textarea) {
+        $('.wfx-lisp-code').each(function(i,textarea) {
             
-     	    editor = CodeMirror.fromTextArea(textarea, {
+     	    var editor = CodeMirror.fromTextArea(textarea, {
                 lineNumbers: true,
                 smartIndent: true,
           	autoCloseBrackets: true,
  		showTrailingSpace: true,
                 matchBrackets: true,
           	mode: "text/x-common-lisp"});
+	    
             editor.display.wrapper.style.fontSize = "12px";
             editor.refresh();
+	    
 	    function updateTextArea() {
 		editor.save();
 	    }
-	    myEditor.on('change', updateTextArea);
+	    
+	    editor.on('change', updateTextArea);
+	});});
+    
+}
+
+
+function prep_codemirror_js () {
+    $(document).ready(function() {
+        $('.wfx-js-code').each(function(i,textarea) {
+            
+     	    var editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: "text/javascript"});
+	    
+            editor.display.wrapper.style.fontSize = "12px";
+            editor.refresh();
+	    
+	    function updateTextArea() {
+		editor.save();
+	    }
+	    
+	    editor.on('change', updateTextArea);
+	});});
+    
+}
+
+function prep_codemirror_css () {
+    $(document).ready(function() {
+        $('.wfx-css-code').each(function(i,textarea) {
+            
+     	    var editor = CodeMirror.fromTextArea(textarea, {
+                lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+		extraKeys: {"Ctrl-Space": "autocomplete"},
+          	mode: "text/css"});
+	    
+            editor.display.wrapper.style.fontSize = "12px";
+            editor.refresh();
+	    
+	    function updateTextArea() {
+		editor.save();
+	    }
+	    
+	    editor.on('change', updateTextArea);
 	});});
     
 }
@@ -171,22 +237,25 @@ function fileUploadPrep (args) {
 
 function applyPeach (context)
 {
-/*
+   /* 
      $('.wfx-script').each(function(i,textarea) {
-	
+
+	 if(textarea){
      	 editor = CodeMirror.fromTextArea(textarea, {
              lineNumbers: true,
-             smartIndent: true,
-             autoCloseBrackets: true,
- 	     showTrailingSpace: true,
-	     matchBrackets: true,
+           //  smartIndent: true,
+           //  autoCloseBrackets: true,
+ 	   //  showTrailingSpace: true,
+	   //  matchBrackets: true,
              mode: "text/x-common-lisp"});
-	 editor.display.wrapper.style.fontSize = "12px";
-         editor.refresh();});
-*/
+	 //editor.display.wrapper.style.fontSize = "12px";
+             editor.refresh();}
+     });
+			  
+
 
     
-   /* $('.date', context).datepicker({format: 'dd M yyyy'});
+$('.date', context).datepicker({format: 'dd M yyyy'});
 
     $("textarea:not('.no-mce')", context).each(function () {
 
@@ -309,7 +378,9 @@ function ajax_render (script_name, renderer, id, args) {
                            applyPeach(widget);
 
 			   fileUploadPrep(args);
-
+			   prep_codemirror_lisp();
+			   prep_codemirror_js();
+			   prep_codemirror_css();
 			   prep_elements();
 
                            if (json[1]) {

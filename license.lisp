@@ -116,10 +116,12 @@
 
 (defgeneric make-license-package (system-name license-code))
 
+
+;;TODO: is :use still needed???
 (defmethod make-license-package (system-name license-code)  
   (eval
    `(defpackage ,(intern (string-upcase (frmt "~A~A" system-name license-code)))
-	  (:use :cl-wfx-scripts)
+	  (:use :cl-wfx-code)
 	  ;;  (:shadow :start-session :parameter :request :session)
 	  (:export))))
 

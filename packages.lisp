@@ -1,5 +1,7 @@
 (in-package :common-lisp-user)
 
+
+
 (defpackage :cl-wfx
   (:use :cl :cl-naive-store)
   
@@ -20,6 +22,7 @@
    :format-date
    :date-diff
    :replace-all
+   :frmt-money
 
    
    ;;#### data.lisp
@@ -39,6 +42,10 @@
    ;;????
    :system 
 
+   ;;###system-code.lisp
+   :lambda-eval
+   :call-lambda
+   :apply-lambda
 
    ;;### Request
    :action-handler
@@ -53,7 +60,7 @@
    :session
    :url
    :cache
-   :*script-functions*
+   :*lambda-functions*
    
    ;;#### 
    :load-context-specs
@@ -126,3 +133,5 @@
    ))
 
 
+(defpackage :wfx-repl
+  (:use :cl :cl-naive-store :cl-wfx))

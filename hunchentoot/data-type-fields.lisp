@@ -1,7 +1,5 @@
 (in-package :cl-wfx)
 
-
-
 (defun print-item-val-s* (field item &key default-value)
   (let ((*print-case* :downcase)
 	(val (if item (getfx item field)))
@@ -10,12 +8,9 @@
 
     (when (and (listp val)
 	       (or (listp (first val))
-		   (equalp (type-of (first val))
-			   'item)))
-      (when (equalp (type-of val)
-		    'item))
-	(setf val (first val))
-	)
+		   (item-p (first val))))
+      (when (item-p val))
+	(setf val (first val)))
     
     (if (if accessors
 	    (accessor-value val accessors)
@@ -48,9 +43,34 @@
 			   &key default-value &allow-other-keys)
   (print-item-val-s* field item :default-value default-value))
 
-(defmethod print-item-val ((type (eql :script)) field item
+(defmethod print-item-val ((type (eql :lambda)) field item
 			   &key default-value &allow-other-keys)
   (print-item-val-s* field item :default-value default-value))
+
+
+(defun print-item-blob* (field item &key default-value)
+  (let ((*print-case* :downcase)
+	(blob (and item (getfx item field))))
+
+    (if (and blob (blob-p blob))
+	(blob-raw blob)
+	default-value)))
+
+(defmethod print-item-val ((type (eql :lisp-code)) field item
+			   &key default-value &allow-other-keys)
+  (print-item-blob* field item :default-value default-value))
+
+(defmethod print-item-val ((type (eql :css)) field item
+			   &key default-value &allow-other-keys)
+  (print-item-blob* field item :default-value default-value))
+
+(defmethod print-item-val ((type (eql :java-script)) field item
+			   &key default-value &allow-other-keys)
+  (print-item-blob* field item :default-value default-value))
+
+(defmethod print-item-val ((type (eql :text-blob)) field item
+			   &key default-value &allow-other-keys)
+  (print-item-blob* field item :default-value default-value))
 
 (defmethod print-item-val ((type (eql :string)) field item
 			   &key default-value &allow-other-keys)
@@ -96,6 +116,8 @@
 
 (defmethod print-item-val ((type (eql :image)) field item
 			   &key default-value &allow-other-keys)
+  (declare (ignore default-value))
+  
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
@@ -130,6 +152,8 @@
 
 (defmethod print-item-val ((type (eql :file)) field item
 			   &key default-value &allow-other-keys)
+  (declare (ignore default-value))
+  
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
@@ -193,6 +217,8 @@
 (defmethod print-item-val ((type (eql :value-string-list)) 
 			   field item &key default-value
 					&allow-other-keys)
+  (declare (ignore default-value))
+  
   (let* ((delimiter (dig field :db-type :delimiter))
 	 (val (getsfx (dig field :db-type :type) field item))
 	 (final-val))
@@ -223,35 +249,36 @@
 (defmethod print-item-val ((type (eql :collection-items))
 			   field item &key default-value
 					&allow-other-keys)
+  (declare (ignore default-value))
  
   (let ((item-val (getfx item field))
 	(accessor (dig field :db-type :accessor)))
     
     (when (listp item-val)
-      (when item-val
-	
+      (when item-val	
 	(frmt "~A"
-	      (accessor-value (first item-val) (dig field :db-type :accessor))
-	      ))))
-  ;;(print-item-val-s* field item)
-  )
+	      (accessor-value (first item-val) accessor)
+	      )))))
 
 (defmethod print-item-val ((type (eql :contained-item)) field item
 			   &key default-value
 			     &allow-other-keys)
+  (declare (ignore default-value))
+  
   (let ((item-val (getfx item field))
 	(accessor (dig field :db-type :accessor)))
     
-    (when (or (listp item-val) (equalp (type-of item-val) 'item))
+    (when (or (listp item-val)
+	      (item-p item-val))
       (when item-val
 	
 	(frmt "~A"
-	      (accessor-value item-val (dig field :db-type :accessor))
-	      )))))
+	      (accessor-value item-val accessor))))))
 
 (defmethod print-item-val ((type (eql :collection-contained-item)) 
 			   field item &key default-value
 					&allow-other-keys)
+  (declare (ignore default-value))
   (print-item-val-s* field item))
 
 (defmethod print-item-val ((type (eql :collection)) field item
@@ -261,7 +288,8 @@
 	(accessor (dig field :db-type :accessor)))
 
     
-    (when (or (listp item-val) (equalp (type-of item-val) 'item))
+    (when (or (listp item-val)
+	      (item-p item-val))
        (when item-val
 	 (frmt "~A"
 	       (accessor-value item-val accessor)
@@ -269,6 +297,8 @@
 
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key default-value &allow-other-keys)
+  (declare (ignore default-value))
+  
   ;;TODO: Sort this shit out need to loop tree
   (let ((item-val (getfx item field))
 	(final))    
@@ -658,14 +688,15 @@
 				   :checked print-val
 				   :aria-label "..."))))))))
 
-(defmethod render-input-val ((type (eql :script)) field item
+
+(defmethod render-input-val ((type (eql :css)) field item
 			     &key &allow-other-keys)
   (let ((name (getf field :name)))
     
     (if (not (digx field :attributes :editable))
 	(with-html-string
 	  (:textarea 
-	   :class "form-control wfx-script"
+	   :class "form-control wfx-css-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
@@ -675,7 +706,127 @@
 			item))))
 	(with-html-string
 	  (:textarea 
-	   :class "form-control wfx-script"
+	   :class "form-control wfx-css-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
+	   (cl-who:str
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
+
+(defmethod render-input-val ((type (eql :java-script)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-js-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-js-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
+	   (cl-who:str
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
+
+(defmethod render-input-val ((type (eql :lambda)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-lisp-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-lisp-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
+	   (cl-who:str
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
+
+(defmethod render-input-val ((type (eql :lisp-code)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-lisp-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-lisp-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
+	   (cl-who:str
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
+
+(defmethod render-input-val ((type (eql :text-blob)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-lisp-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :required (if (getf field :key-p)
