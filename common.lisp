@@ -31,6 +31,7 @@
 Notes:
 Dont set manually use with-system macro.")
 
+;;Dynamic code evaluation and reading ##########################################3
 
 (defparameter *lambda-functions*
   (list 'cl-wfx:frmt
@@ -95,6 +96,18 @@ Dont set manually use with-system macro.")
   (fboundp (first s-expression)))
 
 
+(defun log-eval (error results backtrace)
+
+  (when *context*
+    (setf (gethash :debug-error (cache *context*))	   
+	      error )
+    (setf (gethash :debug-results (cache *context*))	   
+	  results )
+    (setf (gethash :debug-backtrace (cache *context*))	   
+	  backtrace 
+	  )))
+
+
 
 (defun read-eval (expressions-string)
   :documentation "Function converts a string to s-expressions and returns the results of evaluating each s-expression in turn. If the s-expression is not deemed to be evaluatable the expression is returned as is."
@@ -121,6 +134,7 @@ Dont set manually use with-system macro.")
 		   :error nil
 		   :backtrace nil)))
       (error (c)
+	(log-eval c results (sb-debug:list-backtrace))
 	(values c
 		results
 		(list 
@@ -133,28 +147,33 @@ Dont set manually use with-system macro.")
 
 (defun eval% (object &key package-name)
   (cond  ((and (item-p object) (item-of-type-p object "lambda"))
-	  (let ((*package* (or (and package-name (or (find-package package-name)
-						     (make-package package-name)))
-			       *package*)))
-	    (eval-blob% (getx object :code))))
-	 ((and (item-p object) (item-of-type-p object "package"))
-	  (let ((*package* (or
-			    (and package-name (or (find-package package-name)
-						  (make-package package-name)))
-			    (and (getx object :package)
-				 (find-package (frmt "~A" (getx object :package))))
-			    (and (getx object :package)
-				 (make-package (frmt "~A" (getx object :package))))
-			    *package*)))
-	    (eval-blob% (getx object :code))))
-	 ((stringp object)
-	  (read-eval object))
-	 (t
-	  (eval object))))
+	    (let ((*package* (or (and package-name (or (find-package package-name)
+						       (make-package package-name)))
+				 *package*)))
+	      (eval-blob% (getx object :code))))
+	   ((and (item-p object) (item-of-type-p object "package"))
+	    (let ((*package* (or
+			      (and package-name (or (find-package package-name)
+						    (make-package package-name)))
+			      (and (getx object :package)
+				   (find-package (frmt "~A" (getx object :package))))
+			      (and (getx object :package)
+				   (make-package (frmt "~A" (getx object :package))))
+			      *package*)))
+	      (eval-blob% (getx object :code))))
+	   ((stringp object)
+	    (read-eval object))
+	   (t
+	    (handler-case
+		
+		(eval object)
+	      
+	      (error (c)
+		(log-eval c nil (sb-debug:list-backtrace)))))))
 
 
 (defun load-blob% (blob)
-  (load (blob-string-value blob)))
+  (load (make-string-input-stream (blob-string-value blob))))
 
 (defun load% (object &key package)
 
@@ -170,10 +189,24 @@ Dont set manually use with-system macro.")
 				 (make-package (frmt "~A" (getx object :package))))
 			    *package*)))
 	    (load-blob% (getx object :code))))
+	 ((blob-p object)
+	  (load-blob% object))
 	 ((stringp object)
 	  (load object))
 	 (t
 	  (load object))))
+
+(defun apply% (function arg &rest arguments)
+  (handler-case
+      (apply function arg arguments)
+    (error (c)
+      (log-eval c nil (sb-debug:list-backtrace)))))
+
+(defun funcall% (function &rest arguments)
+  (handler-case
+      (apply  function (car arguments) (cdr arguments))
+    (error (c)
+      (log-eval c nil (sb-debug:list-backtrace)))))
 
 
 ;;#############################STRINGS
@@ -294,6 +327,20 @@ is replaced with replacement."
        )
    (equal (trim-whitespace (princ-to-string value)) "")))
 
+(declaim (inline ensure-num))
+(defun ensure-num (value)
+  :documentation "If there is junk in the value then 0 is returned."
+  (let ((final-val 0))
+    (if (empty-p value)
+	final-val
+	(if (stringp value)
+	    (setf final-val (read-from-string value))
+	    (setf final-val value)))
+    (cond ((numberp final-val)
+	       final-val)
+	      (t
+	       0))))
+
 ;;#####################DATES
 
 (defvar *time-zone* 0)
@@ -322,14 +369,14 @@ is replaced with replacement."
 
 
 (defun month-number (month)
-  (let ((position (or (position month *short-months*
-                                :test #'equalp)
-                      (position month *long-months*
-                                :test #'equalp)
-                      (position month *short-months-afrikaans*
-                                :test #'equalp)
-                      (position month *long-months-afrikaans*
-                                :test #'equalp))))
+  (let ((position (or (position (frmt "~A" month) *short-months*
+                                :test #'string-equal)
+                      (position (frmt "~A" month) *long-months*
+                                :test #'string-equal)
+                      (position (frmt "~A" month) *short-months-afrikaans*
+                                :test #'string-equal)
+                      (position (frmt "~A" month) *long-months-afrikaans*
+                                :test #'string-equal))))
     (when position
       (1+ position))))
 

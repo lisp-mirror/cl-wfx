@@ -342,11 +342,14 @@ function ajax_render_event_key(script_name,renderer,source_id,key,id,args){
 	var edValue = document.getElementById(source_id);
 	var arr = [];
 
+	
 	arr.push([source_id,edValue.value]);
-	for (i = 0; i < args.length; ++i) {
-		     arr.push(args[i]);
-		 }
 
+	if(args){
+	    for (i = 0; i < args.length; ++i) {
+		arr.push(args[i]);
+	    }
+	}
         ajax_render(script_name,renderer,id, arr);
     }
 }
@@ -367,7 +370,15 @@ function ajax_render (script_name, renderer, id, args) {
 
       
     if (renderer) {
-	args.push(['context-uri',script_name]);
+	if(args){
+	    args.push(['context-uri',script_name]);
+	}
+	else
+	{
+	    args =[];
+	    args.push(['context-uri',script_name]);
+	}
+	
         cl_ajax_render(script_name, renderer ,id, args,
                        function (response) {
 //alert("fuck");

@@ -15,7 +15,7 @@
    :getx   
    :frmt
    :trim-whitespace
-   :read-no-eval   
+      
    :empty-p
    :ensure-parse-integer
    :parse-date
@@ -23,7 +23,11 @@
    :date-diff
    :replace-all
    :frmt-money
-
+   :ensure-num
+   :read-no-eval
+   :read-eval
+   :eval%
+   :apply%
    
    ;;#### data.lisp
    :init-license-universe

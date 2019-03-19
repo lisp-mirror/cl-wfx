@@ -32,7 +32,6 @@
 		    (if default-value
 			default-value
 			""))) )
-
     (replace-all (replace-all final-val "'" "&#39;") "\"" "&#34;")))
 
 (defmethod print-item-val ((type (eql :symbol)) field item
@@ -316,10 +315,12 @@
 
 (defun item-default-val* (field item)
   (if (getf field :default-value)
-      (apply
-       (eval
-	(getf field :default-value))
-       (list item))))
+      (if (stringp (getf field :default-value))
+	  (getf field :default-value)
+	  (apply
+	   (eval%
+	    (getf field :default-value))
+	   (list item)))))
 
 (defun render-input-val* (type field item)
   (let ((name (getf field :name)))

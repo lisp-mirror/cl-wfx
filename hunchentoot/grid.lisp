@@ -93,14 +93,14 @@
   (let* ((name (getf field :name))
 	 (list (or
 		(and (dig field :db-type :values-lambda)
-		     (eval (dig field :db-type :values-lambda)))
+		     (eval% (dig field :db-type :values-lambda)))
 
 		(dig field :db-type :values)))
 	  
 	 (selected ))
     
     (if (functionp list)
-	(setf list (funcall (eval (dig field :db-type :values-lambda)) item)))
+	(setf list (funcall (eval% (dig field :db-type :values-lambda)) item)))
 
   
     (setf selected (find (getfx item field) list :test #'equalp))
@@ -114,7 +114,7 @@
 	 (list (or (and (dig field :db-type :values-lambda)
 			(cond ((equalp (first (dig field :db-type :values-lambda))
 				       'cl-wfx::get-named-list-sorted-values)
-			       (eval (dig field :db-type :values-lambda)))
+			       (eval% (dig field :db-type :values-lambda)))
 			      ((equalp (first (dig field :db-type :values-lambda))
 				       'cl:lambda)
 			 
@@ -257,8 +257,8 @@
 		  (dolist (accessor accessors)
 		    (push
 		     (apply #'digx
-			    item
-			    accessor)
+			     item
+			     accessor)
 		     values))
 		  (setf value (format nil
 				      "~{~a~^ ~}"
@@ -267,8 +267,8 @@
 				   item
 				   accessors)))
 	    (setf value (apply #'digx
-			       item
-			       (list accessors))))
+				item
+				(list accessors))))
 	item)))
 
 (defun fetch-contained-item-list (field edit-item)
@@ -280,7 +280,7 @@
 		 
 		  (if (getf field :filter)
 		      (funcall
-		       (eval (getf field :filter))
+		       (eval% (getf field :filter))
 		       itemx
 		       edit-item)
 		      t))))
@@ -292,6 +292,7 @@
     
     (when (not (dig field :db-type :container-fetch))
       (dolist (list-item list-containers)
+	
 	(setf list (pushnew (accessor-value list-item container-accessors) list))))
 
 
@@ -301,10 +302,10 @@
 	
 	(setf list
 	      (append list (funcall
-			    (eval (dig field :db-type :container-fetch))
+			    (eval% (dig field :db-type :container-fetch))
 			    (accessor-value list-item container-accessors)
 			    edit-item)))))
-    
+
     (sort (copy-list list) #'string<
 	  :key (lambda (item)
 		 (accessor-value item accessors)))
@@ -349,7 +350,7 @@
 					:test (lambda (itemx)
 							(if (getf field :filter)
 							    (funcall
-							     (eval (getf field :filter))
+							     (eval% (getf field :filter))
 							     itemx
 							     item)
 							    t))))
@@ -619,8 +620,8 @@
 	       (cl-who:htm
 		(:a :class "btn"  :role "button"
 		    :target "_blank"
-		    :href (cl-who:str (apply
-				       (eval
+		    :href (cl-who:str (apply%
+				       (eval%
 					(getf action :action))
 				       (list item
 					     (getcx data-type :parent-item))))
@@ -1011,7 +1012,7 @@
 
     (dolist (lambdax (getx (context-spec *context*) :lambdas))
       (when (find :select-action-list (getx lambdax :events) :test 'equalp)
-	(setf action-list (eval (digx lambdax :lambda :code)))))
+	(setf action-list (eval% (digx lambdax :lambda :code)))))
 
     (when (user-context-permission-p
 	   (getx (context-spec *context*) :name)
@@ -1346,7 +1347,7 @@
 				     :test (lambda (item)
 					     (if (getf sub :filter)
 						 (funcall
-						  (eval (getf sub :filter)) item (first (last (car hierarchy))))
+						  (eval% (getf sub :filter)) item (first (last (car hierarchy))))
 						 item)))
 				    fields))))))))))
 
@@ -1988,7 +1989,7 @@
 	   (dolist (lambdax (getx (context-spec *context*) :lambdas))	     
 	     (when (string-equal (digx lambdax :event)
 				 :select-action-handler)
-	       (eval (digx lambdax :lamda :code))))))
+	       (eval% (digx lambdax :lamda :code))))))
     
     (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
 
@@ -2013,7 +2014,7 @@
       (dolist (action (getf data-type :item-actions))
 	(when (string-equal (parameter "action-name") (getf action :name))
 
-	  (funcall (eval (getf action :action))  item )
+	  (funcall% (eval% (getf action :action))  item )
 	  )))))
 
 (defun getcx (&rest indicators)
@@ -2352,24 +2353,25 @@
 	      (t
 
 	       (setf list (wfx-fetch-context-items		   
-		    (dig field :db-type :collection)
-		    :test (lambda (item)
-			    (and
-			     (if (getf field :filter)
-				 (funcall
-				  (eval (getf field :filter))
-				  item
-				  (getcx data-type :edit-item) )
-				 t)
+			   (dig field :db-type :collection)
+			   :test (lambda (item)
+				   
+				   (and
+				    (if (getf field :filter)
+					(funcall
+					 (eval% (getf field :filter))
+					 item
+					 (getcx data-type :edit-item) )
+					t)
 			     			  
-			     (or
-			      (string-equal (parameter
-					     (frmt "~A-drop" field-name))
-					    "")
-			      (search (parameter
-				       (frmt "~A-drop" field-name))
-				      (accessor-value item accessors)
-				      :test #'string-equal))))))))
+				    (or
+				     (string-equal (parameter
+						    (frmt "~A-drop" field-name))
+						   "")
+				     (search (parameter
+					      (frmt "~A-drop" field-name))
+					     (accessor-value item accessors)
+					     :test #'string-equal))))))))
 
 	(with-html-string
 	  (:div
@@ -2691,7 +2693,7 @@
 			   ))
 	    ((getf field :validation)
 	     (if (functionp (getf field :validation))
-		 (funcall (eval (getf field :validation)) edit-item value)))
+		 (funcall (eval% (getf field :validation)) edit-item value)))
 	    (t
 	     (list t nil)))
       (list t nil)))
@@ -2861,7 +2863,7 @@
 
 	
 	(when (dig (getcx data-type :data-type) :data-type :client-validation)
-	    (let ((valid (funcall (eval (dig (getcx data-type :data-type) :data-type :client-validation))
+	    (let ((valid (funcall (eval% (dig (getcx data-type :data-type) :data-type :client-validation))
 				  root-item
 				  edit-item)))
 	      (unless (first valid)

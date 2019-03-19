@@ -173,10 +173,7 @@
 	(let ((*context* (find-request-context)))
 	  (declare (special *context*))
 
-	  
-	  
 	  (with-debugging
-
 	      (when renderer
 		
 		(json:encode-json-to-string

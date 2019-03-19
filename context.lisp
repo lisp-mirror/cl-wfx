@@ -35,3 +35,8 @@
  ;;  (setf (request-page-permissions context)        (setup-page-permissions context))
   )
 
+
+(defun context-log (object)
+  (when *context*
+    (setf (gethash :debug-log (cache *context*))	   
+	  (push object (gethash :context-log (cache *context*))) )))

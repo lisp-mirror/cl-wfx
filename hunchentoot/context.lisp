@@ -609,11 +609,12 @@
 	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
 	      :data-toggle "collapse"
 	      :href "#debug-info"
+	      :onclick (js-render "cl-wfx:ajax-show-debug" "debug-info-display")
 	      (:strong "Debug Info"))	  
 	  (:div :id "debug-info" :class "collapse"
 		(:ul :class "nav flex-column"
-		     (:div
-		      (cl-who:str (hunchentoot:post-parameters*))))))))
+		     (:div :id "debug-info-display"
+		      ))))))
 
 (defun theme-element (theme element)
   (dig theme element))
@@ -694,7 +695,6 @@
     (:link :rel "stylesheet"
 	   :href "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/codemirror.css")
 
-    #|
     (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/comment/comment.js"
       )
@@ -712,8 +712,7 @@
     (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/css/css.js"
       )
- |#
-    #|
+
     (:link :rel "stylesheet"
 	   :href "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/show-hint.css")
     
@@ -728,13 +727,13 @@
     (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/hint/javascript-hint.js"
       )
-
+  
     
     (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/commonlisp/commonlisp.js"
       )
 
-    |#
+
     
     (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/addon/edit/closebrackets.js"
@@ -835,10 +834,59 @@
 	     (cl-who:str "$(document).ready(function(){
 	
     var code = $(\".wfx-lisp-code\")[0];
+
     if(code){
 	var editor = CodeMirror.fromTextArea(code, {
-	    lineNumbers : true
+	     lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: \"text/x-common-lisp\"
 	});
+        editor.display.wrapper.style.fontSize = \"12px\";
+        editor.refresh();
+    }
+});")
+	     )
+
+    (:script :type "text/javascript"
+	     (cl-who:str "$(document).ready(function(){
+	
+    var code = $(\".wfx-js-code\")[0];
+
+    if(code){
+	var editor = CodeMirror.fromTextArea(code, {
+	     lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: \"text/javascript\"
+	});
+        editor.display.wrapper.style.fontSize = \"12px\";
+        editor.refresh();
+    }
+});")
+	     )
+
+
+    (:script :type "text/javascript"
+	     (cl-who:str "$(document).ready(function(){
+	
+    var code = $(\".wfx-css-code\")[0];
+
+    if(code){
+	var editor = CodeMirror.fromTextArea(code, {
+	     lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: \"text/css\"
+	});
+        editor.display.wrapper.style.fontSize = \"12px\";
+        editor.refresh();
     }
 });")
 	     )
@@ -1129,6 +1177,161 @@
 									 "CL-WFX::READ-EVAL")
 						       (setf limit-trace t)))))))))))))))
 
+
+
+(defun ajax-show-debug (&key id from-ajax)
+  (declare (ignore from-ajax))
+  (with-html-string
+    (:div :class "col"
+	  :id id
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Parameters")))
+	  (:div :class "row"
+		(:div :class :col
+		      (cl-who:str (hunchentoot:post-parameters*))))
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Context Log")))
+	  (:div :class "row"
+		(:div :class :col
+		      (cl-who:str (gethash :context-log (cache *context*)))))
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Context Cache")))
+	  (:div :class "row"
+		(:div :class :col
+		      (let ((count 0))
+			(maphash (lambda (key value)
+				   (incf count)
+				   (unless (or (equalp key :context-log)
+					       (equalp key :debug-error)
+					       (equalp key :debug-results)
+					       (equalp key :debug-backtrace)
+					       (equalp key :debug-log))
+				     (cl-who:htm
+				      (:div :class "row"
+					    (:div :class "col"
+						  (:a ;;:class "btn"
+						   :data-toggle "collapse"
+						   :href (frmt "#collapseCache-~A" count)
+						   :role "button"
+						   :aria-expanded "false"
+						   :aria-controls (frmt "collapseCache-~A" count)
+						   
+						   (:strong
+						    (cl-who:esc
+						     (frmt "~S" key)
+						     )))
+						  ))
+				      (:div
+				       :class "row collapse"
+				       :id (frmt "collapseCache-~A" count)
+				       (:div :class "col"
+					     (cl-who:str value))))))
+				 
+				 
+				 (cache *context*)))))
+	  
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Error")))
+	  
+	  (:div :class "row"
+		(:div :class :col
+		      (cl-who:str
+		       (gethash :debug-error (cache *context*)))))
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Results")))
+	  (:div :class "row"
+		(:div :class :col
+		      (let ((more-results (gethash :debug-results (cache *context*)))
+			    (count 0))
+			
+			(dolist (result more-results)
+			  (incf count)
+			  (cl-who:htm
+			   (:div :class "row"
+				 (:div :class "col"
+				       (:a ;;:class "btn"
+					:data-toggle "collapse"
+					:href (frmt "#collapseMore-~A" count)
+					:role "button"
+					:aria-expanded "false"
+					:aria-controls (frmt "collapseMore-~A" count)
+					
+					(:strong
+					 (cl-who:esc
+					  (frmt "~S" result)
+					  )))))
+			   
+			   (:div :class "row collapse"
+				 :id (frmt "collapseMore-~A" count)
+				 
+				 (:div :class "col bg-light"
+				       (cond ((and (symbolp result)
+						   (fboundp result))
+					      
+					      (let* ((stream (make-string-output-stream))
+						     ;;(x (describe result stream))
+						     (splits (split-sequence:split-sequence
+							      
+							      #\newline
+							      (get-output-stream-string
+							       stream))))
+						
+						(dolist (split splits)
+						  
+						  (cl-who:htm
+						   (:br)
+						   (cl-who:str split)))))
+					     (t
+					      (pprint result)))))
+			   )))))
+	  (:div :class "row bg-secondary"
+		(:div :class :col
+		      (:strong "Backtrace")))
+	  (:div :class "row"
+		(:div :class :col
+		      (let ((backtrace (gethash :debug-backtrace (cache *context*)))
+			    (count 0)
+			    (limit-trace nil))
+			
+			(dolist (trace backtrace)
+			  
+			  (unless limit-trace
+			    (incf count)
+			    (cl-who:htm
+			     (:div :class "row"
+				   (:div :class "col"
+					 (:a ;;:class "btn"
+					  :data-toggle "collapse"
+					  :href (frmt "#collapseTrace-~A" count)
+					  :role "button"
+					  :aria-expanded "false"
+					  :aria-controls (frmt "collapseTrace-~A" count)
+					  
+					  (:strong
+					   (cl-who:str
+					    (frmt "~S" (first trace))
+					    )))))
+			     (dolist (trace-element (cdr trace))
+			       (cl-who:htm
+				(:div :class "row collapse"
+				      :id (frmt "collapseTrace-~A" count)
+				      (:div :class "col bg-white" 
+					    ;;	  (break (frmt "~S" trace-element))
+					    (cl-who:esc (frmt "~A" trace-element))))))
+			     (when (or (string-equal (frmt "~S" (first trace))
+						     "CL-WFX::READ-EVAL")
+				       (string-equal (frmt "~S" (first trace))
+						     "CL-WFX::EVAL%")
+				       (string-equal (frmt "~S" (first trace))
+						     "CL-WFX::FUNCALL%")
+				       (string-equal (frmt "~S" (first trace))
+						     "CL-WFX::APPLY%"))
+			       (setf limit-trace t)))))))))))
 
 
 (defmethod action-handler ((action (eql :eval-repl)) 
