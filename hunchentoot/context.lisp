@@ -262,7 +262,8 @@
 
 (defun render-user-admin-menu ()
   (with-html-string
-    (:div :class "nav-item dropdown"	  
+    (:div :class "nav-item dropdown"
+	  
 	  (:a :class
 	      (concatenate
 	       'string
@@ -317,7 +318,12 @@
 					     parameters)
 				       (context-url 
 					(digx item :context-spec :name)))
-				   (cl-who:str (digx item :name)))))))))))))))
+				   (:i	:class (frmt "fa far fab ~A"
+						     (digx item :context-spec :icon))
+					:style "width:25px;")
+				   " "
+				   (cl-who:str (digx item :name))))))))))))
+	  )))
 
 (defun render-header-display (text)
   (with-html-string
@@ -370,13 +376,14 @@
 	(pushnew item items)))
     (reverse items)))
 
-(defun render-menu-item (item)
+(defun render-menu-item-text (item)
   (with-html-string    
-    (:a :class "btn btn-outline-light text-dark w-100 text-left"
+    (:a :class "btn btn-light text-dark w-100 text-left"
 	:role "button"
 	    
 	     :href (context-url
 		    (digx item :context-spec :name))
+	    
 	     (cl-who:str (digx item :name)))))
 
 ;;When super-user has selected the system license then exclude grids which dont have collections
@@ -395,88 +402,108 @@
 	  )
       t))
 
+(defun render-menu-item (item)
+  (with-html-string
+    (:tr
+     (:td
+      :class "bg-light"
+      :style "width:45px;"
+      (:a
+       
+       :class "btn btn-light"
+       :style "width:45px;"  
+       :href (context-url
+	      (digx item :context-spec :name))
+       (:i
+	
+	:class (frmt "fa far ~A"
+		     (digx item :context-spec
+			   :icon))))
+      (:td
+       :class "bg-light"
+       (cl-who:str (render-menu-item-text item)))))))
+
 (defun render-left-user-menu ()
   (with-html-string
-    (:ul :class "nav navpills flex-column"
-	 :style "box-shadow: 0px 5px 10px;"
-	  (dolist (mod (user-mods))
+    (:div 
+     (:nav :id "sidebar"
+	   :class "sticky-top bg-header"
+	   :style "box-shadow: 0px 2px 5px;"
 	   
-	    (dolist (menu (digx mod :menu))
-	      (cl-who:htm
-	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
-		   :data-toggle "collapse"
-		   :href "#data-menu"
-		   (:strong "Data")))
+	   (:div :class "sidebar-header text-center"
+		 (:img
+		  :style "height:85px;width:85"
+			:src (frmt "~Acor/web/images/~A"
+				   (site-url *system*)
+				   (tea
+				    (theme *system*)
+				    :main-nav-logo
+				    :src)))
+		 (:h3 (:strong (cl-who:str (string-upcase (name *system*))))))
+	   
+	   (:ul :class "list-unstyled components"
+		
 
-	      
-	      (cl-who:htm
-	       (:div :id "data-menu" :class "expand"
-		     (:ul :class "nav flex-column ml"
-			 
-			  (dolist (item (data-menu (digx menu :menu-items)))
+		(:a :class "nav-link bg-header text-dark border"
+		   
+			 :data-toggle "collapse"
+			 :href "#context-menu"
+			 (:strong "License Context"))
+		(:div :id "context-menu"
+		      :class "collapse container"
+		      (cl-who:str (render-right-menu)))
+		
+		(dolist (mod (user-mods))
+		  
+		  (dolist (menu (digx mod :menu))
+		    (cl-who:htm
+		     (:a :class "nav-link bg-header text-dark border-bottom border-right border-left"
+			 :data-toggle "collapse"
+			 :href "#data-menu"
+			 (:strong "Data")))
 
-			    (when (system-context-p (digx item :context-spec))
-			      
-			      (cl-who:htm
-			       (:div :class "btn-group "
-				     
-				     (:button
-				      
-				      :class "btn btn-light"
-				      :name "filter-grid" 
-				      
-				      :data-toggle "collapse"
-				      :href "#collapseFilter" 
-				      :aria-expanded "false"
-				      :aria-controls="collapseFilter"
-				      :aria-pressed "false"
-				      (:i
-				       
-				       :class (frmt "fa far ~A"
-						    (digx item :context-spec
-							  :icon))))
-				     
-				     (cl-who:str (render-menu-item item)))))))))
-	      (cl-who:htm
-	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
-		   :data-toggle "collapse"
-		   :href "#report-menu"
-		   (:strong "Reports"))
-	       (:div :id "report-menu" :class "collapse"
-		     (:ul :class "nav flex-column ml"			 
-			  (dolist (item (report-menu (digx menu :menu-items)))
-			    (when (system-context-p (digx item :context-spec))
-			      (cl-who:htm
-			       (:div :class "btn-group "
-				     
-				     (:button
-				      
-				      :class "btn btn-light"
-				      :name "filter-grid" 
-				      
-				      :data-toggle "collapse"
-				      :href "#collapseFilter" 
-				      :aria-expanded "false"
-				      :aria-controls="collapseFilter"
-				      :aria-pressed "false"
-				      (:i
-				       
-				       :class (frmt "fa far ~A"
-						    (digx item :context-spec
-							  :icon))))
-				     
-				     (cl-who:str (render-menu-item item)))))
-			    
-			    ))))
-	      (cl-who:htm
-	       (:a :class "nav-link bg-secondary text-light border border-light rounded"
-		   :data-toggle "collapse"
-		   :href "#other-menu"
-		   (:strong "Other"))
-	       (:div :id "other-menu" :class "collapse"
-		     (:ul :class "nav flex-column ml"			 
-			  (dolist (item (other-menu (digx menu :menu-items)))
-		 (cl-who:str (render-menu-item item)))))))))))
+		    
+		    (cl-who:htm
+		     (:div :id "data-menu" :class "collapse.show"
+			   (:ul :class "nav flex-column ml"
+				(:table :class "table table-sm"
+					
+					(dolist (item (data-menu (digx menu :menu-items)))
+
+					  (when (system-context-p (digx item :context-spec))
+					    
+					    (cl-who:str
+					     (render-menu-item item)
+					     )))))))
+		    (cl-who:htm
+		     (:a :class "nav-link bg-header text-dark border-bottom border-right border-left"
+			 :data-toggle "collapse"
+			 :href "#report-menu"
+			 (:strong "Reports"))
+		     (:div :id "report-menu" :class "collapse"
+			   (:ul :class "nav flex-column ml"
+				(:table :class "table table-sm"
+					(dolist (item (report-menu (digx menu :menu-items)))
+					  (when (system-context-p (digx item :context-spec))
+					    (cl-who:str
+					     (render-menu-item item)
+					     ))
+					  
+					  )))))
+		    (cl-who:htm
+		     (:a :class "nav-link bg-header text-dark border-bottom border-right border-left"
+			 :data-toggle "collapse"
+			 :href "#other-menu"
+			 (:strong "Other"))
+		     (:div :id "other-menu" :class "collapse"
+			   (:ul :class "nav flex-column ml"
+				(:table :class "table table-sm"
+					(dolist (item (other-menu (digx menu :menu-items)))
+					  (cl-who:str (render-menu-item item)))))))
+
+		    )
+		  )
+		)))))
 
 (defun render-license-dropdown (list &key (select-prompt "Select a License"))
   (let ((selected-value (or (parameter "license-select")
@@ -574,27 +601,22 @@
 
 (defun render-right-menu ()
   (with-html-string
-    (:div :class "nav navpills flex-column"
-	  :style "box-shadow: 0px 5px 10px;"
-	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
-	      :data-toggle "collapse"
-	      :href "#license-context"
-	      (:strong "License Context"))
-	  (:div
-	   :id "license-context"
-	   (:ul :class "nav flex-column"
-		(:form
-		 :id "license-selection"
-		 (:div :class "col nav-item  bg-light font-weight-bold"
-		       "Accessible Licenses")
+    (:form
+     :id "license-selection"
+     (:div :class "col nav-item  bg-light font-weight-bold"
+	   "Accessible Licenses")
+     (:div :class "row"
+	   (:div :class "col"
+		 (cl-who:str (render-license-dropdown
+			      (available-licenses) ))))
+     (:div :class "row" :id "entities-selection"
+	   (:div :class "col"
+		 (:div :class "row"
+		       
+		       (:div :class "col bg-light font-weight-bold"
+			     "Accessible Entities"))
 		 (:div :class "row"
 		       (:div :class "col"
-			     (cl-who:str (render-license-dropdown
-					   (available-licenses) ))))
-		 (:div :class "row" :id "entities-selection"
-		       (:div :class "col"
-			     (:div :class "col bg-light font-weight-bold"
-				   "Accessible Entities")
 			     (let ((license-code
 				    (car (getf (item-values (active-user))
 					       :selected-licenses))))
@@ -604,17 +626,7 @@
 				   (cl-who:str
 				    (render-entity-tree 
 				     license-code
-				     (available-entities license-code)))))))))))
-
-	  (:a :class "nav-link bg-secondary text-light border border-light rounded w-100"
-	      :data-toggle "collapse"
-	      :href "#debug-info"
-	      :onclick (js-render "cl-wfx:ajax-show-debug" "debug-info-display")
-	      (:strong "Debug Info"))	  
-	  (:div :id "debug-info" :class "collapse"
-		(:ul :class "nav flex-column"
-		     (:div :id "debug-info-display"
-		      ))))))
+				     (available-entities license-code)))))))))))))
 
 (defun theme-element (theme element)
   (dig theme element))
@@ -831,6 +843,16 @@
 	      "prep_expands();"))
 
     (:script :type "text/javascript"
+	     (cl-who:str
+	      "$(document).ready(function () {
+
+    $('#sidebarCollapse').on('click', function () {
+        $('#sidebar').toggleClass('active');
+    });
+
+});"))
+
+    (:script :type "text/javascript"
 	     (cl-who:str "$(document).ready(function(){
 	
     var code = $(\".wfx-lisp-code\")[0];
@@ -948,110 +970,110 @@
      
      (:body
       
-	(:input :type "hidden" :id "contextid" :value (context-id *context*))
+      (:input :type "hidden" :id "contextid" :value (context-id *context*))
 
-	(if (not menu-p)	 
-	    (cl-who:htm
-	     (:div :class "container"
-		   (cl-who:str body)))
-	    (cl-who:htm
-	     (unless (active-user)
-	       (hunchentoot:redirect (frmt "~Acor/login" (site-url system))))
-	     
-	     (:nav 
-	      :class "navbar sticky-top d-print-none justify-content-between bg-white"
-	      :style
-	      (if (tea (theme system) :main-nav-bar :bg-image)
-		(frmt "background-image: url(~Acor/web/images/~A);~A"
-		      (site-url system)
-		      (tea (theme system) :main-nav-bar :bg-image)
-		      (ts (theme system) :main-nav-bar))
-		(ts (theme system) :main-nav-bar
-		    "background-size: cover;box-shadow: 0px 1px 2px"))
-	      
-	      (if (current-user)
-		  (cl-who:htm 
-		   (:button :class
-			    (concatenate
-			     'string
-			     "navbar-toggler navbar-toggler-left "
-			     (tea
-			      (theme system)
-			      :nav-toggler-left
-			      :text-color-class))
-			    
-			    :type "button btn-small"
-			    :data-toggle "collapse"
-			    :data-target "#exNavbarLeft"
-			    :aria-controls "exNavbarLeft"
-			    :aria-expanded "true"
-			    :aria-label "Toggle application menu"
-			    "&#9776;")))
-	      
-	      (:a :class "navbar-brand" :href "#" 
-		  (:img
-		   :style (ts (theme system) :main-nav-logo
-			      "height:50px;")
-		   :src (frmt "~Acor/web/images/~A"
-			      (site-url system)
-			      (tea
-			       (theme system)
-			       :main-nav-logo
-			       :src)))
-		  (name system))
+      (if (not menu-p)	 
+	  (cl-who:htm
+	   (:div :class "container"
+		 (cl-who:str body)))
+	  (cl-who:htm
+	   (unless (active-user)
+	     (hunchentoot:redirect (frmt "~Acor/login" (site-url system))))
+	   (:div :class "wrapper"
+		 (cl-who:str (render-left-user-menu))
+		 
+		 
+		 (:div
+		  :id "content"
+		  :class "container-fluid"
 
-	      (cl-who:str (render-header-display ""))
-	      
-	      (cl-who:str (render-user-admin-menu))
-	      
-	      (if (current-user)
-		  (cl-who:htm
-		   (:button :class
-			    (concatenate
-			     'string
-			     "navbar-toggler navbar-toggler-right "
-			     (theme-element-attribute
-			      (theme system)
-			      :nav-toggler-right
-			      :text-color-class))
-			    :type "button"
-			    :data-toggle "collapse"
-			    :data-target "#exNavbarRight"
-			    :aria-controls "exNavbarRight"
-			    :aria-expanded "false"
-			    :aria-label "Toggle system menu"
-			    "&#9776;"))))
-	     
-	     (:div
-	      :class "container-fluid"
-	      (:div :class "row"
-		    (:div
-		     :class "collapse show d-print-none "
-		     :id "exNavbarLeft"
-		     (:br)
-		     (cl-who:str (render-left-user-menu)))
-		    
-		    (:div :class "col"
-			 (:br)
-			 (cl-who:str body))
-		    (:div
-		     :class "collapse col-md-2 d-print-none " 
-		     :id "exNavbarRight" :style "background-color:#FFFFFF"
-		     (:br)
-		     (cl-who:str (render-right-menu)))))))
+		  (:nav 
+		   :class "navbar sticky-top d-print-none justify-content-between bg-white"
+		   :style
+		   (if (tea (theme system) :main-nav-bar :bg-image)
+		       (frmt "background-image: url(~Acor/web/images/~A);~A"
+			     (site-url system)
+			     (tea (theme system) :main-nav-bar :bg-image)
+			     (ts (theme system) :main-nav-bar))
+		       (ts (theme system) :main-nav-bar
+			   "background-size: cover;box-shadow: 0px 1px 2px"))
+		  
+		   (if (current-user)
+		       (cl-who:htm 
+			(:button :id "sidebarCollapse"
+				 :class
+				 (concatenate
+				  'string
+				  "navbar-toggler navbar-toggler-left "
+				  (tea
+				   (theme system)
+				   :nav-toggler-left
+				   :text-color-class))
+				
+				 :type "button btn-small"
+				 :aria-label "Toggle application menu"
+				 "&#9776;")))
+		  
+		   (:a :class "navbar-brand" :href "#" 
+		       (:img
+			:style (ts (theme system) :main-nav-logo
+				   "height:50px;")
+			:src (frmt "~Acor/web/images/~A"
+				   (site-url system)
+				   (tea
+				    (theme system)
+				    :main-nav-logo
+				    :src)))
+		       (name system))
+
+		   (cl-who:str (render-header-display ""))
+		  
+		   (cl-who:str (render-user-admin-menu))
+
+		   (:div "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"))
+		  
+		  
+		  (:div :class "row"
+
+			(:div :class "col"
+			      (:br)
+			      (cl-who:str body)))
+		  (:br)
+		  (:div :class "row"
+			(:div :class "col"
+			      (:a :class "btn btn-light text-dark bg-header border border-light rounded w-100"
+				  :data-toggle "collapse"
+				  :href "#debug-info"
+				  :onclick (js-render "cl-wfx:ajax-show-debug" "debug-info-display")
+				  (:strong "Debug Info"))
+			      
+			      (:div :id "debug-info"
+				    :class "collapse"
+				    (:br)
+				    (:div :id "debug-info-display"
+					       ))))
+		  ))))
 
 
-	(cl-who:str (page-footer-js system))
-	(cl-who:str footer-js)
+      (cl-who:str (page-footer-js system))
+      (cl-who:str footer-js)
 
 
 
-	))))
+      ))))
 
 (defun check-user-access ()
   (unless (current-user)
     (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*)))))
 
+(defun describe% (object)
+  (let* ((stream (make-string-output-stream))
+	(x (describe object stream))
+	(splits (split-sequence:split-sequence		   
+		 #\newline
+		 (get-output-stream-string
+		  stream))))
+    splits))
 
 (defun render-repl ()
   (with-html-string
@@ -1179,159 +1201,175 @@
 
 
 
+
+
 (defun ajax-show-debug (&key id from-ajax)
   (declare (ignore from-ajax))
+							       
   (with-html-string
-    (:div :class "col"
+    (:div :class "card-columns"
 	  :id id
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Parameters")))
-	  (:div :class "row"
-		(:div :class :col
-		      (cl-who:str (hunchentoot:post-parameters*))))
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Context Log")))
-	  (:div :class "row"
-		(:div :class :col
-		      (cl-who:str (gethash :context-log (cache *context*)))))
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Context Cache")))
-	  (:div :class "row"
-		(:div :class :col
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			 "Parameters")
+		(:div :class "card-body"
+			    
+		      (:p :class "card-text"
+			  (cl-who:str (hunchentoot:post-parameters*)))))
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			       "Context Log")
+		(:div :class "card-body"
+		      
+		      (:p :class "card-text"
+			  (cl-who:str (gethash :context-log (cache *context*))))))
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			 "Context Cache")
+		(:div :class "card-body"
+			    
 		      (let ((count 0))
-			(maphash (lambda (key value)
-				   (incf count)
-				   (unless (or (equalp key :context-log)
-					       (equalp key :debug-error)
-					       (equalp key :debug-results)
-					       (equalp key :debug-backtrace)
-					       (equalp key :debug-log))
-				     (cl-who:htm
-				      (:div :class "row"
-					    (:div :class "col"
-						  (:a ;;:class "btn"
-						   :data-toggle "collapse"
-						   :href (frmt "#collapseCache-~A" count)
-						   :role "button"
-						   :aria-expanded "false"
-						   :aria-controls (frmt "collapseCache-~A" count)
+			 (maphash (lambda (key value)
+				    (incf count)
+				    (unless (or (equalp key :context-log)
+						(equalp key :debug-error)
+						(equalp key :debug-results)
+						(equalp key :debug-backtrace)
+						(equalp key :debug-log))
+				      (cl-who:htm
+				       (:div :class "row"
+					     (:div :class "col"
+						   (:a ;;:class "btn"
+						    :data-toggle "collapse"
+						    :href (frmt "#collapseCache-~A" count)
+						    :role "button"
+						    :aria-expanded "false"
+						    :aria-controls (frmt "collapseCache-~A" count)
 						   
-						   (:strong
-						    (cl-who:esc
-						     (frmt "~S" key)
-						     )))
-						  ))
-				      (:div
-				       :class "row collapse"
-				       :id (frmt "collapseCache-~A" count)
-				       (:div :class "col"
-					     (cl-who:str value))))))
+						    (:strong
+						     (cl-who:esc
+						      (frmt "~S" key)
+						      )))
+						   ))
+				       (:div
+					:class "row collapse"
+					:id (frmt "collapseCache-~A" count)
+					(:div :class "col"
+					      (cl-who:esc (frmt "~S" value)))))))
 				 
 				 
-				 (cache *context*)))))
-	  
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Error")))
-	  
-	  (:div :class "row"
-		(:div :class :col
-		      (cl-who:str
-		       (gethash :debug-error (cache *context*)))))
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Results")))
-	  (:div :class "row"
-		(:div :class :col
-		      (let ((more-results (gethash :debug-results (cache *context*)))
-			    (count 0))
+				  (cache *context*)))))
+	 
+
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			 "Error")
+		(:div :class "card-body"
+			    
+		      (:p :class "card-text"
+			  (cl-who:esc
+			   (frmt "~S" (describe% (gethash :debug-error (cache *context*))))))))
+
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			       "Results")
+		(:div :class "card-body"
+		      
+		      (:div :class "row"
+			     (:div :class :col
+				   (let ((more-results (gethash :debug-results (cache *context*)))
+					 (count 0))
 			
-			(dolist (result more-results)
-			  (incf count)
-			  (cl-who:htm
-			   (:div :class "row"
-				 (:div :class "col"
-				       (:a ;;:class "btn"
-					:data-toggle "collapse"
-					:href (frmt "#collapseMore-~A" count)
-					:role "button"
-					:aria-expanded "false"
-					:aria-controls (frmt "collapseMore-~A" count)
+				     (dolist (result more-results)
+				       (incf count)
+				       (cl-who:htm
+					(:div :class "row"
+					      (:div :class "col"
+						    (:a ;;:class "btn"
+						     :data-toggle "collapse"
+						     :href (frmt "#collapseMore-~A" count)
+						     :role "button"
+						     :aria-expanded "false"
+						     :aria-controls (frmt "collapseMore-~A" count)
 					
-					(:strong
-					 (cl-who:esc
-					  (frmt "~S" result)
-					  )))))
+						     (:strong
+						      (cl-who:esc
+						       (frmt "~S" result)
+						       )))))
 			   
-			   (:div :class "row collapse"
-				 :id (frmt "collapseMore-~A" count)
+					(:div :class "row collapse"
+					      :id (frmt "collapseMore-~A" count)
 				 
-				 (:div :class "col bg-light"
-				       (cond ((and (symbolp result)
-						   (fboundp result))
+					      (:div :class "col bg-light"
+						    (cond ((and (symbolp result)
+								(fboundp result))
 					      
-					      (let* ((stream (make-string-output-stream))
-						     ;;(x (describe result stream))
-						     (splits (split-sequence:split-sequence
+							   (let* ((stream (make-string-output-stream))
+								  ;;(x (describe result stream))
+								  (splits (split-sequence:split-sequence
 							      
-							      #\newline
-							      (get-output-stream-string
-							       stream))))
+									   #\newline
+									   (get-output-stream-string
+									    stream))))
 						
-						(dolist (split splits)
+							     (dolist (split splits)
 						  
-						  (cl-who:htm
-						   (:br)
-						   (cl-who:str split)))))
-					     (t
-					      (pprint result)))))
-			   )))))
-	  (:div :class "row bg-secondary"
-		(:div :class :col
-		      (:strong "Backtrace")))
-	  (:div :class "row"
-		(:div :class :col
-		      (let ((backtrace (gethash :debug-backtrace (cache *context*)))
-			    (count 0)
-			    (limit-trace nil))
+							       (cl-who:htm
+								(:br)
+								(cl-who:esc split)))))
+							  (t
+							   (pprint result)))))
+					)))))))
+	  
+
+	  (:div :class "card"
+		(:h5 :class "card-header"
+			 "Backtrace")
+		(:div :class "card-body"
+		      
+		      (:div :class "row"
+			     (:div :class :col
+				   (let ((backtrace (gethash :debug-backtrace (cache *context*)))
+					 (count 0)
+					 (limit-trace nil))
 			
-			(dolist (trace backtrace)
+				     (dolist (trace backtrace)
 			  
-			  (unless limit-trace
-			    (incf count)
-			    (cl-who:htm
-			     (:div :class "row"
-				   (:div :class "col"
-					 (:a ;;:class "btn"
-					  :data-toggle "collapse"
-					  :href (frmt "#collapseTrace-~A" count)
-					  :role "button"
-					  :aria-expanded "false"
-					  :aria-controls (frmt "collapseTrace-~A" count)
+				       (unless limit-trace
+					 (incf count)
+					 (cl-who:htm
+					  (:div :class "row"
+						(:div :class "col"
+						      (:a ;;:class "btn"
+						       :data-toggle "collapse"
+						       :href (frmt "#collapseTrace-~A" count)
+						       :role "button"
+						       :aria-expanded "false"
+						       :aria-controls (frmt "collapseTrace-~A" count)
 					  
-					  (:strong
-					   (cl-who:str
-					    (frmt "~S" (first trace))
-					    )))))
-			     (dolist (trace-element (cdr trace))
-			       (cl-who:htm
-				(:div :class "row collapse"
-				      :id (frmt "collapseTrace-~A" count)
-				      (:div :class "col bg-white" 
-					    ;;	  (break (frmt "~S" trace-element))
-					    (cl-who:esc (frmt "~A" trace-element))))))
-			     (when (or (string-equal (frmt "~S" (first trace))
-						     "CL-WFX::READ-EVAL")
-				       (string-equal (frmt "~S" (first trace))
-						     "CL-WFX::EVAL%")
-				       (string-equal (frmt "~S" (first trace))
-						     "CL-WFX::FUNCALL%")
-				       (string-equal (frmt "~S" (first trace))
-						     "CL-WFX::APPLY%"))
-			       (setf limit-trace t)))))))))))
+						       (:strong
+							(cl-who:esc
+							 (frmt "~S" (first trace))
+							 )))))
+					  (dolist (trace-element (cdr trace))
+					    (cl-who:htm
+					     (:div :class "row collapse"
+						   :id (frmt "collapseTrace-~A" count)
+						   (:div :class "col bg-white" 
+							 ;;	  (break (frmt "~S" trace-element))
+							 (cl-who:esc (frmt "~A" trace-element))))))
+					  (when (or (string-equal (frmt "~S" (first trace))
+								  "CL-WFX::READ-EVAL")
+						    (string-equal (frmt "~S" (first trace))
+								  "CL-WFX::EVAL%")
+						    (string-equal (frmt "~S" (first trace))
+								  "CL-WFX::FUNCALL%")
+						    (string-equal (frmt "~S" (first trace))
+								  "CL-WFX::APPLY%"))
+					    (setf limit-trace t))))))))))
+	  
+
+	  )))
 
 
 (defmethod action-handler ((action (eql :eval-repl)) 
@@ -1538,9 +1576,8 @@
 				      :menu-p nil))))
 	  ((not (empty-p (getx context-spec :renderer)))
 	   
-	   (lambda-eval
-		   (read-no-eval
-		    (getx context-spec :renderer))))
+	   (eval%
+	    (getx context-spec :renderer)))
 	  (t
 	   (custom-render-context system context-spec)
 	   ))

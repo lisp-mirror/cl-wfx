@@ -12,112 +12,131 @@
   (persist-item (core-collection "context-specs")
 		  '(:name "Login"
 		    :permissions nil
-		    :for-everyone t))
+		    :for-everyone t
+		    :icon "fa-sign-out-alt"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "REPL"
 		    :permissions nil
-		    :for-everyone t))
+		    :for-everyone t
+		    :icon "fa-terminal"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Set Password"
 		    :permissions nil
-		    :for-everyone t))
+		    :for-everyone t
+		    :icon "fa-key"))
   
   (persist-item (core-collection "context-specs")    
 		  '(:name "Data Types"
 		    :permissions (:filter :search)
-		    :collection "data-types"))
+		    :collection "data-types"
+		    :icon "fa-database"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Context Specs"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "context-specs"))
+		    :collection "context-specs"
+		    :icon "fa-window-restore"))
   
   (persist-item (core-collection "context-specs")
 			'(:name "Modules"
 			  :permissions (:update :delete)
 			  :for-everyone t 
-			  :collection "modules"))
+			  :collection "modules"
+			  :icon "fa-list"))
   
   (persist-item (core-collection "context-specs")
 			'(:name "Licenses"
 			  :permissions (:update :delete)
 			  :for-everyone t 
-			  :collection "licenses"))
+			  :collection "licenses"
+			  :icon "fa-id-badge"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Entities"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entities"))
+		    :collection "entities"
+		    :icon "fa-stream"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "users"))
+		    :collection "users"
+		    :icon "fa-users"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "License Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "license-users"))
+		    :collection "license-users"
+		    :icon "fa-user-friends"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Named Lists"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "named-lists"))
+		    :collection "named-lists"
+		    :icon "fa-clipboard-list"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Lambdas"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "lambdas"))
+		    :collection "lambdas"
+		    :icon "fa-code"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "Packages"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "packages"))
+		    :collection "packages"
+		    :icon "fa-archive"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "Java Scripts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "java-scripts"))
+		    :collection "java-scripts"
+		    :icon "fa-file-code"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "Stylesheets"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "style-sheets"))
+		    :collection "style-sheets"
+		    :icon "fa-toilet-paper"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "email-accounts"))
+		    :collection "email-accounts"
+		    :icon "fa-at"))
 
   (persist-item (core-collection "context-specs")
 		  '(:name "Entity Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entity-email-accounts"))
+		    :collection "entity-email-accounts"
+		    :icon "fa-envelope"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "reports"))
+		    :collection "reports"
+		    :icon "fa-file-signature"))
   
   (persist-item (core-collection "context-specs")
 		  '(:name "Entity Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
-		    :collection "entity-reports")))
+		    :collection "entity-reports"
+		    :icon "fa-file-invoice-dollar")))
 
 (defun make-menu-item (name context-spec)
   (make-item
@@ -202,7 +221,8 @@
 				       :values
 				       (list
 					:name "action"
-					:value "logout")))))
+					:value "logout")))
+				))
 			      )))
     (when sys-mod
       (setf (getx sys-mod :contexts) contexts)

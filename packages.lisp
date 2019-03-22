@@ -28,6 +28,9 @@
    :read-eval
    :eval%
    :apply%
+   :load%
+
+   :plist-to-value-pairs
    
    ;;#### data.lisp
    :init-license-universe
@@ -37,10 +40,12 @@
    :system-collection
    :license-store
    :license-collection
+   :wfx-get-collection
    :wfx-fetch-items
    :wfx-fetch-item
    :wfx-context-fetch-items
    :wfx-context-fetch-item
+   
    :sanitize-data-file
    
    ;;????
@@ -65,6 +70,7 @@
    :url
    :cache
    :*lambda-functions*
+   :context-log
    
    ;;#### 
    :load-context-specs

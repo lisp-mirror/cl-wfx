@@ -200,6 +200,7 @@ Dont set manually use with-system macro.")
   (handler-case
       (apply function arg arguments)
     (error (c)
+      (break "~S" c)
       (log-eval c nil (sb-debug:list-backtrace)))))
 
 (defun funcall% (function &rest arguments)
@@ -509,3 +510,10 @@ is replaced with replacement."
          (/ (- end-date  start-date) 60))
         (t
          (- end-date start-date))))
+
+
+;;########################################list manipulation
+
+(defun plist-to-value-pairs (values)
+  (loop for (a b) on values by #'cddr 
+     :collect (list a b)))

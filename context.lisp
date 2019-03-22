@@ -40,3 +40,6 @@
   (when *context*
     (setf (gethash :debug-log (cache *context*))	   
 	  (push object (gethash :context-log (cache *context*))) )))
+
+(defun clear-context-log ()
+  (setf (gethash :context-log (cache *context*)) nil))

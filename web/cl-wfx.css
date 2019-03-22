@@ -9,8 +9,86 @@
 
 @media print{@page {size: landscape}}
 
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    min-height: 100vh;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+   
+}
+
+#sidebar.active {
+    margin-left: -250px;
+}
+
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
+    #sidebar.active {
+        margin-left: 0;
+    }
+}
+
+a[data-toggle="collapse"] {
+    position: relative;
+}
+
+.dropdown-toggle::after {
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+}
+
+
 html {
      font-size: 14px;
+}
+
+input[type=checkbox] {
+    zoom: 1.5;
+}
+.table-sm {
+    margin-bottom: 0;
+}
+
+.table-sm td, .table-sm th {
+    padding: .1rem;
+    border-right: 1px solid #dee2e6;
+}
+
+.table-sm th {
+    text-align: center;
+    
+}
+
+.table-sm .card {
+    margin-top:.5rem;
+}
+
+.card-header {
+    margin-top: 0;
+}
+
+
+h5, h6 {
+    margin-top: .5rem;
+
+}
+
+.bg-header {
+    background-color: #00000008;
 }
 
 
@@ -36,6 +114,7 @@ html {
    
 
 }
+
 
 
 .grid-card-header {
