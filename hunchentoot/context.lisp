@@ -322,8 +322,7 @@
 						     (digx item :context-spec :icon))
 					:style "width:25px;")
 				   " "
-				   (cl-who:str (digx item :name))))))))))))
-	  )))
+				   (cl-who:str (digx item :name)))))))))))))))
 
 (defun render-header-display (text)
   (with-html-string
@@ -334,7 +333,7 @@
 	    (tea
 	     (theme *system*)
 	     :nav-toggler-left
-	     :text-color-class)			     )
+	     :text-color-class))
 	   	   
 	   (cl-who:str
 	    text))))
@@ -398,8 +397,7 @@
 	      (find :system
 		    (getf (find-collection-def *system* (getx  context :collection))
 			  :destinations)
-		    :test 'equalp))
-	  )
+		    :test 'equalp)))
       t))
 
 (defun render-menu-item (item)
@@ -1080,7 +1078,6 @@
     (:div :class "row"
 	  (:div :class "col"
 		(:div :class "card"
-		      
 		      (:div :class "card-block"
 			    (:h4 :class "card-title"
 				 "Lisp Code")
@@ -1127,23 +1124,23 @@
 						   (:div :class "row"
 							 (:div :class "col"
 							       (:a ;;:class "btn"
-								   :data-toggle "collapse"
-								   :href (frmt "#collapseMore-~A" count)
-								   :role "button"
-								   :aria-expanded "false"
-								   :aria-controls (frmt "collapseMore-~A" count)
+								:data-toggle "collapse"
+								:href (frmt "#collapseMore-~A" count)
+								:role "button"
+								:aria-expanded "false"
+								:aria-controls (frmt "collapseMore-~A" count)
 								   
-								   (:strong
-								    (cl-who:esc
-								     (frmt "~S" result)
-								     )))))
+								(:strong
+								 (cl-who:esc
+								  (frmt "~S" result)
+								  )))))
 						   
 						   (:div :class "row collapse"
 							 :id (frmt "collapseMore-~A" count)
 							 
 							 (:div :class "col bg-light"
 							       (cond ((and (symbolp result)
-									     (fboundp result))
+									   (fboundp result))
 								      
 								      (let* ((stream (make-string-output-stream))
 									     (x (describe result stream))
@@ -1153,14 +1150,13 @@
 										      (get-output-stream-string
 										       stream))))
 								
-									  (dolist (split splits)
+									(dolist (split splits)
 									    
-									    (cl-who:htm
-									     (:br)
-									     (cl-who:str split)))))
-								       (t
-									(pprint result)))))
-						   )))))
+									  (cl-who:htm
+									   (:br)
+									   (cl-who:str split)))))
+								     (t
+								      (pprint result))))))))))
 				  (:div :class "row bg-secondary"
 					(:div :class :col
 					      (:strong "Backtrace")))
@@ -1186,8 +1182,7 @@
 								  
 								  (:strong
 								   (cl-who:str
-								    (frmt "~S" (first trace))
-								    )))))
+								    (frmt "~S" (first trace)))))))
 						     (dolist (trace-element (cdr trace))
 						       (cl-who:htm
 							(:div :class "row collapse"
@@ -1198,10 +1193,6 @@
 						     (when (string-equal (frmt "~S" (first trace))
 									 "CL-WFX::READ-EVAL")
 						       (setf limit-trace t)))))))))))))))
-
-
-
-
 
 (defun ajax-show-debug (&key id from-ajax)
   (declare (ignore from-ajax))
@@ -1248,19 +1239,15 @@
 						   
 						    (:strong
 						     (cl-who:esc
-						      (frmt "~S" key)
-						      )))
-						   ))
+						      (frmt "~S" key))))))
 				       (:div
 					:class "row collapse"
 					:id (frmt "collapseCache-~A" count)
 					(:div :class "col"
 					      (cl-who:esc (frmt "~S" value)))))))
 				 
-				 
 				  (cache *context*)))))
 	 
-
 	  (:div :class "card"
 		(:h5 :class "card-header"
 			 "Error")
@@ -1294,8 +1281,7 @@
 					
 						     (:strong
 						      (cl-who:esc
-						       (frmt "~S" result)
-						       )))))
+						       (frmt "~S" result))))))
 			   
 					(:div :class "row collapse"
 					      :id (frmt "collapseMore-~A" count)
@@ -1318,9 +1304,7 @@
 								(:br)
 								(cl-who:esc split)))))
 							  (t
-							   (pprint result)))))
-					)))))))
-	  
+							   (pprint result))))))))))))
 
 	  (:div :class "card"
 		(:h5 :class "card-header"
@@ -1366,10 +1350,7 @@
 								  "CL-WFX::FUNCALL%")
 						    (string-equal (frmt "~S" (first trace))
 								  "CL-WFX::APPLY%"))
-					    (setf limit-trace t))))))))))
-	  
-
-	  )))
+					    (setf limit-trace t)))))))))))))
 
 
 (defmethod action-handler ((action (eql :eval-repl)) 
@@ -1451,6 +1432,19 @@
 		"User not found!")))))
 
 
+(defun render-export ()
+  (with-html-string
+    (when (parameter "collection")
+      (cond ((string-equal (parameter "export-type") "json")
+	     (cl-who:str (item-list-to-json (wfx-fetch-items (parameter "collection")))))
+	    ((string-equal (parameter "export-type") "csv")
+	     (cl-who:str (item-list-to-csv (wfx-fetch-items (parameter "collection")))))
+	    (t
+	     (cl-who:str
+	      (frmt "~S" (items-to-plist (wfx-fetch-items (parameter "collection")))))
+	     ))
+
+      )))
 
 (defun handle-file (post-parameter)
   (when (and post-parameter (listp post-parameter))
@@ -1490,22 +1484,19 @@
 	nil      
       (when (and (boundp 'hunchentoot:*request*)
 				 (hunchentoot:get-parameter "datatype"))
-			(handle-file (hunchentoot:post-parameter "file_data")
-				     ))
+			(handle-file (hunchentoot:post-parameter "file_data")))
       "{}")))
 
 
 (defmethod custom-render-context ((system hunch-system)
 				 context-spec
 				 &key &allow-other-keys)
-  (warn "Implement custom-render-context")
-  )
+  (warn "Implement custom-render-context"))
 
 (defgeneric render-context (system context-spec-name &key &allow-other-keys))
 
 (defmethod render-context ((system hunch-system) context-spec-name
 			    &key &allow-other-keys)
-
   
   (let ((context-spec (get-context-spec-x context-spec-name)))
     
@@ -1556,6 +1547,16 @@
 				 "Access Denied")
 			     :menu-p t))))
 
+
+	  ((string-equal (getx context-spec :name) "export")
+	   (check-user-access)
+	   (with-html-string
+	     (:pre
+	      (cl-who:esc (if (or (context-access-p context-spec)
+				  (getx (current-user) :super-user-p))
+			      (render-export)
+			      "Access Denied")))))
+
 	  
 	  ((string-equal (getx context-spec :name) "file-upload")
 
@@ -1579,10 +1580,7 @@
 	   (eval%
 	    (getx context-spec :renderer)))
 	  (t
-	   (custom-render-context system context-spec)
-	   ))
-    )
-  )
+	   (custom-render-context system context-spec)))))
 
 (defmethod setup-context-system ((system hunch-system)  
 				 &key &allow-other-keys)

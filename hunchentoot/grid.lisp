@@ -2097,7 +2097,7 @@
 
 
 
-(defun render-grid-menu (data-type)
+(defun render-grid-menu (collection-name data-type)
   (with-html-string
     (:div :class "navitem dropdown dropleft"
 	  (:button :class "btn btn-sm dropdown-toggle"
@@ -2174,20 +2174,79 @@
        
 			   :class "btn btn-light"
 			   :style "width:45px;"
-			   :onclick (grid-js-render data-type
-						    :action "export")
+			   :target "_blank"
+			   :href (frmt "~A&collection=~A" 
+					     (context-url 
+					      "export")
+					     collection-name )
 			   
 			   (:i	
 			    :class "fa far fa-download"))
 			  (:td
 			   :class "bg-light"
-			   (:button
+			   (:a
 			    :class "btn btn-light w-100 text-left"
-			    :name "export"
-			    :type "submit"	
-			    :onclick (grid-js-render data-type
-						     :action "export")
-			    (cl-who:str "Export"))))))
+			    :name "export"			    
+			    :target "_blank"
+			    :href (frmt "~A&collection=~A" 
+					     (context-url 
+					      "export")
+					     collection-name )
+			    (cl-who:str "Export")))))
+			(:tr
+			 (:td
+			  :class "bg-light"
+			  :style "width:45px;"
+			  (:a
+       
+			   :class "btn btn-light"
+			   :style "width:45px;"
+			   :target "_blank"
+			   :href (frmt "~A&collection=~A&export-type=csv" 
+					     (context-url 
+					      "export")
+					     collection-name )
+			   
+			   (:i	
+			    :class "fa far fa-download"))
+			  (:td
+			   :class "bg-light"
+			   (:a
+			    :class "btn btn-light w-100 text-left"
+			    :name "export"			    
+			    :target "_blank"
+			    :href (frmt "~A&collection=~A&export-type=csv" 
+					     (context-url 
+					      "export")
+					     collection-name )
+			    (cl-who:str "Export CSV")))))
+			(:tr
+			 (:td
+			  :class "bg-light"
+			  :style "width:45px;"
+			  (:a
+       
+			   :class "btn btn-light"
+			   :style "width:45px;"
+			   :target "_blank"
+			   :href (frmt "~A&collection=~A&export-type=json" 
+					     (context-url 
+					      "export")
+					     collection-name )
+			   
+			   (:i	
+			    :class "fa far fa-download"))
+			  (:td
+			   :class "bg-light"
+			   (:a
+			    :class "btn btn-light w-100 text-left"
+			    :name "export"			    
+			    :target "_blank"
+			    :href (frmt "~A&collection=~A&export-type=json" 
+					     (context-url 
+					      "export")
+					     collection-name )
+			    (cl-who:str "Export JSON"))))))
 		
 	
 		
@@ -2276,7 +2335,7 @@
 				 (grid-js-render-new data-type nil)
 				 (cl-who:str "+")))
 			       (:td
-				(cl-who:str (render-grid-menu data-type))))))))
+				(cl-who:str (render-grid-menu collection-name data-type))))))))
 	
 		(:div :class "card-body  p-0 m-0" 		    
 		      :id data-type

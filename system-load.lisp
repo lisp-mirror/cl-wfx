@@ -16,6 +16,12 @@
 		    :icon "fa-sign-out-alt"))
 
   (persist-item (core-collection "context-specs")
+		  '(:name "Export"
+		    :permissions nil
+		    :for-everyone t
+		    :icon "fa-sign-out-alt"))
+
+  (persist-item (core-collection "context-specs")
 		  '(:name "REPL"
 		    :permissions nil
 		    :for-everyone t
@@ -184,7 +190,7 @@
 	(menu-items (loop for spec in contexts
 			   when spec
 			   collect (make-item
-				    :data-type "context-spec"
+				    :data-type "menu-item"
 				    :values
 				    (list
 				     :name (digx spec :name)

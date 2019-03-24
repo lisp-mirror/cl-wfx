@@ -270,7 +270,6 @@
     (when (or (listp item-val)
 	      (item-p item-val))
       (when item-val
-	
 	(frmt "~A"
 	      (accessor-value item-val accessor))))))
 
@@ -285,14 +284,12 @@
   
   (let ((item-val (getfx item field))
 	(accessor (dig field :db-type :accessor)))
-
     
     (when (or (listp item-val)
 	      (item-p item-val))
        (when item-val
 	 (frmt "~A"
-	       (accessor-value item-val accessor)
-	     )))))
+	       (accessor-value item-val accessor))))))
 
 (defmethod print-item-val ((type (eql :hierarchical)) field item 
 			   &key default-value &allow-other-keys)
