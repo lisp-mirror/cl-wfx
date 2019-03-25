@@ -224,6 +224,7 @@
 				(get-context-spec (core-store ) "Login")
 				:context-parameters 
 				(list (make-item
+				       :data-type "context-parameter"
 				       :values
 				       (list
 					:name "action"

@@ -20,7 +20,7 @@
 				     :complex-type :value-string-list
 				     :delimiter " ")
 		     :attributes (:display t :editable t))))
-    :destinations (:core))
+    :destinations (:core :license))
 
    (:data-type
     (:name "data-type-permission"
@@ -38,7 +38,7 @@
 				     :complex-type :value-string-list
 				     :delimiter " ")
 		     :attributes (:display t :editable t))))
-    :destinations (:core))
+    :destinations (:core :license))
    
    (:data-type
     (:name "user-profile"
@@ -366,6 +366,8 @@ must be valid email to enable confirmation.")
 				    :license-codes licenses
 				    :super-user-p super-user-p)))
 
+   ;; (break "~A~%~A" email contexts)
+    
     (dolist (context contexts)	    
 	    (push
 	     (make-item
@@ -394,9 +396,12 @@ must be valid email to enable confirmation.")
 	(persist-item
 	   (item-collection user)
 	   user))
-
+      
+     ;; 
+      
       (let ((lic-user (get-license-user code email)))
 
+	
 	(when lic-user
 	  (setf (getx lic-user :permissions) context-permissions)
 	  (setf (getx lic-user :accessible-entities) entities)

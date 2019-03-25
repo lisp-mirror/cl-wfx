@@ -76,6 +76,7 @@
   (add-store (universe system) 
 	     (make-instance 'store
 			    :name "core"))
+ 
   (dolist (def *core-store-definitions*)
     (pushnew def (data-definitions system)))
   (init-definitions (universe *system*) :core "core" *core-store-definitions*))
