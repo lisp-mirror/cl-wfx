@@ -31,7 +31,6 @@
 	      :list-items
 	      :hierarchical)))
 
-
 (defun html-value (value)
   (cond ((symbolp value)
 	 (frmt "~S" value))
@@ -836,6 +835,7 @@
 							  errors))))))))))))))))
 
 (defun render-grid-col-filter (data-type col-name)
+ 
   (with-html-string
     (:input :class "w-100"
 	    :type "text" 
@@ -854,7 +854,7 @@
 	     13
 	     "cl-wfx:ajax-grid"
 	     (gethash :collection-name (cache *context*))
-	     nil
+	     "collapseFilter"
 	     (js-pair "data-type"
 		      (frmt "~A" data-type))
 	     (js-pair "wfxaction" "grid-col-filter")))))
@@ -911,7 +911,7 @@
       
       (:tr :class (if (or search-p filter-p)
 		      "collapse show"
-		      "collapse")
+		      "collapse form-group")
 	   :aria-expanded (if (or search-p filter-p)
 			      "true"
 			      "false")
@@ -1962,12 +1962,14 @@
   (dolist (item selected)
     (setf (item-deleted-p item) t)
     (persist-item (item-collection item) item)
-    (cl-naive-store::remove-data-object (item-collection item) item)))
+    ;;(cl-naive-store::remove-data-object (item-collection item) item)
+    ))
 
 (defmethod action-handler ((action (eql :grid-select-action)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
+  
   (let ((selected))
     (dolist (param (hunchentoot:post-parameters*))
       (when (equalp (car param) "grid-selection")
@@ -2249,11 +2251,37 @@
 					     (context-url 
 					      "export")
 					     collection-name )
-			    (cl-who:str "Export JSON"))))))
+			    (cl-who:str "Export JSON")))))
+			
+			)
 		
-	
+		(:div :class "dropdown-divider")
 		
-		
+		(:table :class "table table-sm"
+			(:tr
+			 (:td
+			  :class "bg-light"
+			  :style "width:45px;"
+			  (:a
+       
+			   :class "btn btn-light"
+			   :style "width:45px;"
+			   :onclick (grid-js-render-new data-type nil)
+			   
+			   (:i	
+			    :class "fa far fa-plus"))
+			  (:td
+			   :class "bg-light"
+			   (:button
+			    :class "btn btn-light w-100 text-left"
+			    :name "sanitize-collection"
+			    :type "button"
+			    ;;TODO: Figure out ajax call that does not render. Or give feeback stats.
+			    :onclick (js-render "cl-wfx:ajax-sanitize-collection"
+						(gethash :collection-name (cache *context*))	      
+						(js-pair "data-type" (frmt "~A" data-type))
+						(js-pair "wfxaction" "sanitize-collection"))
+			    (cl-who:str "Sanitize Collection"))))))
 		
 		(:div :class "dropdown-divider")
 	
@@ -2390,7 +2418,26 @@
 
 (defun ajax-grid (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-   (render-grid (getx (context-spec *context*) :name)))
+  (render-grid (getx (context-spec *context*) :name)))
+
+(defun ajax-sanitize-collection (&key id from-ajax)
+  (declare (ignore from-ajax))
+  (let* ((collection-name id)
+	(stores (collection-stores *system* collection-name)))
+
+
+    (dolist (store stores)
+      (let ((collection (get-collection
+				  store 
+				  collection-name)))
+
+	(when collection
+	  (sanitize-data-file collection))))
+    
+    )
+  
+ 
+  (render-grid (getx (context-spec *context*) :name)))
 
 (defun get-child (fields parent-item data-type hash)
   (dolist (field fields)

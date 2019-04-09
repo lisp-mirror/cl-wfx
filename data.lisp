@@ -332,29 +332,4 @@ that override others to the correct level."
     ))
 
 
-(defun sanitize-data-file (store collection-name path)
-    (let ((items (fetch-items 
-		  (get-collection store  collection-name)
-		  :test (lambda (item)
-			 
-			  item))))
-      (when (probe-file
-	       (frmt "~A/~A/~A.old" path collection-name collection-name))
-	  (fad:copy-file (frmt "~A/~A/~A.old" path collection-name collection-name)
-			 (frmt "~A/~A/~A.old.old" path collection-name collection-name)
-			 :overwrite t))
 
-      (fad:copy-file (frmt "~A/~A/~A.log" path collection-name collection-name)
-		       (frmt "~A/~A/~A.old" path collection-name collection-name)
-		       :overwrite t)
-      (when items
-	(dolist (item items)
-	
-	  (cl-naive-store::persist item
-				   :file (frmt "~A~A/~A.new" path collection-name
-					       collection-name)
-				   :new-file-p t))
-	(fad:copy-file (frmt "~A~A/~A.new" path collection-name collection-name)
-		       (frmt "~A~A/~A.log" path collection-name collection-name)
-		       :overwrite t))
-      ))
