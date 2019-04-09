@@ -381,7 +381,7 @@
     (with-html-string
       (cl-who:str
        (render-dropdown name selected list
-			:key-func 'cl-naive-store:item-hash
+			:key-func 'cl-naive-items:item-hash
 			:value-func (lambda (item)
 				      (accessor-value item accessors)))))))
 
@@ -1050,7 +1050,7 @@
 		     (js-pair "action-data"
 			      (or (getf action :data) ""))
 		     (js-pair "action-handler-lambda"
-			      (getf action :handler-lambda))
+			      (frmt "~A" (getf action :handler-lambda)))
 		     (js-pair "pages"
 			      (or (parameter "pages") 50))
 		     (js-pair "page"
@@ -1541,7 +1541,7 @@
 
 (defun render-grid-data (data-type page-items sub-level
 			 parent-item parent-spec hierarchy)
-  (let ((data-items))
+  (let ((data-objects))
 
     
     
@@ -1558,9 +1558,9 @@
 	      (pushnew field subs))))
 
 	
-	(setf data-items (sort-by-keys page-items (keysx fields)))	
+	(setf data-objects (sort-by-keys page-items (keysx fields)))	
 
-	(dolist (item data-items)
+	(dolist (item data-objects)
 	  (let ((item-hierarchy (append hierarchy (list (list :data-type
 							     data-type
 							     :item item)))))
@@ -1751,6 +1751,7 @@
 	(when (getf field :db-type)
 	    (when (sub-grid-p field)
 	      (let ((accessor (dig field :db-type :accessor)))
+	
 		(dolist (sub-val (getfx item field))
 		  (when sub-val
 		    
@@ -1787,7 +1788,7 @@
 	 (filter-p (getcx data-type :filter)))
 
     (unless (or search-p filter-p)
-
+      
       (multiple-value-bind (itemsx count)
 	    (wfx-fetch-context-items collection-name
 					   :test test)
@@ -1803,8 +1804,8 @@
 				     :test (filter-function data-type))
 	  (setf (getcx data-type :data-count) count)
 	  (setf items itemsx))
+	
 	(when items
-
 	  (setf items
 		(find-items-in-item-list
 		 items
@@ -1959,9 +1960,9 @@
 
 (defun delete-selected (selected)
   (dolist (item selected)
-    (setf (cl-naive-store::item-deleted-p item) t)
+    (setf (item-deleted-p item) t)
     (persist-item (item-collection item) item)
-    (cl-naive-store::remove-item item)))
+    (cl-naive-store::remove-data-object (item-collection item) item)))
 
 (defmethod action-handler ((action (eql :grid-select-action)) 
 			   (context context) 
@@ -2023,7 +2024,9 @@
 	 (place (gethash indicator (cache *context*))))
     
     (if indicators
-	(naive-dig place indicators)
+	(progn
+	  
+	  (apply 'digx place indicators)) ;;digx also uses rest and that causes to many ()
 	place)))
 
 (defun (setf getcx) (value &rest indicators)
@@ -2032,7 +2035,7 @@
     
     (if indicators
 	(setf (gethash indicator (cache *context*)) 
-	      (set-naive-dig place indicators value))
+	      (cl-naive-items::set-naive-dig place indicators value)) 
 	(setf (gethash indicator (cache *context*)) value))))
 
 (defun set-grid-search (data-type)
@@ -2291,7 +2294,7 @@
 
       (set-type-context data-type)
 
-      (set-type-context (parameter "data-type"))
+     ;; (set-type-context (parameter "data-type"))
 
       (set-grid-search data-type)
 	
@@ -2695,9 +2698,6 @@
       (return-from find-contained-item item))))
 
 
-
-
-
 (defun synq-value (field edit-item parent-item value)
   (cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
@@ -2887,7 +2887,7 @@
 				     :changes (item-changes edit-item)))
 	  (setf (getf (first (last edit-objects)) :item) edit-item)
 
-	  (let ((clean-list (getx parent-item parent-slot)))
+	  (let ((clean-list (getxo parent-item parent-slot)))
 	    
 	    (dolist (item clean-list)
 	      (when (string-equal (frmt "~A" (item-hash item))
@@ -3014,6 +3014,6 @@
 	  (persist-item (item-collection root-item) root-item)))
 
       (unless (and edit-item parent-slot)
-	(setf (cl-naive-store::item-deleted-p root-item) t)
+	(setf (item-deleted-p root-item) t)
 	(persist-item (item-collection root-item) root-item)
-	(cl-naive-store::remove-item root-item))))
+	(cl-naive-store::remove-data-object (item-collection root-item) root-item))))

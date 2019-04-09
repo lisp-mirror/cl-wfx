@@ -138,9 +138,7 @@
 
 (defun get-license-codes ()
   (let ((licenses
-	 (fetch-items (core-collection "licenses")
-		      :test (lambda (item)
-			      t)))
+	 (fetch-items (core-collection "licenses")))
 	(codes))
     (dolist (lic licenses)
       (setf codes (push (getx lic :license-code)

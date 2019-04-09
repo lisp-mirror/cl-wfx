@@ -102,17 +102,13 @@
 	     :db-type :string
 	     :attributes (:display t :editable t)
 	     :documentation "")))
-    :destinations ( :license))
+    :destinations (:license))
 
    (:collection
 	(:name "entity-email-accounts"
 	 :label "Entity Email Accounts"
-	 :data-type "entity-email-account"
-;;	 :bucket-keys (:entity)
-	 )
-	:destinations (:license))
-
-   ))
+	 :data-type "entity-email-account")
+	:destinations (:license))))
 
 (setf cl-smtp::*debug* t)
 

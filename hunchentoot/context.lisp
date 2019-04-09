@@ -87,7 +87,6 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
-
   (when (and (parameter "email") (parameter "password"))
     (let ((user (validate-user (parameter "email") (parameter "password"))))
       (if user
@@ -341,7 +340,7 @@
 (defun data-menu (menu-items)
   (let ((items))
     (dolist (item menu-items)
-   
+     
       (when (and
 	     (digx item :context-spec)
 	     (context-access-p
@@ -376,6 +375,7 @@
     (reverse items)))
 
 (defun render-menu-item-text (item)
+  
   (with-html-string    
     (:a :class "btn btn-light text-dark w-100 text-left"
 	:role "button"
@@ -468,6 +468,8 @@
 					
 					(dolist (item (data-menu (digx menu :menu-items)))
 
+					  
+					  
 					  (when (system-context-p (digx item :context-spec))
 					    
 					    (cl-who:str
@@ -1065,13 +1067,12 @@
     (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*)))))
 
 (defun describe% (object)
-  (let* ((stream (make-string-output-stream))
-	(x (describe object stream))
-	(splits (split-sequence:split-sequence		   
+  (let* ((stream (make-string-output-stream)))
+    (describe object stream)
+    (split-sequence:split-sequence		   
 		 #\newline
 		 (get-output-stream-string
 		  stream))))
-    splits))
 
 (defun render-repl ()
   (with-html-string
@@ -1143,13 +1144,13 @@
 									   (fboundp result))
 								      
 								      (let* ((stream (make-string-output-stream))
-									     (x (describe result stream))
-									     (splits (split-sequence:split-sequence
+									     (splits ))
+									(describe result stream)
+									(setf splits (split-sequence:split-sequence
 										      
 										      #\newline
 										      (get-output-stream-string
-										       stream))))
-								
+										       stream)))
 									(dolist (split splits)
 									    
 									  (cl-who:htm
@@ -1497,7 +1498,6 @@
 
 (defmethod render-context ((system hunch-system) context-spec-name
 			    &key &allow-other-keys)
-  
   (let ((context-spec (get-context-spec-x context-spec-name)))
     
     (cond ((not context-spec)

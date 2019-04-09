@@ -127,9 +127,7 @@
    (:collection
 	(:name "entity-reports"
 	 :label "Entity Reports"
-	 :data-type "entity-report"
-;;	 :bucket-keys (:entity)
-	 )
+	 :data-type "entity-report")
 	:destinations (:license))))
 
 

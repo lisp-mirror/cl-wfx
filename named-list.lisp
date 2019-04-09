@@ -57,7 +57,7 @@
 				       :documentation "")		       
 		       :attributes (:display t :editable t)))
        :documentation "")
-      :destinations (:system :license))
+      :destinations (:core :system :license))
    
    (:collection
     (:name "named-lists"

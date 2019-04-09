@@ -145,7 +145,7 @@
    (:collection
     (:name "stylesheets"
      :label "Stylesheets"
-     :data-type "style-sheet")
+     :data-type "stylesheet")
     :destinations (:core :system :license)
     :access
     (:stores

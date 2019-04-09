@@ -10,7 +10,7 @@
   (setf (data-definitions system)
 	(append (data-definitions system) definitions)))
 
-(defclass extended-collection (collection)
+(defclass extended-collection (item-collection)
   ((destinations :initarg :destinations
 		    :accessor destinations
 		    :initform nil)))
@@ -23,58 +23,82 @@
 		    :accessor destinations
 		    :initform nil)))
 
-(defun init-definitions (universe destination store-name definitions)
+(defun init-data-types (universe destination store-name definitions)
+
+  (dolist (definition definitions)
+      (let ((destinations (or (getf definition :destinations)
+			      (list destination))))
+	(when (find destination destinations :test 'equalp)
+	  (let ((data-type-def (getf definition :data-type)))
+	    (when data-type-def
+	      (let ((fields))
+		(dolist (field (getf data-type-def :fields))
+		  (setf
+		   fields 
+		   (append fields 
+			   (list (make-instance 
+				  'field
+				  :name (getf field :name)
+				  :key-p (getf field :key-p)
+				  :type-def (getf field :type-def)
+				  :attributes (getf field :attributes))))))
+
+		(add-data-type
+		 (get-store universe store-name)
+		 (make-instance 
+		  'extended-data-type
+		  :name (getf data-type-def :name)
+		  :label (getf data-type-def :label)
+		  :top-level-p
+		  (getf data-type-def :top-level-p)
+		  :fields fields
+		  :destinations
+		  (getf definition :destinations)
+		  :entity-accessor
+		  (getf definition :entity-accessor))))))))))
+
+(defun init-col-definitions (universe destination store-name definitions)
   (when definitions
     (dolist (definition definitions)
       (let ((destinations (or (getf definition :destinations)
 			      (list destination))))
 	(when (find destination destinations :test 'equalp)
-	  (let ((data-type-def (getf definition :data-type))
-		(collection-def (getf definition :collection)))
+	  (let ((collection-def (getf definition :collection)))
 
-	    (cond (collection-def			   
-		   (add-collection 
-		    (get-store universe store-name)
-		    (make-instance 
-		     'extended-collection
-		     :name (getf collection-def :name)
-		     :data-type (getf collection-def :data-type)
-		     :bucket-keys (getf collection-def :bucket-keys)
-		     :filter (getf collection-def :filter)
-		     :destinations (getf definition :destinations))))
-		  (data-type-def
-		   (let ((fields))
-		     (dolist (field (getf data-type-def :fields))
-		       (setf
-			fields 
-			(append fields 
-				(list (make-instance 
-				       'field
-				       :name (getf field :name)
-				       :key-p (getf field :key-p)
-				       :type-def (getf field :type-def)
-				       :attributes (getf field :attributes))))))
+	    
+	    
+	    (when collection-def
+	      (let ((data-type (get-data-type (get-store universe store-name)
+					      (getf collection-def :data-type))))
+		
+		(unless data-type
+		  (break "?~A~%~S" (getf collection-def :data-type) collection-def)
+		  (break "??~A~%~A" (getf collection-def :data-type)
+			 (get-data-type (get-store universe store-name)
+					(getf collection-def :data-type)))
+		  (error "Collection data-type not found."))
+		
+		(add-collection 
+		 (get-store universe store-name)
+		 (make-instance 
+		  'extended-collection
+		  :name (getf collection-def :name)
+		  :data-type data-type
+		  :destinations (getf definition :destinations)))))
 
-		     (add-data-type
-		      (get-store universe store-name)
-		      (make-instance 
-		       'extended-data-type
-		       :name (getf data-type-def :name)
-		       :label (getf data-type-def :label)
-		       :top-level-p
-		       (getf data-type-def :top-level-p)
-		       :fields fields
-		       :destinations
-		       (getf definition :destinations)
-		       :entity-accessor
-		       (getf definition :entity-accessor))))))))))))
+	  ))))))
+
+(defun init-definitions (universe destination store-name definitions)
+  ;;Data Types need to be done before collections.
+  (init-data-types universe destination store-name definitions)
+  (init-col-definitions universe destination store-name definitions))
 
 
 (defmethod init-core-universe ((system system) &key &allow-other-keys)
   (unless *core-store-definitions*
     (warn (frmt "init-core ~A" *core-store-definitions*)))
   (add-store (universe system) 
-	     (make-instance 'store
+	     (make-instance 'item-store
 			    :name "core"))
  
   (dolist (def *core-store-definitions*)
@@ -85,7 +109,7 @@
   (unless (data-definitions system)
     (warn (frmt "init-system ~A" (data-definitions system))))
   (add-store (universe system) 
-	     (make-instance 'store
+	     (make-instance 'item-store
 			    :name (name system)))
    (init-definitions (universe system)
 		    :system (name system) (data-definitions system)))
@@ -93,7 +117,7 @@
 (defmethod init-license-universe ((system system) license-code
 				  &key &allow-other-keys)
   (add-store (universe system) 
-	     (make-instance 'store
+	     (make-instance 'item-store
 			    :name license-code))
   (init-definitions (universe system) :license license-code
 		     *core-store-definitions*)
@@ -154,10 +178,11 @@ items override earlier ones. See append-items."
 	(destinations
 	 (if (stringp collection)
 	     (digx  (find-collection-def system collection) :destinations)
-	     (destinations collection))
-	 ))
+	     (destinations collection))))
+
     (dolist (dest (list :core :system :license))
       (when (find dest destinations :test #'equalp)
+	
 	(cond ((equalp dest :core)
 	       (setf core-store (core-store)))
 	      ((equalp dest :system)

@@ -51,7 +51,9 @@
 
     
     (dolist (action-parameter action-parameters)
+      
       (when (parameter action-parameter)
+
 	(if (string-equal action-parameter "wfxaction")
 	    (progn
 	    
@@ -115,6 +117,7 @@
 	
 	    (unless *context*
 	      (bad-request *request*))
+	    
 	    (when *context*
 	      (system-request acceptor *request*))	 
 	 

@@ -8,6 +8,8 @@
 	       "ironclad"
 	       "bordeaux-threads"
 	       "cl-naive-store"
+	       "cl-naive-data-types"
+	       "cl-naive-items"
 	       "hunchentoot"
 	       "cl-who"
 	       "split-sequence"

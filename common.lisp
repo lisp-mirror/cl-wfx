@@ -1,5 +1,11 @@
 (in-package :cl-wfx)
 
+#|
+(declaim (inline frmt))
+(defun frmt (control-string &rest args)
+  (apply #'format nil control-string args))
+|#
+
 (defparameter *log-shit-p* nil)
 
 (defun log-shit (shit)
@@ -212,9 +218,7 @@ Dont set manually use with-system macro.")
 
 ;;#############################STRINGS
 ;;FORMAT
-(declaim (inline frmt))
-(defun frmt (control-string &rest args)
-  (apply #'format nil control-string args))
+
 
 (defun format-money-for-export-no-cents (value &key (include-comma nil))
   (typecase value
@@ -239,8 +243,7 @@ Dont set manually use with-system macro.")
      (princ-to-string value))))
 
 
-(defun frmt-money (value &key (include-comma t)
-                            )
+(defun frmt-money (value &key (include-comma t))
   (typecase value
         (null "")
         (number
@@ -251,11 +254,12 @@ Dont set manually use with-system macro.")
         (t
          (princ-to-string value))))
 
-
+#|
 ;;STRING MANIPULATION
 (defun trim-whitespace (string)
   (string-trim
    '(#\Space #\Newline #\Tab #\Return) string))
+|#
 
 (defun assert-ends-with-/ (string)
   (assert (char= (alexandria:last-elt string) #\/)))
@@ -317,6 +321,7 @@ is replaced with replacement."
 
 ;;#####################VALUE CHECKS
 
+#|
 (defun empty-p (value)
   "Checks if value is null or an empty string."
   (or
@@ -327,6 +332,7 @@ is replaced with replacement."
        (string-equal value "NIL")
        )
    (equal (trim-whitespace (princ-to-string value)) "")))
+|#
 
 (declaim (inline ensure-num))
 (defun ensure-num (value)
@@ -514,6 +520,3 @@ is replaced with replacement."
 
 ;;########################################list manipulation
 
-(defun plist-to-value-pairs (values)
-  (loop for (a b) on values by #'cddr 
-     :collect (list a b)))

@@ -385,7 +385,7 @@ must be valid email to enable confirmation.")
 	      :values
 	      (list :type-name
 		    data-type
-		    :permissions (or permissions '())))
+		    :permissions permissions))
 	     data-type-permissions))
     
     (dolist (code licenses)

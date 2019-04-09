@@ -48,13 +48,11 @@
     (:name "entities"
      :label "Entities"
      :data-type "entity")
-    :destinations (:core :license)
+    :destinations (:license)
     :access
     (:stores		  
      (:license
       (:user-levels
-       (:core (:update :delete :lookup))
-       (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))))
 
 (defgeneric match-context-entities (item))
@@ -68,6 +66,7 @@
 		(if (string-equal name (getx entity :name))
 		  (return-from get-license-entity entity)
 		  (tail-entity (getx entity :children) name)))))
+     
      (tail-entity (get-license-entities (getx license :license-code)) name)))
 
 
@@ -99,8 +98,7 @@
 	  
 	   (find (item-hash item)
 		 (getx (active-user) :selected-entities)
-		 :test #'equalp)
-	   )
+		 :test #'equalp))
 	  ((and (slot-exists-p data-type-def 'entity-accessor)
 		(and data-type-def (entity-accessor data-type-def)))
 	   (let ((entity (apply 'digx item (entity-accessor data-type-def))))
@@ -109,9 +107,7 @@
 		       (getx (active-user) :selected-entities)
 		       :test #'equalp)
 		 (when  (getx (current-user) :super-user-p)
-		   item)
-		 ))
-	   )
+		   item))))
 	  ((exists-p item :entity)
 
 	   (if (getx item :entity)
@@ -119,12 +115,9 @@
 		     (getx (active-user) :selected-entities)
 		     :test #'equalp)
 	       (when  (getx (current-user) :super-user-p)
-		 item))
-	  )
+		 item)))
 	  (t
-	   item)
-	  )
-      ))
+	   item))))
 
 (defmethod match-context-entities ((item item))
   (match-entity item))
