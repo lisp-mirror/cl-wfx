@@ -97,14 +97,14 @@
       (:name :lambdas
 	     :label "Lambdas"
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "context-lambda"
 			     :accessor (:lambda :name))			  
 	     :attributes (:display t :editable t))
       (:name :lambdas
 	     :label "Lambdas"
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "context-lambda"
 			     :accessor (:java-script :name))			  
 	     :attributes (:display t :editable t))
@@ -158,11 +158,13 @@
 	 (:license (:update :delete :lookup))))))))
 
 (defun get-context-spec (store name)
-  (fetch-item (get-collection store "context-specs")
-	      :test (lambda (item)
-		      (equalp name (getx item :name)))))
+  (query-data-object
+   (get-collection store "context-specs")
+   :query (lambda (item)
+	    (equalp name (getx item :name)))))
 
 (defun get-context-spec-x (name)
-  (wfx-fetch-item "context-specs"
-	      :test (lambda (item)
-		      (equalp name (getx item :name)))))
+  (wfx-query-data-object
+   "context-specs"
+   :query (lambda (item)
+	   (equalp name (getx item :name)))))

@@ -54,7 +54,7 @@
 		     :label "Context Permissions"
 		     :key nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "user-permission"
 				     :accessor (:context-spec :name))
 		     :attributes (:display t :editable t))
@@ -62,7 +62,7 @@
 		     :label "Data Type Permissions"
 		     :key nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "data-type-permission"
 				     :accessor (:name))
 		     :attributes (:display t :editable t)))
@@ -145,14 +145,14 @@
 	     :label "Permissions"
 	     :key nil
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
 	     :attributes (:display t :editable t))     
       (:name :preferences
 	     :label "Preferences"
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "user-preference"
 			     :accessor :name)			  
 	     :attributes (:display t :editable t))      
@@ -197,7 +197,7 @@
       (:name :permissions 
 	     :label "Permissions"
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "user-permission"
 			     :accessor (:context-spec :name))
 	     :attributes (:display t :editable t))
@@ -205,14 +205,14 @@
 	     :label "Data Type Permissions"
 	     :key nil
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "data-type-permission"
 			     :accessor (:name))
 	     :attributes (:display t :editable t))
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :db-type (:type :list
-			     :complex-type :collection-items
+			     :complex-type :collection-objects
 			     :data-type"entity"
 			     :collection "entities"
 			     :accessor :name)
@@ -266,7 +266,7 @@ must be valid email to enable confirmation.")
 	     :label "Selected Entities"
 	     :key nil
 	     :db-type (:type :list
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "entity"
 			     :accessor :name)
 	     :attributes (:display t :editable t))))
@@ -331,15 +331,15 @@ must be valid email to enable confirmation.")
           (make-password new-password))))
 
 (defun get-user (email)
-  (fetch-item
+  (query-data-object
    (core-collection "users")
-   :test (lambda (item)
+   :query (lambda (item)	    
 	   (string-equal email (getx item :email)))))
 
 (defun get-license-user (license-code email) 
-  (fetch-item
+  (query-data-object
    (license-collection license-code "license-users" )
-   :test (lambda (item)
+   :query (lambda (item)
 	   (string-equal email (getx item :email)))))
 
 
@@ -504,7 +504,6 @@ must be valid email to enable confirmation.")
 
 (defun validate-user (email password)
   (let ((user (get-user email)))
-    
     (unless (and user (check-password user password))      
       (setf user nil))
     user))

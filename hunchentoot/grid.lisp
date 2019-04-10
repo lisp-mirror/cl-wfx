@@ -27,8 +27,8 @@
 
 (defun sub-grid-p (field)
   (find (complex-type field)
-	(list :collection-items
-	      :list-items
+	(list :collection-objects
+	      :list-objects
 	      :hierarchical)))
 
 (defun html-value (value)
@@ -128,11 +128,11 @@
 			     &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :collection-items))
+(defmethod render-input-val ((type (eql :collection-objects))
 			     field item &key &allow-other-keys)
   (render-input-val* type field item))
 
-(defmethod render-input-val ((type (eql :list-items)) field item
+(defmethod render-input-val ((type (eql :list-objects)) field item
 			     &key &allow-other-keys)
   (render-input-val* type field item))
 
@@ -274,9 +274,9 @@
 (defun fetch-contained-item-list (field edit-item)
   
   (let ((list-containers
-	 (wfx-fetch-context-items
+	 (wfx-query-context-data
 	  (dig field :db-type :collection)
-	  :test (lambda (itemx)
+	  :query (lambda (itemx)
 		  (if (getf field :filter)
 		      (funcall
 		       (eval% (getf field :filter))
@@ -340,14 +340,15 @@
 			     &key data-type hierarchy &allow-other-keys)
 
   (let* ((name (getf field :name))
-	 (list (wfx-fetch-context-items (dig field :db-type :collection)
-					:test (lambda (itemx)
-							(if (getf field :filter)
-							    (funcall
-							     (eval% (getf field :filter))
-							     itemx
-							     item)
-							    t))))
+	 (list (wfx-query-context-data
+		(dig field :db-type :collection)
+		:query (lambda (itemx)
+			(if (getf field :filter)
+			    (funcall
+			     (eval% (getf field :filter))
+			     itemx
+			     item)
+			    t))))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
 	 (accessors (dig field :db-type :accessor)))
@@ -835,8 +836,7 @@
 							  errors))))))))))))))))
 
 (defun render-grid-col-filter (data-type col-name)
- 
-  (with-html-string
+   (with-html-string
     (:input :class "w-100"
 	    :type "text" 
 	    :name (frmt "~A-filter" col-name) 
@@ -1120,7 +1120,7 @@
 	   :update)
     (with-html-string
       (when (find (complex-type sub)
-		  (list :collection-items
+		  (list :collection-objects
 			:hierarchical))
 	(cl-who:htm
 	 (:button
@@ -1345,9 +1345,9 @@
 		      (:table :class "table table-sm grid-table-stuffx"
 		       (cl-who:str (render-select-item-row
 				    (dig sub :db-type :data-type)
-				    (wfx-fetch-context-items
+				    (wfx-query-context-data
 				     (dig sub :db-type :collection)
-				     :test (lambda (item)
+				     :query (lambda (item)
 					     (if (getf sub :filter)
 						 (funcall
 						  (eval% (getf sub :filter)) item (first (last (car hierarchy))))
@@ -1790,8 +1790,8 @@
     (unless (or search-p filter-p)
       
       (multiple-value-bind (itemsx count)
-	    (wfx-fetch-context-items collection-name
-					   :test test)
+	    (wfx-query-context-data collection-name
+				    :query test)
 	  (setf (getcx data-type :data-count) count)
 	  (setf items itemsx)))
 
@@ -1800,23 +1800,23 @@
 	     data-type 
 	     :filter-fields)
 	(multiple-value-bind (itemsx count)
-	    (wfx-fetch-context-items collection-name
-				     :test (filter-function data-type))
+	    (wfx-query-context-data collection-name
+				     :query (filter-function data-type))
 	  (setf (getcx data-type :data-count) count)
 	  (setf items itemsx))
 	
 	(when items
 	  (setf items
-		(find-items-in-item-list
+		(query-data
 		 items
-		 (search-function data-type search-term)))))
+		 :query (search-function data-type search-term)))))
       (unless (getcx 
 	       data-type 
 	       :filter-fields)
 
 	(multiple-value-bind (itemsx count)
-	    (wfx-fetch-context-items collection-name
-				       :test (search-function
+	    (wfx-query-context-data collection-name
+				       :query (search-function
 					      data-type search-term))
 	  (setf (getcx data-type :data-count) count)
 	  (setf items itemsx))))
@@ -1931,13 +1931,13 @@
 	    (setf persist-p t)
 
 	    (pushnew
-	     (wfx-fetch-context-item 
+	     (wfx-query-context-data-object
 	      (getcx (parameter "data-type")
 		     :collection-name)
-	      :test (lambda (item)
-		      (string-equal
-		       (frmt "~A" (item-hash item))
-		       (frmt "~A" (second spliff)))))
+	      :query (lambda (item)
+		       (string-equal
+			(frmt "~A" (item-hash item))
+			(frmt "~A" (second spliff)))))
 	     (getx (getcx (parameter "data-type") :active-item)
 		   (intern (string-upcase (parameter "add-selection-field"))
 
@@ -1976,9 +1976,9 @@
 	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
 	  (when (equalp (first spliff) "true")
 	    (pushnew
-	     (wfx-fetch-context-item 
+	     (wfx-query-context-data-object
 	      (gethash :collection-name (cache *context*))
-	      :test (lambda (item)				      
+	      :query (lambda (item)				      
 		      (string-equal
 		       (frmt "~A" (item-hash item))
 		       (frmt "~A" (second spliff)))))
@@ -2005,9 +2005,9 @@
 			   &key &allow-other-keys)
   
   (let* ((data-type (getcx (parameter "data-type") :data-type))
-	 (item (wfx-fetch-context-item 
+	 (item (wfx-query-context-data-object
 		(gethash :collection-name (cache *context*))
-		:test (lambda (item)				      
+		:query (lambda (item)				      
 			(string-equal
 			 (frmt "~A" (item-hash item))
 			 (frmt "~A" (parameter "item-id")))))))
@@ -2455,11 +2455,12 @@
 
 (defun fetch-grid-root-edit-item (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))   
-     (wfx-fetch-context-item  collection-name
-		      :test (lambda (item)
-			      (when (string-equal (frmt "~A" (item-hash item))
-						  (frmt "~A" hash))
-				item)))))
+    (wfx-query-context-data-object
+     collection-name
+     :query (lambda (item)
+	     (when (string-equal (frmt "~A" (item-hash item))
+				 (frmt "~A" hash))
+	       item)))))
 
 (defun ajax-auto-complete (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
@@ -2481,26 +2482,26 @@
 	      
 	      (t
 
-	       (setf list (wfx-fetch-context-items		   
+	       (setf list (wfx-query-context-data		   
 			   (dig field :db-type :collection)
-			   :test (lambda (item)
+			   :query (lambda (item)
 				   
-				   (and
-				    (if (getf field :filter)
-					(funcall
-					 (eval% (getf field :filter))
-					 item
-					 (getcx data-type :edit-item) )
-					t)
+				    (and
+				     (if (getf field :filter)
+					 (funcall
+					  (eval% (getf field :filter))
+					  item
+					  (getcx data-type :edit-item) )
+					 t)
 			     			  
-				    (or
-				     (string-equal (parameter
-						    (frmt "~A-drop" field-name))
-						   "")
-				     (search (parameter
-					      (frmt "~A-drop" field-name))
-					     (accessor-value item accessors)
-					     :test #'string-equal))))))))
+				     (or
+				      (string-equal (parameter
+						     (frmt "~A-drop" field-name))
+						    "")
+				      (search (parameter
+					       (frmt "~A-drop" field-name))
+					      (accessor-value item accessors)
+					      :test #'string-equal))))))))
 
 	(with-html-string
 	  (:div
@@ -2528,9 +2529,9 @@
 	 (collection (parameter "collection")))
  
     (let* ((accessors (list  field-name))
-	   (list (wfx-fetch-context-items		   
+	   (list (wfx-query-context-data		   
 		  collection
-		  :test (lambda (item)
+		  :query (lambda (item)
 			  (or
 			   (string-equal (parameter
 					  (frmt "~A-drop" field-name))
@@ -2748,9 +2749,9 @@
 (defun synq-value (field edit-item parent-item value)
   (cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
-	       (wfx-fetch-context-item
+	       (wfx-query-context-data-object
 		(dig field :db-type :collection)
-		:test (lambda (item)
+		:query (lambda (item)
 			(string-equal (frmt "~A" (item-hash item))
 				      (frmt "~A" value))))))
 	
@@ -2791,9 +2792,9 @@
 	      field 
 	      edit-item 
 	      (parameter field-name)
-	      :items (wfx-fetch-context-items
+	      :items (wfx-query-context-data
 		      (dig field :db-type :collection)
-		      :test (lambda (item)
+		      :query (lambda (item)
 			      (string-equal (frmt "~A" (item-hash item))
 					    (frmt "~A" value))))))
 	    
@@ -2867,7 +2868,7 @@
       (let ((exists (find-equalp-item edit-item
 				      (getx parent-item parent-slot))))
 	(if exists
-	    (setf exists edit-item)		  
+	    edit-item		  
 	    (setf (getx parent-item parent-slot)
 		  (append (getx parent-item parent-slot)
 			  (list edit-item))))))))

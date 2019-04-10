@@ -218,8 +218,7 @@ that override others to the correct level."
 	  (setf merged-items (remove item merged-items)))))
     (append merged-items more-items)))
 
-(defun wfx-fetch-items (collection &key test (result-type 'list))
-  
+(defun wfx-query-data (collection &key query)
   (let ((items)
 	(collection-name (if (stringp collection)
 			     collection
@@ -227,24 +226,20 @@ that override others to the correct level."
   
     (dolist (store (collection-stores *system* collection-name))      
       (when (get-collection store collection-name)
-	
 	(setf items (append-items
 		     items
-		     (fetch-items (get-collection store collection-name)
-				  :test test
-				  :result-type result-type)))))
+		     (query-data (get-collection store collection-name)
+				 :query query)))))
     items))
 
-(defun wfx-fetch-item (collection &key test (result-type 'list))
-  (first (last (wfx-fetch-items
+(defun wfx-query-data-object (collection &key query)
+  (first (last (wfx-query-data
 		collection
-		:test test :result-type result-type))))
-
-
+		:query query))))
 
 ;;TODO: do something to force correct order of stores searched instead of relying on order of stores!!!
 
-(defun wfx-fetch-context-items (collection &key test (result-type 'list))
+(defun wfx-query-context-data (collection &key query)
   (let* ((items)
 	 (item-count 0)
 	(collection-name (if (stringp collection)
@@ -261,21 +256,21 @@ that override others to the correct level."
 	(when collection
 	  (setf items
 		(append-items items
-			(fetch-items 
+			(query-data
 			 collection
-			 :test (lambda (item)
+			 :query (lambda (item)
 				 (when item				  
 				   (when (match-context-entities item)
 				     (incf item-count)
-				     (if test
-					 (funcall test item)
-					 item))))
-			 :result-type result-type))))))
+				     (if query
+					 (funcall query item)
+					 item))))))))))
     
     (values items item-count)))
 
-(defun wfx-fetch-context-item (collection &key test)
+(defun wfx-query-context-data-object (collection &key query)
   (let* ((items)
+	 (other-items)
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name)))
@@ -285,20 +280,27 @@ that override others to the correct level."
       (let ((collection (get-collection
 				  store 
 				  collection-name)))
-	(when collection  
-	  (setf items
-		(append-items
-		 items
-		 (list (fetch-item 
+	(when collection
+	  (multiple-value-bind (object others)
+	      (query-data-object
 			collection
-			:test (lambda (item)
+			:query (lambda (item)
 				(when item
 				  (when (match-context-entities item)
-				    (if test
-					(funcall test item)
-					item)))))))))))
+				    (if query
+					(funcall query item)
+					item)))))
+	    
+	    (setf items
+		  (append-items
+		   items
+		   (list object)))
+	    (setf other-items
+		  (append-items
+		   other-items
+		   others))))))
   
-    (first (remove-if #'not items))))
+    (values (first items) (rest items) other-items)))
 
 (defun in-place-subst (file refs)
   (let ((backup-file (format nil "~A.shash.bak" file)))

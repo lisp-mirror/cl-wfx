@@ -86,6 +86,7 @@
       (:license (:update :delete :lookup))))))))
 
 (defun get-data-type (store type-name)
-  (fetch-item (get-collection store "data-types")
-	      :test (lambda (item)
-		      (equalp (getx item :name) type-name))))
+  (query-data-object
+   (get-collection store "data-types")
+   :query (lambda (item)
+	   (equalp (getx item :name) type-name))))

@@ -1,9 +1,10 @@
 (in-package :cl-wfx)
 
 (defun get-core-context-spec (context-name)
-  (fetch-item (core-collection "context-specs")
-	      :test (lambda (spec)
-		      (string-equal context-name (name spec)))))
+  (query-data-object
+   (core-collection "context-specs")
+   :query (lambda (spec)
+	   (string-equal context-name (name spec)))))
 
 
 
@@ -234,9 +235,11 @@
     (when sys-mod
       (setf (getx sys-mod :contexts) contexts)
       (let ((menu
-	     (find-in-item-list (getx sys-mod :menu)
-				(lambda (item)
-				  (equalp (getx item :name) "System")))))
+	     (query-data-object
+	      (getx sys-mod :menu)
+	      :query (lambda (item)
+		       (equalp (getx item :name) "System")))))
+
 	(setf (getx menu :menu-items) menu-items)))
     
     (unless sys-mod

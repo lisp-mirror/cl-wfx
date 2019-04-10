@@ -51,7 +51,7 @@
       (:name :files
 	     :label "Files"
 	     :db-type (:type :item
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "file"
 			     :accessor (:name))))
      :destinations (:core :system :license)))
@@ -119,7 +119,7 @@
       (:name :files
 	     :label "Files"
 	     :db-type (:type :item
-			     :complex-type :list-items
+			     :complex-type :list-objects
 			     :data-type "file"
 			     :accessor (:name))))
      :destinations (:license)))
@@ -249,10 +249,11 @@
     (eval (digx report :code :selection-lambda))))
 
 (defmethod render-report ((type (eql :html)) report-name)
-  (let* ((report (wfx-fetch-item "reports"
-				 :test (lambda (item)
-					 (equalp (getx item :name)
-						 report-name)))))
+  (let* ((report (wfx-query-data-object
+		  "reports"
+		  :query (lambda (item)
+			  (equalp (getx item :name)
+				  report-name)))))
     (cl-wfx::with-html-string
       (:div :id "report-body"
 	    (when report

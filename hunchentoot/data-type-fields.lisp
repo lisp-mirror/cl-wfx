@@ -241,11 +241,11 @@
 
     final-val))
 
-(defmethod print-item-val ((type (eql :list-items)) field item
+(defmethod print-item-val ((type (eql :list-objects)) field item
 			   &key default-value &allow-other-keys)
   (print-item-val-s* field item :default-value default-value))
 
-(defmethod print-item-val ((type (eql :collection-items))
+(defmethod print-item-val ((type (eql :collection-objects))
 			   field item &key default-value
 					&allow-other-keys)
   (declare (ignore default-value))

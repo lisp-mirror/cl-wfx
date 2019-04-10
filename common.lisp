@@ -41,8 +41,8 @@ Dont set manually use with-system macro.")
 
 (defparameter *lambda-functions*
   (list 'cl-wfx:frmt
-	'cl-wfx::wfx-fetch-context-item
-	'cl-wfx::wfx-fetch-context-items
+	'cl-wfx::wfx-query-context-data-item
+	'cl-wfx::wfx-query-context-data
 	'cl-wfx:with-html
 	'cl-wfx:with-html-string
 	'cl-wfx::render-report

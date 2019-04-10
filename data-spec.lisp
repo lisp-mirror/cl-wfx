@@ -88,7 +88,8 @@
 
 (defun get-data-spec (spec-name)
   (if (current-user)
-      (wfx-fetch-item "data-specs"
-		  :test (lambda (item)
-			  (equalp (name item) spec-name)))
+      (wfx-query-data-object
+       "data-specs"
+       :query (lambda (item)
+	       (equalp (name item) spec-name)))
       (get-data-spec spec-name)))

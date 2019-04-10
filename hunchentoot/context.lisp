@@ -64,10 +64,11 @@
   (dolist (license-code (available-licenses user))
     (init-license-universe *system* license-code))
   
-  (let ((active-user (fetch-item (core-collection "active-users")
-				 :test (lambda (item)				 
-					 (equalp (parameter "email")
-						 (digx item :email))))))
+  (let ((active-user (query-data-object
+		      (core-collection "active-users")
+		      :query (lambda (item)				 
+			       (equalp (parameter "email")
+				       (digx item :email))))))
     (unless active-user      
       (setf active-user (persist-item (core-collection "active-users")
 				      (list :email (digx user :email) 
@@ -106,20 +107,21 @@
   (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*))))
 
 (defun user-mods ()
-  (wfx-fetch-items "modules"
-		   :test
-		   (lambda (item)			    
-		     (not (string-equal "Core" (digx item :name))))
-		   :result-type 'list))
+  (wfx-query-data
+   "modules"
+   :query
+   (lambda (item)			    
+     (not (string-equal "Core" (digx item :name))))))
 
 (defun mod-menu (mod)
   (if mod
       (digx (first (digx mod :menu)) :menu-items)))
 
 (defun system-menu ()
-  (let ((sys-mod (fetch-item (core-collection "modules")
-			     :test (lambda (item)
-				     (string-equal "Core" (digx item :name)))))) 
+  (let ((sys-mod (query-data-object
+		  (core-collection "modules")
+		  :query (lambda (item)
+			   (string-equal "Core" (digx item :name)))))) 
     (if sys-mod
 	(digx (first (digx sys-mod :menu)) :menu-items))))
 
@@ -133,8 +135,8 @@
 
 (defun accessible-entity-roots (accessible-entities license-code)
   (let ((roots))
-    (dolist (entity (fetch-items (license-collection license-code "entities")
-				 :result-type 'list))      
+    (dolist (entity (query-data
+		     (license-collection license-code "entities")))      
       (when (digx entity :root-p)	
 	(when (accessible-entity entity accessible-entities)
 	  (pushnew entity roots))))
@@ -283,9 +285,9 @@
 	  (:div :class "dropdown-menu"
 		:aria-labelledby "userDropdown"
 		(let ((sys-mod 
-		       (fetch-item
+		       (query-data-object
 			(core-collection "modules")
-			:test (lambda (item)
+			:query (lambda (item)
 				(string-equal
 				 "Core" 
 				 (digx item :name))))))
@@ -1437,12 +1439,12 @@
   (with-html-string
     (when (parameter "collection")
       (cond ((string-equal (parameter "export-type") "json")
-	     (cl-who:str (item-list-to-json (wfx-fetch-items (parameter "collection")))))
+	     (cl-who:str (item-list-to-json (wfx-query-data (parameter "collection")))))
 	    ((string-equal (parameter "export-type") "csv")
-	     (cl-who:str (item-list-to-csv (wfx-fetch-items (parameter "collection")))))
+	     (cl-who:str (item-list-to-csv (wfx-query-data (parameter "collection")))))
 	    (t
 	     (cl-who:str
-	      (frmt "~S" (items-to-plist (wfx-fetch-items (parameter "collection")))))
+	      (frmt "~S" (items-to-plist (wfx-query-data (parameter "collection")))))
 	     ))
 
       )))

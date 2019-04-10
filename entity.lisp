@@ -58,7 +58,7 @@
 (defgeneric match-context-entities (item))
 
 (defun get-license-entities (code)
-  (fetch-items (license-collection code "entities")))
+  (query-data (license-collection code "entities")))
 
 (defun get-license-entity (license name)
    (labels ((tail-entity (entities name)

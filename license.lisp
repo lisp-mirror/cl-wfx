@@ -21,7 +21,7 @@
 			   :label "License Modules"
 			   :key-p nil
 			   :db-type (:type :list
-					   :complex-type :collection-items
+					   :complex-type :collection-objects
 					   :data-type "module"
 					   :collection "Modules"
 					   :accessor :name)
@@ -57,9 +57,10 @@
        (:license (:lookup))))))))
 
 (defun get-license (code)
-  (fetch-item (core-collection "licenses")
-	      :test (lambda (item)
-		      (string-equal (getx item :license-code) code))))
+  (query-data-object
+   (core-collection "licenses")
+   :query (lambda (item)
+	   (string-equal (getx item :license-code) code))))
 
 
 (defvar *license-code-lock* (bordeaux-threads:make-lock))
@@ -138,7 +139,7 @@
 
 (defun get-license-codes ()
   (let ((licenses
-	 (fetch-items (core-collection "licenses")))
+	 (query-data (core-collection "licenses")))
 	(codes))
     (dolist (lic licenses)
       (setf codes (push (getx lic :license-code)

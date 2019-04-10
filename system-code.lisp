@@ -168,8 +168,9 @@
 
 
 (defun apply-lambda (name args)
-  (let ((lambdax (wfx-fetch-items "lambdas"
-				 :test (lambda (item)
-					 (equalp (getx item :name) name)))))
+  (let ((lambdax (wfx-query-data
+		  "lambdas"
+		  :query (lambda (item)
+			   (equalp (getx item :name) name)))))
     (when lambdax
       (apply (getx lambdax :code) args))))

@@ -39,10 +39,10 @@
    :license-store
    :license-collection
    :wfx-get-collection
-   :wfx-fetch-items
-   :wfx-fetch-item
-   :wfx-context-fetch-items
-   :wfx-context-fetch-item
+   :wfx-query-data
+   :wfx-query-data-object
+   :wfx-query-context-data
+   :wfx-query-context-data-object
    
    :sanitize-data-file
    

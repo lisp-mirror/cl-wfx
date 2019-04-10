@@ -33,7 +33,7 @@
 		     :label "Children"
 		     :key-p nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "menu-item"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -52,7 +52,7 @@
 		     :label "Context Parameters"
 		     :key-p nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "context-parameter"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -73,7 +73,7 @@
 		     :label "Menu Items"
 		     :key-p nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "menu-item"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -100,7 +100,7 @@
 		     :label "Contexts"
 		     :key-p nil
 		     :db-type (:type :list
-				     :complex-type :collection-items
+				     :complex-type :collection-objects
 				     :data-type "context-spec"
 				     :collection "context-specs"
 				     :accessor :name)
@@ -110,7 +110,7 @@
 		     :label "Menu"
 		     :key-p nil
 		     :db-type (:type :list
-				     :complex-type :list-items
+				     :complex-type :list-objects
 				     :data-type "menu"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -139,9 +139,10 @@
        (:license (:update :delete :lookup))))))))
 
 (defun get-module (store module-name)   
-  (fetch-item (get-collection store "modules" )
-	      :test (lambda (item)
-		      (string-equal module-name (getx item :name)))))
+  (query-data-object
+   (get-collection store "modules" )
+   :query (lambda (item)
+	    (string-equal module-name (getx item :name)))))
 
 (defun get-module-context (module context-name)  
   (dolist (context (getx module :contexts))
@@ -149,10 +150,10 @@
 	(return-from get-module-context context))))
 
 (defun get-module-short (store module-short)  
-  (fetch-item (get-collection store "modules")
-	     :test (lambda (item)
-		    
-		     (string-equal module-short (getx item :module-short)))))
+  (query-data-object
+   (get-collection store "modules")
+   :query (lambda (item)
+	    (string-equal module-short (getx item :module-short)))))
 
 
 

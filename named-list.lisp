@@ -31,7 +31,7 @@
 		(:name :attributes
 		       :label "Attributes"
 		       :db-type (:type :list
-				       :complex-type :list-items 
+				       :complex-type :list-objects 
 				       :data-type "key-value"
 				       :accessor (:key)
 				       :documentation "")		       
@@ -51,7 +51,7 @@
 		(:name :list-values
 		       :label "List Values"
 		       :db-type (:type :list
-				       :complex-type :list-items 
+				       :complex-type :list-objects 
 				       :data-type "list-value"
 				       :accessor (:key)
 				       :documentation "")		       
@@ -74,12 +74,12 @@
 
 
 (defun get-named-list (name &key store)
-  (wfx-fetch-item
+  (wfx-query-data-object
    (get-collection (or
 		     store
 		     (system-store))
 		    "named-lists")
-   :test (lambda (item)
+   :query (lambda (item)
 	   (string-equal name (getx item :list-name)))))
 
 (defun get-named-list-values (name &key store)
