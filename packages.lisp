@@ -31,6 +31,7 @@
    :plist-to-value-pairs
    
    ;;#### data.lisp
+   :wfx-universe
    :init-license-universe
    :core-store
    :core-collection

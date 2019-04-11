@@ -1,5 +1,12 @@
 (in-package :cl-wfx)
 
+(defclass wfx-universe (universe)
+  ((store-class :initarg :store-class
+		 :accessor store-class
+		 :initform 'item-store
+		 :allocation :class
+		 :documentation "Overriding store class here to influence data-type-class and collection-class.")))
+
 (defparameter *core-store-definitions* nil)
 
 (defun add-core-definitions (definitions)  
@@ -72,11 +79,13 @@
 					      (getf collection-def :data-type))))
 		
 		(unless data-type
+		  #|
 		  (break "?~A~%~S" (getf collection-def :data-type) collection-def)
 		  (break "??~A~%~A" (getf collection-def :data-type)
 			 (get-data-type (get-store universe store-name)
 					(getf collection-def :data-type)))
-		  (error "Collection data-type not found."))
+		  |#
+		  (error (frmt "Collection data-type (~A) not found." (getf collection-def :data-type))))
 		
 		(add-collection 
 		 (get-store universe store-name)

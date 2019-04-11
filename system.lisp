@@ -23,7 +23,7 @@
 	       :initform "/web/")
    (universe :initarg :universe
 	     :accessor universe
-	     :initform (make-instance 'universe :location "~/data-universe/")
+	     :initform (make-instance 'wfx-universe :location "~/data-universe/")
 	     :documentation "") 
    (data-definitions :initarg :data-definitions
 		     :accessor data-definitions
