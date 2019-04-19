@@ -37,10 +37,11 @@
 				&key &allow-other-keys)
 
 
+  
   (let ((allowed-actions (list "save" "delete" "login" "logout"
 			       "assign-campaign" "select-action" "grid-select-action"
-			       "add-selection" "eval-repl" "set-password"
-			       "item-action"))
+			       "add-selection" "eval-repl" "eval-import" "import-data"
+			       "set-password" "item-action"))
 	(action-parameters (list "wfxaction" "set-entities")))
 
     (when (action-parameter-allowed-values system)
@@ -52,11 +53,16 @@
     
     (dolist (action-parameter action-parameters)
       
-      (when (parameter action-parameter)
+      (when  (parameter action-parameter)
 
+	(setf (gethash :get-parameters (cache *context*))
+	      (hunchentoot:get-parameters*))
+	(setf (gethash :post-parameters (cache *context*))
+	      (hunchentoot:post-parameters*))
+
+	
 	(if (string-equal action-parameter "wfxaction")
 	    (progn
-	    
 	      (when (find (parameter action-parameter) allowed-actions :test 'string-equal)
 		
 		(action-handler (intern (string-upcase (parameter action-parameter)) :keyword)
@@ -110,11 +116,10 @@
 
       (if (not dont)           
 	  (let* ((*session* (start-session acceptor))
-		 (*context* (request-context *request*))
-		 ;;TODO: is this the right way to get module
-		 )
+		 (*context* (request-context *request*)))
+	    
 	    (declare (special *system* *context* *session* *request*))
-	
+	    
 	    (unless *context*
 	      (bad-request *request*))
 	    

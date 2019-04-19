@@ -279,8 +279,7 @@
 	      :aria-haspopup="true"
 	      :aria-expanded "false" 
 	      (if (current-user) 
-		  (cl-who:str (cl-who:htm
-			       (digx (current-user) :email)))))
+		  (cl-who:str (frmt "~A&nbsp&nbsp&nbsp&nbsp&nbsp" (digx (current-user) :email)))))
 	  
 	  (:div :class "dropdown-menu"
 		:aria-labelledby "userDropdown"
@@ -870,6 +869,12 @@
 	});
         editor.display.wrapper.style.fontSize = \"12px\";
         editor.refresh();
+
+	function updateTextArea() {
+	    editor.save();
+	}
+	
+	editor.on('change', updateTextArea);
     }
 });")
 	     )
@@ -890,6 +895,12 @@
 	});
         editor.display.wrapper.style.fontSize = \"12px\";
         editor.refresh();
+
+	function updateTextArea() {
+	    editor.save();
+	}
+	
+	editor.on('change', updateTextArea);
     }
 });")
 	     )
@@ -911,6 +922,12 @@
 	});
         editor.display.wrapper.style.fontSize = \"12px\";
         editor.refresh();
+
+	function updateTextArea() {
+	    editor.save();
+	}
+	
+	editor.on('change', updateTextArea);
     }
 });")
 	     )
@@ -1032,12 +1049,14 @@
 		  
 		   (cl-who:str (render-user-admin-menu))
 
-		   (:div "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"))
+		   ;;(:div "&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp")
+
+		   )
 		  
 		  
 		  (:div :class "row"
 
-			(:div :class "col"
+			(:div :class "col" :id "wfx-page-body"
 			      (:br)
 			      (cl-who:str body)))
 		  (:br)
@@ -1076,7 +1095,9 @@
 		 (get-output-stream-string
 		  stream))))
 
-(defun render-repl ()
+(defun ajax-render-repl (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+
   (with-html-string
     (:div :class "row"
 	  (:div :class "col"
@@ -1084,11 +1105,7 @@
 		      (:div :class "card-block"
 			    (:h4 :class "card-title"
 				 "Lisp Code")
-			    (:form :method "post"
-				   :action ""			       
-				   (:input :type "hidden" :id "contextid" 
-					   :value (context-id *context*))
-				   (:div :class "form-group"
+			     (:div :class "form-group"
 					 (:label :for "repl-code" "Code")
 					 (:textarea
 					  :class "form-control wfx-lisp-code"
@@ -1102,104 +1119,22 @@
 					    :class "btn btn-primary"
 					    :type "submit"
 					    :value "eval-repl"
-					    "run")))
+					    :onclick (frmt "~A;~A"
+							   (js-render-form-values
+							    "cl-wfx:ajax-render-repl"
+							    "wfx-page-body"
+							    "wfx-page-body"
+							    (js-pair "wfxaction"
+								     "eval-repl"))
+							  
+							   (js-render "cl-wfx:ajax-show-debug"
+								      "debug-info-display"))
+					    "run"))
 		      (:div :class "card-footer"
-			    (:div :class "col"
-				  (:div :class "row bg-secondary"
-					(:div :class :col
-					      (:strong "Result")))
-				  
-				  (:div :class "row"
-					(:div :class :col
-					      (cl-who:str
-					       (gethash :repl-result (cache *context*)))))
-				  (:div :class "row bg-secondary"
-					(:div :class :col
-					      (:strong "More Results")))
-				  (:div :class "row"
-					(:div :class :col
-					      (let ((more-results (gethash :repl-more-results (cache *context*)))
-						    (count 0))
-						
-						(dolist (result more-results)
-						  (incf count)
-						  (cl-who:htm
-						   (:div :class "row"
-							 (:div :class "col"
-							       (:a ;;:class "btn"
-								:data-toggle "collapse"
-								:href (frmt "#collapseMore-~A" count)
-								:role "button"
-								:aria-expanded "false"
-								:aria-controls (frmt "collapseMore-~A" count)
-								   
-								(:strong
-								 (cl-who:esc
-								  (frmt "~S" result)
-								  )))))
-						   
-						   (:div :class "row collapse"
-							 :id (frmt "collapseMore-~A" count)
-							 
-							 (:div :class "col bg-light"
-							       (cond ((and (symbolp result)
-									   (fboundp result))
-								      
-								      (let* ((stream (make-string-output-stream))
-									     (splits ))
-									(describe result stream)
-									(setf splits (split-sequence:split-sequence
-										      
-										      #\newline
-										      (get-output-stream-string
-										       stream)))
-									(dolist (split splits)
-									    
-									  (cl-who:htm
-									   (:br)
-									   (cl-who:str split)))))
-								     (t
-								      (pprint result))))))))))
-				  (:div :class "row bg-secondary"
-					(:div :class :col
-					      (:strong "Backtrace")))
-				  (:div :class "row"
-					(:div :class :col
-					      (let ((backtrace (gethash :repl-backtrace (cache *context*)))
-						    (count 0)
-						    (limit-trace nil))
-						
-						(dolist (trace backtrace)
-						  
-						  (unless limit-trace
-						    (incf count)
-						    (cl-who:htm
-						     (:div :class "row"
-							   (:div :class "col"
-								 (:a ;;:class "btn"
-								  :data-toggle "collapse"
-								  :href (frmt "#collapseTrace-~A" count)
-								  :role "button"
-								  :aria-expanded "false"
-								  :aria-controls (frmt "collapseTrace-~A" count)
-								  
-								  (:strong
-								   (cl-who:str
-								    (frmt "~S" (first trace)))))))
-						     (dolist (trace-element (cdr trace))
-						       (cl-who:htm
-							(:div :class "row collapse"
-							      :id (frmt "collapseTrace-~A" count)
-							      (:div :class "col bg-white" 
-								    ;;	  (break (frmt "~S" trace-element))
-								    (cl-who:esc (frmt "~A" trace-element))))))
-						     (when (string-equal (frmt "~S" (first trace))
-									 "CL-WFX::READ-EVAL")
-						       (setf limit-trace t)))))))))))))))
+			    (:div (cl-who:esc (frmt "~S" (gethash :repl-result (cache *context*)))))))))))
 
 (defun ajax-show-debug (&key id from-ajax)
   (declare (ignore from-ajax))
-							       
   (with-html-string
     (:div :class "card-columns"
 	  :id id
@@ -1207,9 +1142,13 @@
 		(:h5 :class "card-header"
 			 "Parameters")
 		(:div :class "card-body"
-			    
 		      (:p :class "card-text"
-			  (cl-who:str (hunchentoot:post-parameters*)))))
+			
+			  (cl-who:str (gethash :get-parameters (cache *context*))))
+		      (:p :class "card-text"
+			
+			  (cl-who:str (gethash :post-parameters (cache *context*))))
+		   ))
 	  (:div :class "card"
 		(:h5 :class "card-header"
 			       "Context Log")
@@ -1226,10 +1165,13 @@
 			 (maphash (lambda (key value)
 				    (incf count)
 				    (unless (or (equalp key :context-log)
+						(equalp key :get-parameters)
+						(equalp key :post-parameters)
 						(equalp key :debug-error)
 						(equalp key :debug-results)
 						(equalp key :debug-backtrace)
-						(equalp key :debug-log))
+						(equalp key :debug-log)
+						)
 				      (cl-who:htm
 				       (:div :class "row"
 					     (:div :class "col"
@@ -1243,8 +1185,7 @@
 						    (:strong
 						     (cl-who:esc
 						      (frmt "~S" key))))))
-				       (:div
-					:class "row collapse"
+				       (:div :class "row collapse"
 					:id (frmt "collapseCache-~A" count)
 					(:div :class "col"
 					      (cl-who:esc (frmt "~S" value)))))))
@@ -1257,8 +1198,9 @@
 		(:div :class "card-body"
 			    
 		      (:p :class "card-text"
-			  (cl-who:esc
-			   (frmt "~S" (describe% (gethash :debug-error (cache *context*))))))))
+			  (if (gethash :debug-error (cache *context*))
+			      (cl-who:esc
+			       (frmt "~S" (describe% (gethash :debug-error (cache *context*)))))))))
 
 	  (:div :class "card"
 		(:h5 :class "card-header"
@@ -1343,7 +1285,6 @@
 					     (:div :class "row collapse"
 						   :id (frmt "collapseTrace-~A" count)
 						   (:div :class "col bg-white" 
-							 ;;	  (break (frmt "~S" trace-element))
 							 (cl-who:esc (frmt "~A" trace-element))))))
 					  (when (or (string-equal (frmt "~S" (first trace))
 								  "CL-WFX::READ-EVAL")
@@ -1365,21 +1306,174 @@
 	     (parameter "repl-code")
 	     (not (empty-p (parameter "repl-code"))))
 
-    
-    (multiple-value-bind (result more-results error)
-	  (eval% 
-	   (parameter "repl-code")
-	   :package-name :wfx-repl)
 
-    ;;  (break "~S~%~S" result more-results)
+    (multiple-value-bind (result more-results error)
+	(eval% 
+	 (parameter "repl-code")
+	 :package-name :wfx-repl)
+
+      ;;  (break "~S~%~S" result more-results)
       (setf (gethash :repl-result (cache *context*))	   
-	      (or result
-		  (and error (getf error :error))) )
-	(setf (gethash :repl-more-results (cache *context*))	   
-	      more-results )
-	(setf (gethash :repl-backtrace (cache *context*))	   
+	    (or result
+		(and error (getf error :error))) )
+      (setf (gethash :repl-more-results (cache *context*))	   
+	    more-results )
+      (setf (gethash :repl-backtrace (cache *context*))	   
 	    (getf error :backtrace) ))))
 
+
+
+(defun ajax-render-import (&key id from-ajax)
+  (declare (ignore id) (ignore from-ajax))
+  (with-html-string
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "card"
+		      (:div :class "card-block"
+			    (:h4 :class "card-title"
+				 "Data")
+			    (:div :class "form-group"
+				  (:label :for "import-data" "Code")
+				  (:textarea
+				   :class "form-control"
+				   :rows 20
+				   :name "import-data"
+				   :id "import-data"
+				   (cl-who:str
+				    (or (parameter "import-data") ""))))))))
+
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "card"
+		      (:div :class "card-block"
+			    (:h4 :class "card-title"
+				 "Parsed Data")
+			    (:div :class "form-group"
+				  (:label :for "import-parsed-data" "Code")
+				  (:textarea
+				   :class "form-control"
+				   :rows 20
+				   :name "import-parsed-data"
+				   :id "import-parsed-data"
+				   (dolist (parsed (gethash :import-data (cache *context*)))
+				     (cl-who:str (frmt "~S~%" parsed)))))))))
+
+	   	   
+    (:div :class "row"
+	  (:div :class "col"
+		(:div :class "card"
+		      (:div :class "card-block"
+			    (:h4 :class "card-title"
+				 "Lisp Code")
+			    (:div :class "form-group"
+				  (:label :for "import-code" "Code")
+				  (:textarea
+				   :class "form-control wfx-lisp-code"
+				   :rows 20
+				   :name "import-code"
+				   :id "import-code"
+				   (cl-who:str
+				    (or (parameter "import-code") ""))))
+					  
+			    (:button :name "wfxaction"
+				     :class "btn btn-primary"
+				     :type "submit"
+				     :value "eval-import"
+				     :onclick (frmt "~A;~A"
+						    (js-render-form-values
+						     "cl-wfx:ajax-render-import"
+						     "wfx-page-body"
+						     "wfx-page-body"
+						     (js-pair "wfxaction"
+							      "eval-import"))
+							  
+						    (js-render "cl-wfx:ajax-show-debug"
+							       "debug-info-display"))
+				     "Parse Data")
+			    (:button :name "wfxaction"
+				     :class "btn btn-primary"
+				     :type "submit"
+				     :value "import-data"
+				     :onclick (frmt "~A;~A"
+						    (js-render-form-values
+						     "cl-wfx:ajax-render-import"
+						     "wfx-page-body"
+						     "wfx-page-body"
+						     (js-pair "wfxaction"
+							      "import-data"))
+							  
+						    (js-render "cl-wfx:ajax-show-debug"
+							       "debug-info-display"))
+				     "Import Data")))))))
+
+
+
+
+(defun parse-import-data (text fn)
+  (let ((csv-parser:*field-separator* #\|))
+    (let ((stream (make-string-input-stream text)))
+      
+      (loop as line = (csv-parser:read-csv-line stream)
+	 while line
+	 do (funcall fn line)))))
+
+
+(defmethod action-handler ((action (eql :eval-import)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+
+  (when (and (parameter "wfxaction")
+	     (parameter "import-data")
+	     (not (empty-p (parameter "import-data")))
+	     (parameter "import-code")
+	     (not (empty-p (parameter "import-code"))))
+
+    (let ((*package* (or (find-package :wfx-importer)
+			 (make-package :wfx-importer))))
+
+      (setf (gethash :import-validation (cl-wfx:cache cl-wfx:*context*)) nil)
+      
+      (setf (gethash :import-data (cache *context*))	   
+	    (apply% 
+	     (eval% 
+	      (parameter "import-code"))
+	     (parameter "import-data"))))
+
+    
+
+    
+    ))
+
+
+(defmethod action-handler ((action (eql :import-data)) 
+			   (context context) 
+			   (request hunch-request)
+			   &key &allow-other-keys)
+  (when (and (parameter "wfxaction")
+	     (parameter "import-data")
+	     (not (empty-p (parameter "import-data")))
+	     (parameter "import-code")
+	     (not (empty-p (parameter "import-code"))))
+
+    (let ((*package* (or (find-package :wfx-importer)
+			 (make-package :wfx-importer))))
+      (setf (gethash :import-validation (cl-wfx:cache cl-wfx:*context*)) nil)
+      
+      (setf (gethash :import-data (cache *context*))	   
+	    (apply% 
+	     (eval% 
+	      (parameter "import-code"))
+	     (parameter "import-data"))))
+
+    (dolist (object (gethash :import-data (cache *context*)))
+      
+      (persist-item (item-collection object) object ))
+
+    
+    )
+
+  )
 
 (defun render-set-password ()
   (with-html-string
@@ -1545,7 +1639,19 @@
 		(render-page system
 			     (if (or (context-access-p context-spec)
 				   (getx (current-user) :super-user-p))
-				 (render-repl)
+				 (ajax-render-repl)
+				 "Access Denied")
+			     :menu-p t))))
+
+	  ((string-equal (getx context-spec :name) "import")
+	   (check-user-access)
+	   (with-html-string
+	       "<!doctype html>"
+	       (cl-who:str
+		(render-page system
+			     (if (or (context-access-p context-spec)
+				   (getx (current-user) :super-user-p))
+				 (ajax-render-import)
 				 "Access Denied")
 			     :menu-p t))))
 

@@ -143,4 +143,7 @@
 
 
 (defpackage :wfx-repl
-  (:use :cl :cl-naive-store :cl-wfx))
+  (:use :cl :cl-naive-store :cl-naive-items :cl-wfx))
+
+(defpackage :wfx-importer
+  (:use :cl :cl-naive-store :cl-naive-items :cl-wfx))

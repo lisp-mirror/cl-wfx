@@ -99,23 +99,27 @@ function prep_expands () {
 function prep_codemirror_lisp () {
     $(document).ready(function() {
         $('.wfx-lisp-code').each(function(i,textarea) {
-            
-     	    var editor = CodeMirror.fromTextArea(textarea, {
-                lineNumbers: true,
-                smartIndent: true,
-          	autoCloseBrackets: true,
- 		showTrailingSpace: true,
-                matchBrackets: true,
-          	mode: "text/x-common-lisp"});
-	    
-            editor.display.wrapper.style.fontSize = "12px";
-            editor.refresh();
-	    
-	    function updateTextArea() {
-		editor.save();
+
+	    if (textarea.style.display != "none"){
+		
+		var editor = CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    smartIndent: true,
+          	    autoCloseBrackets: true,
+ 		    showTrailingSpace: true,
+                    matchBrackets: true,
+          	    mode: "text/x-common-lisp"});
+		
+		editor.display.wrapper.style.fontSize = "12px";
+		editor.refresh();
+		
+		function updateTextArea() {
+		    editor.save();
+		}
+		
+		editor.on('change', updateTextArea);
 	    }
 	    
-	    editor.on('change', updateTextArea);
 	});});
     
 }
@@ -124,23 +128,25 @@ function prep_codemirror_lisp () {
 function prep_codemirror_js () {
     $(document).ready(function() {
         $('.wfx-js-code').each(function(i,textarea) {
-            
-     	    var editor = CodeMirror.fromTextArea(textarea, {
-                lineNumbers: true,
-                smartIndent: true,
-          	autoCloseBrackets: true,
- 		showTrailingSpace: true,
-                matchBrackets: true,
-          	mode: "text/javascript"});
-	    
-            editor.display.wrapper.style.fontSize = "12px";
-            editor.refresh();
-	    
-	    function updateTextArea() {
-		editor.save();
+
+	    if (textarea.style.display != "none"){
+     		var editor = CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    smartIndent: true,
+          	    autoCloseBrackets: true,
+ 		    showTrailingSpace: true,
+                    matchBrackets: true,
+          	    mode: "text/javascript"});
+		
+		editor.display.wrapper.style.fontSize = "12px";
+		editor.refresh();
+		
+		function updateTextArea() {
+		    editor.save();
+		}
+		
+		editor.on('change', updateTextArea);
 	    }
-	    
-	    editor.on('change', updateTextArea);
 	});});
     
 }
@@ -148,24 +154,25 @@ function prep_codemirror_js () {
 function prep_codemirror_css () {
     $(document).ready(function() {
         $('.wfx-css-code').each(function(i,textarea) {
-            
-     	    var editor = CodeMirror.fromTextArea(textarea, {
-                lineNumbers: true,
-                smartIndent: true,
-          	autoCloseBrackets: true,
- 		showTrailingSpace: true,
-                matchBrackets: true,
-		extraKeys: {"Ctrl-Space": "autocomplete"},
-          	mode: "text/css"});
-	    
-            editor.display.wrapper.style.fontSize = "12px";
-            editor.refresh();
-	    
-	    function updateTextArea() {
-		editor.save();
+            if (textarea.style.display != "none"){
+     		var editor = CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    smartIndent: true,
+          	    autoCloseBrackets: true,
+ 		    showTrailingSpace: true,
+                    matchBrackets: true,
+		    extraKeys: {"Ctrl-Space": "autocomplete"},
+          	    mode: "text/css"});
+		
+		editor.display.wrapper.style.fontSize = "12px";
+		editor.refresh();
+		
+		function updateTextArea() {
+		    editor.save();
+		}
+		
+		editor.on('change', updateTextArea);
 	    }
-	    
-	    editor.on('change', updateTextArea);
 	});});
     
 }
@@ -361,14 +368,9 @@ function prep_elements() {
 
 function ajax_render (script_name, renderer, id, args) {
     var widget = find_widget(id);
-/*    jQuery.fallr('show', {
-        buttons     : {},
-	content     : 'Loading data',
-	icon        : 'info',
-	useOverlay  : false
-    });*/
 
-      
+  //  alert(renderer);
+    
     if (renderer) {
 	if(args){
 	    args.push(['context-uri',script_name]);
@@ -381,7 +383,7 @@ function ajax_render (script_name, renderer, id, args) {
 	
         cl_ajax_render(script_name, renderer ,id, args,
                        function (response) {
-//alert("fuck");
+
                            var json = jQuery.parseJSON(response);
 
                            before_ajax(widget);

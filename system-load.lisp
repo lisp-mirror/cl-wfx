@@ -23,6 +23,12 @@
 		    :icon "fa-sign-out-alt"))
 
   (persist-item (core-collection "context-specs")
+		  '(:name "Import"
+		    :permissions nil
+		    :for-everyone t
+		    :icon "fa-sign-in-alt" ))
+  
+  (persist-item (core-collection "context-specs")
 		  '(:name "REPL"
 		    :permissions nil
 		    :for-everyone t
@@ -200,6 +206,14 @@
 
     (setf menu-items (append menu-items
 			     (list
+			      (make-item
+			       :data-type "menu-item"
+			       :values
+			       (list
+				:name "REPL"
+				:context-spec 
+				(get-context-spec (core-store )
+						  "Import")))			      
 			      (make-item
 			       :data-type "menu-item"
 			       :values

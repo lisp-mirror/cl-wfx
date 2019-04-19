@@ -102,16 +102,23 @@ Dont set manually use with-system macro.")
   (fboundp (first s-expression)))
 
 
-(defun log-eval (error results backtrace)
+(defun clear-eval-log ()
+  (when *context*
+    (setf (gethash :debug-error (cache *context*))	   
+	      nil )
+    (setf (gethash :debug-results (cache *context*))	   
+	  nil)
+    (setf (gethash :debug-backtrace (cache *context*))	   
+	  nil)))
 
+(defun log-eval (error results backtrace)
   (when *context*
     (setf (gethash :debug-error (cache *context*))	   
 	      error )
     (setf (gethash :debug-results (cache *context*))	   
 	  results )
     (setf (gethash :debug-backtrace (cache *context*))	   
-	  backtrace 
-	  )))
+	  backtrace)))
 
 
 
@@ -119,6 +126,9 @@ Dont set manually use with-system macro.")
   :documentation "Function converts a string to s-expressions and returns the results of evaluating each s-expression in turn. If the s-expression is not deemed to be evaluatable the expression is returned as is."
   (let ((results)
 	(last-expression))
+
+    (clear-eval-log)
+    
     (handler-case
 	(let ((stream (make-string-input-stream expressions-string) ))
 	  
@@ -152,6 +162,9 @@ Dont set manually use with-system macro.")
   (read-eval (blob-string-value blob) ))
 
 (defun eval% (object &key package-name)
+
+  
+  
   (cond  ((and (item-p object) (item-of-type-p object "lambda"))
 	    (let ((*package* (or (and package-name (or (find-package package-name)
 						       (make-package package-name)))
@@ -170,6 +183,8 @@ Dont set manually use with-system macro.")
 	   ((stringp object)
 	    (read-eval object))
 	   (t
+	    (clear-eval-log)
+	    
 	    (handler-case
 		
 		(eval object)

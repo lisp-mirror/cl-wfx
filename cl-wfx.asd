@@ -17,6 +17,7 @@
 	       "cl-json"
 	       "cl-smtp"
 	       "sandbox"
+	       "csv-parser"
 	      ;; "postoffice"
 	       )
   :components ((:file "packages")
