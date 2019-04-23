@@ -1438,12 +1438,7 @@
 	    (apply% 
 	     (eval% 
 	      (parameter "import-code"))
-	     (parameter "import-data"))))
-
-    
-
-    
-    ))
+	     (parameter "import-data"))))))
 
 
 (defmethod action-handler ((action (eql :import-data)) 
@@ -1458,6 +1453,7 @@
 
     (let ((*package* (or (find-package :wfx-importer)
 			 (make-package :wfx-importer))))
+      
       (setf (gethash :import-validation (cl-wfx:cache cl-wfx:*context*)) nil)
       
       (setf (gethash :import-data (cache *context*))	   
@@ -1468,12 +1464,7 @@
 
     (dolist (object (gethash :import-data (cache *context*)))
       
-      (persist-item (item-collection object) object ))
-
-    
-    )
-
-  )
+      (persist-item (item-collection object) object ))))
 
 (defun render-set-password ()
   (with-html-string
@@ -1602,8 +1593,7 @@
 	     "<!doctype html>"
 	     (cl-who:str (render-page system
 				      "Context not defined."
-				      :menu-p t)))
-	   )
+				      :menu-p t))))
 	  ((not (empty-p (getx context-spec :collection)))
 	   (check-user-access)
 	   

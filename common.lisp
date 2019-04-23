@@ -221,7 +221,7 @@ Dont set manually use with-system macro.")
   (handler-case
       (apply function arg arguments)
     (error (c)
-      (break "~S" c)
+ 
       (log-eval c nil (sb-debug:list-backtrace)))))
 
 (defun funcall% (function &rest arguments)
