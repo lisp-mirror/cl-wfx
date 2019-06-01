@@ -426,7 +426,7 @@
   (with-html-string
     (:div 
      (:nav :id "sidebar"
-	   :class "sticky-top bg-header"
+	   :class "sticky-top bg-header  d-print-none"
 	   :style "box-shadow: 0px 2px 5px;"
 	   
 	   (:div :class "sidebar-header text-center"
@@ -1062,14 +1062,14 @@
 		  (:br)
 		  (:div :class "row"
 			(:div :class "col"
-			      (:a :class "btn btn-light text-dark bg-header border border-light rounded w-100"
+			      (:a :class "btn btn-light text-dark bg-header border border-light rounded w-100 d-print-none"
 				  :data-toggle "collapse"
 				  :href "#debug-info"
 				  :onclick (js-render "cl-wfx:ajax-show-debug" "debug-info-display")
 				  (:strong "Debug Info"))
 			      
 			      (:div :id "debug-info"
-				    :class "collapse"
+				    :class "collapse d-print-none"
 				    (:br)
 				    (:div :id "debug-info-display"
 					       ))))

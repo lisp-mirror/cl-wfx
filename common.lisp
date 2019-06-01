@@ -162,8 +162,6 @@ Dont set manually use with-system macro.")
   (read-eval (blob-string-value blob) ))
 
 (defun eval% (object &key package-name)
-
-  
   
   (cond  ((and (item-p object) (item-of-type-p object "lambda"))
 	    (let ((*package* (or (and package-name (or (find-package package-name)
@@ -221,7 +219,6 @@ Dont set manually use with-system macro.")
   (handler-case
       (apply function arg arguments)
     (error (c)
- 
       (log-eval c nil (sb-debug:list-backtrace)))))
 
 (defun funcall% (function &rest arguments)
