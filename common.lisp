@@ -150,6 +150,7 @@ Dont set manually use with-system macro.")
 		   :error nil
 		   :backtrace nil)))
       (error (c)
+	(break "?~A" c)
 	(log-eval c results (sb-debug:list-backtrace))
 	(values c
 		results

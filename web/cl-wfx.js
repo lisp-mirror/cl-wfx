@@ -182,7 +182,7 @@ function prep_file_upload () {
         $(".file-upload").each(function (i,file) {
 	    
             file.fileinput({
-                uploadUrl: "/cor/file-upload",
+                uploadUrl: "file-upload",
                 uploadAsync: false,
                 theme: "fa",
                 initialPreviewAsData: true,
@@ -216,7 +216,7 @@ function fileUploadPrep (args) {
 	    var args = JSON.parse($("#args-" + file.id).val());
 	    //doing fucked up concat because "" + lic drops leeading 0's even
 	    //though type() syste license is a string????
-	    var fuck = "/cor/file-upload?license=";
+	    var fuck = "file-upload?license=";
 	    var license = args.license.toString();
 	    
 	   // alert($("#init-" + file.id).val() );

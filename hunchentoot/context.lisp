@@ -438,7 +438,12 @@
 				    (theme *system*)
 				    :main-nav-logo
 				    :src)))
-		 (:h3 (:strong (cl-who:str (string-upcase (name *system*))))))
+		 (when (empty-p (tea
+				    (theme *system*)
+				    :main-nav-logo
+				    :src))
+		   (cl-who:htm
+		    (:h3 (:strong (cl-who:str (string-upcase (name *system*))))))))
 	   
 	   (:ul :class "list-unstyled components"
 		
@@ -1033,16 +1038,21 @@
 				 :aria-label "Toggle application menu"
 				 "&#9776;")))
 		  
-		   (:a :class "navbar-brand" :href "#" 
-		       (:img
-			:style (ts (theme system) :main-nav-logo
-				   "height:50px;")
-			:src (frmt "~Acor/web/images/~A"
-				   (site-url system)
-				   (tea
+		   (:a :class "navbar-brand" :href "#"
+		       (unless (empty-p (tea
 				    (theme system)
-				    :main-nav-logo
-				    :src)))
+				    :main-nav-bar
+				    :brand-image))
+			 (cl-who:htm
+			  (:img
+			   :style (ts (theme system) :main-nav-logo
+				      "height:50px;")
+			   :src (frmt "~Acor/web/images/~A"
+				      (site-url system)
+				      (tea
+				       (theme system)
+				       :main-nav-bar
+				       :brand-image)))))
 		       (name system))
 
 		   (cl-who:str (render-header-display ""))
@@ -1082,6 +1092,76 @@
 
 
       ))))
+
+
+(defgeneric render-clean-page (system body &key menu-p header-css header-js
+				       footer-js
+				       &allow-other-keys))
+
+
+(defmethod render-clean-page ((system hunch-system) body
+			&key menu-p header-css header-js
+			  footer-js
+			  &allow-other-keys)
+  (with-html-string
+    (:html
+     (:head
+      (:meta :charset "utf-8")
+      (:meta :name "viewport"
+	     :content "width=device-width, initial-scale=1, shrink-to-fit=no")
+
+          (:link :rel "stylesheet"
+	   :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
+	   :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
+	   :crossorigin "anonymous")
+
+    (:link :rel "stylesheet"
+	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/css/fileinput.min.css"
+	   :media "all"
+	   :type "text/css")
+
+    (:link :rel "stylesheet"
+	   :href "https://use.fontawesome.com/releases/v5.6.0/css/all.css"
+	   :integrity "sha384-aOkxzJ5uQz7WBObEZcHvV5JvRW3TUc2rNPA7pe3AwnsUohiw1Vj2Rgx2KSOkF5+h"
+	   :crossorigin "anonymous")
+
+    
+    (:script
+     :type "text/javascript"
+      :src "https://code.jquery.com/jquery-3.3.1.min.js"
+      :integrity "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+      :crossorigin "anonymous")
+
+    (:script
+     :type "text/javascript"
+     :src "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
+     :ingegrity "sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
+     :crossorigin "anonymous")
+
+    (:script
+     :type "text/javascript"
+     :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js")
+
+    
+     
+     (:body
+      
+      (:input :type "hidden" :id "contextid" :value (context-id *context*))
+
+
+      (:div :class "container"
+	    (cl-who:str body))
+      
+     
+
+
+      
+     
+
+
+
+      )))))
+
 
 (defun check-user-access ()
   (unless (current-user)
@@ -1567,7 +1647,7 @@
   (eval
    `(hunchentoot:define-easy-handler
 	(,(intern (frmt "file-upload-~A" (name system))) 
-	 :uri ,(frmt "~Acor/file-upload" (site-url system))  
+	 :uri ,(frmt "~Afile-upload" (site-url system))  
 	 :allow-other-keys t)
 	nil      
       (when (and (boundp 'hunchentoot:*request*)
@@ -1657,7 +1737,6 @@
 
 	  
 	  ((string-equal (getx context-spec :name) "file-upload")
-
 	   (when (and (boundp 'hunchentoot:*request*)
 				 (hunchentoot:get-parameter "datatype"))
 			(handle-file (hunchentoot:post-parameter "file_data"))))
