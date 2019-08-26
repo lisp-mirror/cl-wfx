@@ -1,7 +1,7 @@
 (in-package :common-lisp-user)
 
 (defpackage :cl-wfx
-  (:use :cl :cl-naive-store :cl-naive-data-types :cl-naive-items)
+  (:use :cl :cl-naive-store :cl-naive-indexed :cl-naive-data-types :cl-naive-data-type-defs :cl-naive-items)
   
   (:export
    ;;#### common.lisp

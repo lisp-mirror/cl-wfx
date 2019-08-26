@@ -10,141 +10,141 @@
 
 (defmethod load-context-specs :before ((system system) &key &allow-other-keys)
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Login"
 		    :permissions nil
 		    :for-everyone t
 		    :icon "fa-sign-out-alt"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Export"
 		    :permissions nil
 		    :for-everyone t
 		    :icon "fa-sign-out-alt"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Import"
 		    :permissions nil
 		    :for-everyone t
 		    :icon "fa-sign-in-alt" ))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "REPL"
 		    :permissions nil
 		    :for-everyone t
 		    :icon "fa-terminal"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Set Password"
 		    :permissions nil
 		    :for-everyone t
 		    :icon "fa-key"))
   
-  (persist-item (core-collection "context-specs")    
+  (persist-object (core-collection "context-specs")    
 		  '(:name "Data Types"
 		    :permissions (:filter :search)
 		    :collection "data-types"
 		    :icon "fa-database"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Context Specs"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "context-specs"
 		    :icon "fa-window-restore"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 			'(:name "Modules"
 			  :permissions (:update :delete)
 			  :for-everyone t 
 			  :collection "modules"
 			  :icon "fa-list"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 			'(:name "Licenses"
 			  :permissions (:update :delete)
 			  :for-everyone t 
 			  :collection "licenses"
 			  :icon "fa-id-badge"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Entities"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "entities"
 		    :icon "fa-stream"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "users"
 		    :icon "fa-users"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "License Users"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "license-users"
 		    :icon "fa-user-friends"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Named Lists"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "named-lists"
 		    :icon "fa-clipboard-list"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Lambdas"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "lambdas"
 		    :icon "fa-code"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Packages"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "packages"
 		    :icon "fa-archive"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Java Scripts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "java-scripts"
 		    :icon "fa-file-code"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Stylesheets"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "style-sheets"
 		    :icon "fa-toilet-paper"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "email-accounts"
 		    :icon "fa-at"))
 
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Entity Email Accounts"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "entity-email-accounts"
 		    :icon "fa-envelope"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
 		    :collection "reports"
 		    :icon "fa-file-signature"))
   
-  (persist-item (core-collection "context-specs")
+  (persist-object (core-collection "context-specs")
 		  '(:name "Entity Reports"
 		    :permissions (:update :delete)
 		    :for-everyone t 
@@ -242,7 +242,7 @@
 				       :data-type "context-parameter"
 				       :values
 				       (list
-					:name "action"
+					:name "wfxaction"
 					:value "logout")))
 				))
 			      )))
@@ -271,7 +271,7 @@
 		     (list :name "System"
 			   :menu-items  menu-items)))))
 
-    (setf sys-mod (persist-item (core-collection "modules") sys-mod))
+    (setf sys-mod (persist-object (core-collection "modules") sys-mod))
     
     (setup-file-upload *system*)
     

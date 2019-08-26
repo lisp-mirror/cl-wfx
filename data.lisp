@@ -261,7 +261,6 @@ that override others to the correct level."
       (let ((collection (get-collection
 				  store 
 				  collection-name)))
-
 	(when collection
 	  (setf items
 		(append-items items

@@ -60,14 +60,12 @@
 	(setf (gethash :post-parameters (cache *context*))
 	      (hunchentoot:post-parameters*))
 
-	
 	(if (string-equal action-parameter "wfxaction")
-	    (progn
-	      (when (find (parameter action-parameter) allowed-actions :test 'string-equal)
+	    (when (find (parameter action-parameter) allowed-actions :test 'string-equal)
 		
 		(action-handler (intern (string-upcase (parameter action-parameter)) :keyword)
 				context
-				request)))
+				request))
 	    (action-handler (intern (string-upcase (parameter action-parameter)) :keyword)
 		    context
 		    request)

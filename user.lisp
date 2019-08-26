@@ -316,7 +316,7 @@ must be valid email to enable confirmation.")
 (defun make-user (email password &key name phone-no license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
-    (persist-item (core-collection "users") 
+    (persist-object (core-collection "users") 
 		  (list :license-codes license-codes
 			:email email
 			:name name
@@ -395,7 +395,7 @@ must be valid email to enable confirmation.")
 	(setf (getx user :license-codes)
 	      (append (getx user :license-codes)
 		      (list code)))
-	(persist-item
+	(persist-object
 	   (item-collection user)
 	   user))
       
@@ -407,10 +407,10 @@ must be valid email to enable confirmation.")
 	(when lic-user
 	  (setf (getx lic-user :permissions) context-permissions)
 	  (setf (getx lic-user :accessible-entities) entities)
-	  (persist-item (license-collection code "license-users") lic-user))
+	  (persist-object (license-collection code "license-users") lic-user))
 	
 	(unless lic-user	  
-	  (persist-item
+	  (persist-object
 	   (license-collection code "license-users")
 	   (list
 	    :email email

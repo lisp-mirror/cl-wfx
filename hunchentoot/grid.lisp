@@ -51,8 +51,7 @@
 			    (if key-func
 				(funcall key-func selected)
 				selected)
-			    (or (parameter (frmt "~A" name))
-				select-prompt))))
+			    (parameter (frmt "~A" name)))))
 
     (with-html-string
       (:div :class "bt-group dropdown"
@@ -65,7 +64,7 @@
 		     :type "button"
 		     :data-toggle "dropdown"
 		     :aria-haspopup "true" :aria-expanded "false"
-		     (cl-who:str (html-value (or selected-value ""))))
+		     (cl-who:str (html-value (or selected-value select-prompt ""))))
 	     
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
 		  (dolist (option list)
@@ -149,8 +148,7 @@
 				(funcall value-func selected)
 				selected)
 			    (or (parameter (frmt "~A-drop" field-name))
-				context-state-selected
-				select-prompt))))
+				context-state-selected))))
     (with-html-string
       (:div :class "col"
 	    
@@ -204,8 +202,7 @@
 				(funcall value-func selected)
 				selected)
 			    (or (parameter (frmt "~A" field-name))
-				context-state-selected
-				select-prompt))))
+				context-state-selected))))
 
     (with-html-string
       (:div :class "col"
@@ -1639,7 +1636,7 @@
 		      :fields)))
 
 	 (sorted-items (sort-by-keys items keys)))
-    
+
     (setf (getcx data-type :show-pages-count) 
 	  (if (not (empty-p (parameter "pages")))
 	      (parse-integer (parameter "pages"))
@@ -1655,20 +1652,21 @@
 		  1)))
 
     (multiple-value-bind (page-count rem)
-	(floor (getcx data-type :data-count) 
+	(floor (ensure-num (getcx data-type :data-count)) 
 	       (getcx data-type :show-pages-count))
       
       (setf (getcx data-type :page-count) page-count)
       (setf (getcx data-type :page-count-remaining) rem))
+ 
     
     (setf (getcx data-type :start-page-count) 
-	  (- (* (getcx 
-		 data-type :active-page) 
-		(getcx 
-		 data-type :show-pages-count)) 
-	     (getcx 
-	      data-type :show-pages-count)))
-    
+	  (- (* (ensure-num (getcx 
+			     data-type :active-page)) 
+		(ensure-num (getcx 
+			     data-type :show-pages-count))) 
+	     (ensure-num (getcx 
+			  data-type :show-pages-count))))
+
     (setf (getcx data-type :end-page-count) 
 	  (if (< (* (getcx 
 		     data-type :active-page)
@@ -1680,7 +1678,7 @@
 		  data-type :active-page)
 		 (getcx 
 		  data-type :show-pages-count))))
-    
+ 
     (when (or (not (getcx data-type :end-page-count))
 	      (>= (getcx data-type :end-page-count)
 		  (length sorted-items)))
@@ -1951,7 +1949,7 @@
 	     (root-item
 	      (fetch-grid-root-edit-item root-hash)))
 
-	(persist-item
+	(persist-object
 	 (wfx-get-collection	
 	  (gethash :collection-name (cache *context*)))
 	 (if (listp root-item)
@@ -1961,7 +1959,7 @@
 (defun delete-selected (selected)
   (dolist (item selected)
     (setf (item-deleted-p item) t)
-    (persist-item (item-collection item) item)
+    (persist-object (item-collection item) item)
     ;;(cl-naive-store::remove-data-object (item-collection item) item)
     ))
 
@@ -2873,7 +2871,7 @@
 		  (append (getx parent-item parent-slot)
 			  (list edit-item))))))))
 
-(defun grid-persist-item (data-type root-item)
+(defun grid-persist-object (data-type root-item)
   (unless (getcx data-type :validation-errors)
     (let ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*)))))
@@ -2887,7 +2885,7 @@
       (when collection
 	(setf (item-collection root-item) collection)
 	(setf (item-store root-item) (store collection))
-	(persist-item collection root-item :allow-key-change-p t)))))
+	(persist-object collection root-item :allow-key-change-p t)))))
 
 (defun prepare-edit-objects ()
   (let* ((data-type (string-downcase (parameter "data-type")))
@@ -2974,7 +2972,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
- 
+
   (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields (getcx data-type :fields)))
 
@@ -3010,8 +3008,8 @@
 	  (grid-append-child data-type parent-slot parent-item
 			     edit-item)
 
-
-	  (grid-persist-item data-type root-item)
+	  
+	  (grid-persist-object data-type root-item)
 
 	  (fire-context-event context :save root-item edit-item))
 	
@@ -3059,9 +3057,9 @@
 	  
 	  (setf (getx parent-item parent-slot) clean-list)
 	  
-	  (persist-item (item-collection root-item) root-item)))
+	  (persist-object (item-collection root-item) root-item)))
 
       (unless (and edit-item parent-slot)
 	(setf (item-deleted-p root-item) t)
-	(persist-item (item-collection root-item) root-item)
+	(persist-object (item-collection root-item) root-item)
 	(cl-naive-store::remove-data-object (item-collection root-item) root-item))))

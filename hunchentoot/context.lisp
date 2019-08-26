@@ -70,7 +70,7 @@
 			       (equalp (parameter "email")
 				       (digx item :email))))))
     (unless active-user      
-      (setf active-user (persist-item (core-collection "active-users")
+      (setf active-user (persist-object (core-collection "active-users")
 				      (list :email (digx user :email) 
 					    :selected-licenses nil
 					    :selected-entities nil))))
@@ -88,6 +88,7 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
+
   (when (and (parameter "email") (parameter "password"))
     (let ((user (validate-user (parameter "email") (parameter "password"))))
       (if user
@@ -98,10 +99,10 @@
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
- 
+
   (setf (contexts *session*) nil)
   (setf *session* nil)
-  (persist-item (core-collection "active-users") (active-user))
+  (persist-object (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
   (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*))))
@@ -216,7 +217,7 @@
 	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
 	    (pushnew (item-hash entity)
 		     (getx (active-user) :selected-entities))
-	    (persist-item (core-collection "active-users") (active-user))))))))
+	    (persist-object (core-collection "active-users") (active-user))))))))
 
 (defun render-licence-codes ()
   (with-html-string
@@ -296,11 +297,16 @@
 		      (dolist (item (digx menu :menu-items))
 			(let ((parameters))
 			  (dolist (param (digx item :context-parameters))
-			    (setf parameters 
-				  (frmt "~A&~A=~A" 
+			    (if parameters
+				(setf parameters 
+				      (frmt "~A&~A=~A" 
 					    parameters
 					    (digx param :name)
-					    (digx param :value))))
+					    (digx param :value)))
+				(setf parameters 
+				      (frmt "~A=~A" 
+					    (digx param :name)
+					    (digx param :value)))))
 			  
 			  (when (or (equalp (digx item :name) "Logout")
 				    (context-access-p
@@ -567,7 +573,7 @@
 		      :license (parameter "select-action-value")
 		      (data-definitions *system*))
     
-    (persist-item (core-collection "active-users") (active-user)))
+    (persist-object (core-collection "active-users") (active-user)))
   
   (with-html-string
     (:div :class "col"
@@ -603,7 +609,7 @@
 			:license (cdr parameter)
 			(data-definitions *system*))
       
-      (persist-item (core-collection "active-users") (active-user)))))
+      (persist-object (core-collection "active-users") (active-user)))))
 
 (defun render-right-menu ()
   (with-html-string
@@ -1100,9 +1106,9 @@
 
 
 (defmethod render-clean-page ((system hunch-system) body
-			&key menu-p header-css header-js
-			  footer-js
-			  &allow-other-keys)
+			      &key header-css header-js
+				footer-js
+				&allow-other-keys)
   (with-html-string
     (:html
      (:head
@@ -1110,57 +1116,49 @@
       (:meta :name "viewport"
 	     :content "width=device-width, initial-scale=1, shrink-to-fit=no")
 
-          (:link :rel "stylesheet"
-	   :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
-	   :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
-	   :crossorigin "anonymous")
+      (:link :rel "stylesheet"
+	     :href "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/css/bootstrap.min.css"
+	     :integrity "sha384-Smlep5jCw/wG7hdkwQ/Z5nLIefveQRIY9nfy6xoR1uRYBtpZgI6339F5dgvm/e9B"
+	     :crossorigin "anonymous")
 
-    (:link :rel "stylesheet"
-	   :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/css/fileinput.min.css"
-	   :media "all"
-	   :type "text/css")
+      (:link :rel "stylesheet"
+	     :href "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/css/fileinput.min.css"
+	     :media "all"
+	     :type "text/css")
 
-    (:link :rel "stylesheet"
-	   :href "https://use.fontawesome.com/releases/v5.6.0/css/all.css"
-	   :integrity "sha384-aOkxzJ5uQz7WBObEZcHvV5JvRW3TUc2rNPA7pe3AwnsUohiw1Vj2Rgx2KSOkF5+h"
-	   :crossorigin "anonymous")
-
-    
-    (:script
-     :type "text/javascript"
-      :src "https://code.jquery.com/jquery-3.3.1.min.js"
-      :integrity "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-      :crossorigin "anonymous")
-
-    (:script
-     :type "text/javascript"
-     :src "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
-     :ingegrity "sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
-     :crossorigin "anonymous")
-
-    (:script
-     :type "text/javascript"
-     :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js")
+      (:link :rel "stylesheet"
+	     :href "https://use.fontawesome.com/releases/v5.6.0/css/all.css"
+	     :integrity "sha384-aOkxzJ5uQz7WBObEZcHvV5JvRW3TUc2rNPA7pe3AwnsUohiw1Vj2Rgx2KSOkF5+h"
+	     :crossorigin "anonymous")
 
     
+      (:script
+       :type "text/javascript"
+       :src "https://code.jquery.com/jquery-3.3.1.min.js"
+       :integrity "sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+       :crossorigin "anonymous")
+
+      (:script
+       :type "text/javascript"
+       :src "https://stackpath.bootstrapcdn.com/bootstrap/4.1.2/js/bootstrap.min.js"
+       :ingegrity "sha384-o+RDsa0aLu++PJvFqy8fFScvbHFLtbvScb8AjopnFD+iEQ7wo/CG0xlczd+2O/em"
+       :crossorigin "anonymous")
+
+      (:script
+       :type "text/javascript"
+       :src "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js")
+
+      
+      (cl-who:str (and header-css ""))
+      (cl-who:str (and header-js "")))
      
      (:body
-      
       (:input :type "hidden" :id "contextid" :value (context-id *context*))
-
 
       (:div :class "container"
 	    (cl-who:str body))
-      
-     
-
-
-      
-     
-
-
-
-      )))))
+       
+      (cl-who:str (and footer-js ""))))))
 
 
 (defun check-user-access ()
@@ -1544,7 +1542,7 @@
 
     (dolist (object (gethash :import-data (cache *context*)))
       
-      (persist-item (item-collection object) object ))))
+      (persist-object (item-collection object) object ))))
 
 (defun render-set-password ()
   (with-html-string
@@ -1668,12 +1666,16 @@
   (let ((context-spec (get-context-spec-x context-spec-name)))
     
     (cond ((not context-spec)
-	   (check-user-access)
-	   (with-html-string
-	     "<!doctype html>"
-	     (cl-who:str (render-page system
-				      "Context not defined."
-				      :menu-p t))))
+	   ;;(check-user-access)
+	   (if (current-user)
+	       (with-html-string
+		 "<!doctype html>"
+		 (cl-who:str (render-page system
+					  "Context not defined."
+					  :menu-p t)))
+	       (with-html-string
+		 "<!doctype html>"
+		 (cl-who:str "Context not defined."))))
 	  ((not (empty-p (getx context-spec :collection)))
 	   (check-user-access)
 	   
@@ -1747,6 +1749,7 @@
 				      (render-set-password)
 				      :menu-p t))))
 	  ((string-equal (getx context-spec :name) "login")
+
 	   (with-html-string
 	     
 	     (cl-who:str (render-page system

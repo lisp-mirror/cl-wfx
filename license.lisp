@@ -108,7 +108,7 @@
 			     :license-date (format-date (get-universal-time))
 			     :license-status :active)))
 	
-	(persist-item (core-collection "licenses") license)
+	(persist-object (core-collection "licenses") license)
 	
 	(init-license-universe system
 			       (getx license :license-code)))
