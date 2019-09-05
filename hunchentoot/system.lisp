@@ -40,7 +40,7 @@ other web components wfx currates the list of action parameter values that it tr
 action-parameter-allowed-values gives the consumer of wfx the opportunity to add to the curated 
 list of action parameter values. ")
    (action-parameters
-    :initarg :action-parameter-allowed-values
+    :initarg :action-parameters
     :accessor action-parameters
     :initform nil
     :documentation "Page submits by wfx need to be assigned an action-handler, wfx uses the 'wfxaction' parameter
