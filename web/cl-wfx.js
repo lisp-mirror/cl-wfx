@@ -177,6 +177,34 @@ function prep_codemirror_css () {
     
 }
 
+
+function prep_codemirror_html () {
+    $(document).ready(function() {
+        $('.wfx-html-code').each(function(i,textarea) {
+            if (textarea.style.display != "none"){
+     		var editor = CodeMirror.fromTextArea(textarea, {
+                    lineNumbers: true,
+                    smartIndent: true,
+          	    autoCloseBrackets: true,
+ 		    showTrailingSpace: true,
+                    matchBrackets: true,
+		    extraKeys: {"Ctrl-Space": "autocomplete"},
+          	    mode: "text/html"});
+		
+		editor.display.wrapper.style.fontSize = "12px";
+		editor.refresh();
+		
+		function updateTextArea() {
+		    editor.save();
+		}
+		
+		editor.on('change', updateTextArea);
+	    }
+	});});
+    
+}
+
+
 function prep_file_upload () {
     $(document).ready(function() {
         $(".file-upload").each(function (i,file) {
@@ -394,6 +422,7 @@ function ajax_render (script_name, renderer, id, args) {
 			   prep_codemirror_lisp();
 			   prep_codemirror_js();
 			   prep_codemirror_css();
+			   prep_codemirror_html();
 			   prep_elements();
 
                            if (json[1]) {
@@ -414,6 +443,7 @@ function get_values(widget, tag_name, disabled) {
 
         if (element.name && (disabled || !element.disabled))
         {
+	   
             if (tag_name == 'input')
             {
                 if (element.type == 'checkbox')
@@ -430,6 +460,7 @@ function get_values(widget, tag_name, disabled) {
                     result.push([element.name, element.value]);
                 }
             } else if (element.id && tag_name == 'textarea') {
+	
                 result.push([element.name, element.value]);
             }
             else
@@ -461,7 +492,7 @@ function get_form_values(form_id, disabled) {
     var widget = find_widget(form_id);
     var input_types = ['input', 'select', 'textarea'];
 
-    
+   
     if (widget) {
         //tinyMCE.triggerSave();
         save_scripts();
@@ -469,6 +500,7 @@ function get_form_values(form_id, disabled) {
         for (var i = 0; i < input_types.length; i++){
             result = result.concat(get_values(widget, input_types[i], disabled));
 	}
+	 
         return result;
     }
 }

@@ -63,6 +63,10 @@
 			   &key default-value &allow-other-keys)
   (print-item-blob* field item :default-value default-value))
 
+(defmethod print-item-val ((type (eql :html)) field item
+			   &key default-value &allow-other-keys)
+  (print-item-blob* field item :default-value default-value))
+
 (defmethod print-item-val ((type (eql :java-script)) field item
 			   &key default-value &allow-other-keys)
   (print-item-blob* field item :default-value default-value))
@@ -705,6 +709,36 @@
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-css-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :required (if (getf field :key-p)
+			 "required")
+	   (cl-who:str
+	    (or
+	     (parameter name)
+	     (print-item-val 
+	      type
+	      field 
+	      item))))))))
+
+(defmethod render-input-val ((type (eql :html)) field item
+			     &key &allow-other-keys)
+  (let ((name (getf field :name)))
+    
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-html-code"
+	   :id name
+	   :name name :cols 50 :rows 10
+	   :disabled "disabled"
+	   (cl-who:str (print-item-val 
+			type
+			field 
+			item))))
+	(with-html-string
+	  (:textarea 
+	   :class "form-control wfx-html-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :required (if (getf field :key-p)

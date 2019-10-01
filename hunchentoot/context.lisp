@@ -734,6 +734,14 @@
       )
 
     (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/xml/xml.js"
+      )
+
+    (:script
+      :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/htmlmixed/htmlmixed.js"
+      )
+
+    (:script
       :src "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.44.0/mode/css/css.js"
       )
 
@@ -930,6 +938,33 @@
  		showTrailingSpace: true,
                 matchBrackets: true,
           	mode: \"text/css\"
+	});
+        editor.display.wrapper.style.fontSize = \"12px\";
+        editor.refresh();
+
+	function updateTextArea() {
+	    editor.save();
+	}
+	
+	editor.on('change', updateTextArea);
+    }
+});")
+	     )
+
+    (:script :type "text/javascript"
+	     (cl-who:str "$(document).ready(function(){
+	
+    var code = $(\".wfx-html-code\")[0];
+
+    if(code){
+
+	var editor = CodeMirror.fromTextArea(code, {
+	     lineNumbers: true,
+                smartIndent: true,
+          	autoCloseBrackets: true,
+ 		showTrailingSpace: true,
+                matchBrackets: true,
+          	mode: \"text/html\"
 	});
         editor.display.wrapper.style.fontSize = \"12px\";
         editor.refresh();

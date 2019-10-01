@@ -315,7 +315,8 @@ is replaced with replacement."
 			 ("'" "-")
 			 ("\"" "-")
 			 ("," "-")
-			 (" " "-"))))))
+			 (" " "-")
+			 (":" "-"))))))
 
 #|
 (defun plural-name (name)

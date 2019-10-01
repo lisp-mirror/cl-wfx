@@ -28,9 +28,6 @@
 (defgeneric action-handler (action context request
 				&key &allow-other-keys))
 
-
-
-
 (defmethod process-sys-request ((system hunch-system)
 				(context context) 
 				(request hunch-request)

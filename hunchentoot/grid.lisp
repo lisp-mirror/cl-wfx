@@ -1160,6 +1160,8 @@
 	   (cl-who:str val))
 	  ((or (equalp (complex-type field) :lambda)
 	       (equalp (complex-type field) :lisp-code)
+	       (equalp (complex-type field) :css)
+	       (equalp (complex-type field) :html)
 	       (equalp (complex-type field) :java-script))
 	   (cl-who:htm
 	    (:textarea :readonly "readonly" :style "width:100%;"
