@@ -189,7 +189,8 @@ Dont set manually use with-system macro.")
 		(eval object)
 	      
 	      (error (c)
-		(log-eval c nil (sb-debug:list-backtrace)))))))
+		(log-eval c nil (sb-debug:list-backtrace))
+		(error c))))))
 
 
 (defun load-blob% (blob)
@@ -220,13 +221,18 @@ Dont set manually use with-system macro.")
   (handler-case
       (apply function arg arguments)
     (error (c)
-      (log-eval c nil (sb-debug:list-backtrace)))))
+      
+      (log-eval c nil (sb-debug:list-backtrace))
+      (error c)
+      )))
 
 (defun funcall% (function &rest arguments)
   (handler-case
       (apply  function (car arguments) (cdr arguments))
     (error (c)
-      (log-eval c nil (sb-debug:list-backtrace)))))
+      
+      (log-eval c nil (sb-debug:list-backtrace))
+      (error c))))
 
 
 ;;#############################STRINGS

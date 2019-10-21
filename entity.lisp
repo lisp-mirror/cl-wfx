@@ -87,15 +87,14 @@
 
 (defun match-entity (item)
 
-  (let ((data-type-def (get-data-type (item-store item)
-					(item-data-type item))))
-      
+  (let ((data-type-def (if (stringp (item-data-type item))
+			   (get-data-type (item-store item)
+					  (item-data-type item))
+			   (item-data-type item))))
     (cond ((not (getx (active-user) :selected-entities))
-	   
 	   (when  (getx (current-user) :super-user-p)
 	     item))
-	  ((equalp (item-data-type item) "entity")
-	  
+	  ((equalp (name data-type-def) "entity")
 	   (find (item-hash item)
 		 (getx (active-user) :selected-entities)
 		 :test #'equalp))
@@ -109,7 +108,6 @@
 		 (when  (getx (current-user) :super-user-p)
 		   item))))
 	  ((exists-p item :entity)
-
 	   (if (getx item :entity)
 	       (find (item-hash (getx item :entity))
 		     (getx (active-user) :selected-entities)

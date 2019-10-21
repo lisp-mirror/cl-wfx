@@ -298,7 +298,6 @@ that override others to the correct level."
 				    (if query
 					(funcall query item)
 					item)))))
-	    
 	    (setf items
 		  (append-items
 		   items
@@ -307,6 +306,7 @@ that override others to the correct level."
 		  (append-items
 		   other-items
 		   others))))))
+    
   
     (values (first items) (rest items) other-items)))
 

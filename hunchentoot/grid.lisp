@@ -86,8 +86,10 @@
 				  (funcall value-func option)
 				  option)))))))))))
 
+
+
 (defmethod render-input-val ((type (eql :value-list)) field item
-			     &key &allow-other-keys)
+			     &key parent-item hierarchy &allow-other-keys)
   (let* ((name (getf field :name))
 	 (list (or
 		(and (dig field :db-type :values-lambda)
@@ -97,8 +99,8 @@
 	  
 	 (selected ))
     
-    (if (functionp list)
-	(setf list (funcall (eval% (dig field :db-type :values-lambda)) item)))
+    (when (functionp list)      
+	(setf list (funcall (eval% (dig field :db-type :values-lambda)) item parent-item hierarchy)))
 
   
     (setf selected (find (getfx item field) list :test #'equalp))
@@ -115,7 +117,7 @@
 			       (eval% (dig field :db-type :values-lambda)))
 			      ((equalp (first (dig field :db-type :values-lambda))
 				       'cl:lambda)
-			 
+			       (break "render-input-val-x ??? value-lambda")
 			       )))
 		   (dig field :db-type :values)))
 	 (selected (find (getfx item field) list :test #'equalp)))
@@ -278,7 +280,8 @@
 		      (funcall
 		       (eval% (getf field :filter))
 		       itemx
-		       edit-item)
+		       edit-item
+		       (getcx (dig field :db-type :data-type) :edit-object))
 		      t))))
 	      
 	(container-accessors (dig field :db-type :container-accessor))
@@ -293,13 +296,15 @@
 	(setf list (pushnew (accessor-value list-item container-accessors) list))))
 
 
-    (when  (dig field :db-type :container-fetch) 
+    (when (dig field :db-type :container-fetch)
+      
       (dolist (list-item list-containers)
 	(setf list
 	      (append list (funcall
 			    (eval% (dig field :db-type :container-fetch))
 			    (accessor-value list-item container-accessors)
-			    edit-item)))))
+			    edit-item
+			    (getcx (dig field :db-type :data-type) :edit-object))))))
 
     (sort (copy-list list) #'string<
 	  :key (lambda (item)
@@ -331,7 +336,11 @@
 		   :hierarchy hierarchy)))))
 
 
-
+(defun find-in-hierarchy (data-type hierarchy)
+  (dolist (hierarchy-item hierarchy)
+    (when (string-equal (getf hierarchy-item :data-type)
+			data-type)
+      (return-from find-in-hierarchy (getf hierarchy-item :item)))))
 
 (defmethod render-input-val ((type (eql :collection)) field item 
 			     &key data-type hierarchy &allow-other-keys)
@@ -344,7 +353,8 @@
 			    (funcall
 			     (eval% (getf field :filter))
 			     itemx
-			     item)
+			     item
+			     hierarchy)
 			    t))))
 	 (selected (find (getx item name)  
 			 list :test #'equalp))
@@ -1349,7 +1359,10 @@
 				     :query (lambda (item)
 					     (if (getf sub :filter)
 						 (funcall
-						  (eval% (getf sub :filter)) item (first (last (car hierarchy))))
+						  (eval% (getf sub :filter))
+						  item
+						  (first (last (car hierarchy)))
+						  hierarchy)
 						 item)))
 				    fields))))))))))
 
@@ -2491,7 +2504,8 @@
 					 (funcall
 					  (eval% (getf field :filter))
 					  item
-					  (getcx data-type :edit-item) )
+					  (getcx data-type :edit-item)
+					  (getcx data-type :edit-object))
 					 t)
 			     			  
 				     (or
@@ -2749,19 +2763,22 @@
 (defun synq-value (field edit-item parent-item value)
   (cond ((equalp (complex-type field) :collection)
 	 (setf (getfx edit-item field)
-	       (wfx-query-context-data-object
-		(dig field :db-type :collection)
-		:query (lambda (item)
-			(string-equal (frmt "~A" (item-hash item))
-				      (frmt "~A" value))))))
+		 (wfx-query-context-data-object
+			(dig field :db-type :collection)
+			:query (lambda (item)
+				 (string-equal (frmt "~A" (item-hash item))
+					       (frmt "~A" value))))))
 	
 	((equalp (complex-type field) :collection-contained-item)
 	 (setf (getfx edit-item field)
-	       (find-contained-item
-		value
-		(fetch-contained-item-list
-		 field
-		 edit-item))))
+	       (if (not (empty-p value))
+		   (progn
+		     
+		     (find-contained-item
+		      value
+		      (fetch-contained-item-list
+		       field
+		       edit-item))))))
 	
 	((equalp (complex-type field) :contained-item)
 	 (setf (getfx edit-item field)
@@ -2787,6 +2804,7 @@
 (defun validate-value (field field-name edit-item parent-item value)
   (if (equalp (complex-type field) :item)
       (cond ((equalp (complex-type field) :collection)
+	     (break "~A"(parameter field-name) )
 	     (validate-sfx
 	      (complex-type field)
 	      field 
@@ -2804,11 +2822,7 @@
 			   edit-item 
 			   (parameter field-name)
 			   :items
-			   (fetch-contained-item-list field edit-item )
-			   
-			   ))
-
-	    
+			   (fetch-contained-item-list field edit-item )))
 	    ((equalp (complex-type field) :contained-item)
 	     (validate-sfx (complex-type field)
 			   field 
@@ -2816,8 +2830,7 @@
 			   (parameter field-name)
 			   :items
 			   (accessor-value parent-item
-				(digx field :db-type :container-accessor))
-			   ))
+				(digx field :db-type :container-accessor))))
 	    ((getf field :validation)
 	     (if (functionp (getf field :validation))
 		 (funcall (eval% (getf field :validation)) edit-item value)))
@@ -2826,6 +2839,7 @@
       (list t nil)))
 
 (defun synq-item-values (data-type fields parent-item edit-item)
+  
   (dolist (field fields)
 
     (when (and (digx field :attributes :editable)
@@ -2842,20 +2856,20 @@
 					 (parameter (string-downcase field-name))
 					 (parameter field-name)))
 			(list t nil))))
-	      
+
+	
 	(unless (first valid)
-	  
 	  (pushnew 
 	   (list field-name (second valid))
 	   (getcx data-type :validation-errors)))
 	      
 	(when (first valid)
-	  
 	  (synq-value field edit-item parent-item
 		      (or (parameter (string-downcase field-name))
 			  (parameter field-name))))))	  
   
-    (when (getf field :key-p)	   
+    (when (getf field :key-p)
+      
       (when (empty-p (parameter (getf field :name)))
 	(pushnew
 	 (frmt "Key values may not be blank. (~A)~%" (getf field :name))
@@ -2990,7 +3004,8 @@
 
 	
 	(when (dig (getcx data-type :data-type) :data-type :client-validation)
-	    (let ((valid (funcall (eval% (dig (getcx data-type :data-type) :data-type :client-validation))
+	  (let ((valid (funcall (eval% (dig (getcx data-type :data-type)
+					    :data-type :client-validation))
 				  root-item
 				  edit-item)))
 	      (unless (first valid)
@@ -2998,22 +3013,30 @@
 		(pushnew 
 		 (list data-type (second valid))
 		 (getcx data-type :validation-errors)))))
-
+        
 	(unless (getcx data-type :validation-errors)
-
+          
+	  (handler-case (synq-item-values data-type fields parent-item edit-item)
+	    (error (c)
+              (break "~S" c)
+	      (pushnew 
+	       (list data-type (cl-who:escape-string  (frmt "~S" c)))
+		 (getcx data-type :validation-errors))
+	      
+	      ))
 	  
-	  (synq-item-values data-type fields parent-item edit-item)
+          
+	  (unless (getcx data-type :validation-errors)
+                  
+		  (move-uploaded-file fields edit-item)   
+		  
+		  (grid-append-child data-type parent-slot parent-item
+				     edit-item)
 
-	  
-	  (move-uploaded-file fields edit-item)   
-	  
-	  (grid-append-child data-type parent-slot parent-item
-			     edit-item)
+		  
+		  (grid-persist-object data-type root-item)
 
-	  
-	  (grid-persist-object data-type root-item)
-
-	  (fire-context-event context :save root-item edit-item))
+		  (fire-context-event context :save root-item edit-item)))
 	
 
 	))))
