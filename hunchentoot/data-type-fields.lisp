@@ -184,9 +184,59 @@
 			   &key default-value &allow-other-keys)
   (print-item-val-a* field item :default-value default-value))
 
+(defmethod print-item-val ((type (eql :date-time)) field item
+			   &key default-value &allow-other-keys)
+  (let* ((*print-case* :downcase)
+	 (val (if item (getfx item field)))
+	 (accessors (if (listp (getf field :db-type))
+			(dig field :db-type :accessor)))
+	 (accessor-val (if accessors
+				  (accessor-value
+				   val
+				   accessors)
+				  val))
+	 (final-val (if val
+			(frmt "~A"
+			      (if (typep val 'local-time:timestamp)
+				  (progn                                         
+				    (local-time:format-timestring
+				     nil
+				     accessor-val
+				     :format
+				     '((:year 4) #\- (:month 2) #\- (:day 2)
+				        #\T (:hour 2) #\: (:min 2))
+				     ))
+				  accessor-val)
+			      
+			      )
+			(if default-value
+			    default-value
+			    ""))) )
+    
+     final-val))
+
 (defmethod print-item-val ((type (eql :date)) field item
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  
+  (let* ((*print-case* :downcase)
+	 (val (if item (getfx item field)))
+	 (accessors (if (listp (getf field :db-type))
+			(dig field :db-type :accessor)))
+	 (final-val (if val
+			(frmt "~A" (if accessors
+				       (accessor-value (if (typep val 'local-time:timestamp)
+							   (local-time:format-timestring
+							    local-time:+iso-8601-date-format+ val)
+							   val)
+						       accessors)
+				       val))
+			(if default-value
+			    default-value
+			    ""))) )
+    
+     final-val)
+  
+  )
 
 (defmethod print-item-val ((type (eql :time)) field item
 			   &key default-value &allow-other-keys)
@@ -577,6 +627,43 @@
 		       :default-value
 		       (item-default-val* field item))
 		      ))))))
+
+
+(defmethod render-input-val ((type (eql :date-time)) field item
+			     &key &allow-other-keys)
+  
+  (let ((name (getf field :name)))
+    (if (not (digx field :attributes :editable))
+	(with-html-string
+	  (:input :class "form-control "
+		  :id name
+		  :name name 
+		  :type "datetime-local"		 
+		  :value
+		  (print-item-val 
+			       type
+			       field 
+			       item
+			       :default-value
+			       (item-default-val* field item))
+		  :disabled "disabled"))
+	(with-html-string
+	  (:input :class "form-control date"
+		  :id name
+		  :name name 
+		  :type "datetime-local"
+		  :required (if (getf field :key-p)
+				"required")
+		  :value
+		  (or
+		   (parameter name)
+		   (print-item-val 
+		    type
+		    field 
+		    item
+		    :default-value
+		    (item-default-val* field item))
+		   ))))))
 
 (defmethod render-input-val ((type (eql :date)) field item
 			     &key &allow-other-keys)

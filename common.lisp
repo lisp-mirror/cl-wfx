@@ -1,10 +1,7 @@
 (in-package :cl-wfx)
 
-#|
-(declaim (inline frmt))
-(defun frmt (control-string &rest args)
-  (apply #'format nil control-string args))
-|#
+;;Enable ISO 8601 date-time
+(local-time:enable-read-macros)
 
 (defparameter *log-shit-p* nil)
 
@@ -323,6 +320,7 @@ is replaced with replacement."
 			 ("," "-")
 			 (" " "-")
 			 ("“" "")
+			 ("\"" "")
 			 ("." "-")
 			 ("?" "")
 			 ("--" "-")
@@ -544,4 +542,5 @@ is replaced with replacement."
 
 
 ;;########################################list manipulation
+
 

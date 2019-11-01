@@ -20,6 +20,7 @@
 	       "cl-smtp"
 	       "sandbox"
 	       "csv-parser"
+	       "local-time"
 	      ;; "postoffice"
 	       )
   :components ((:file "packages")
