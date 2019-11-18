@@ -166,43 +166,43 @@
 
   
   (let* ((sys-mod (get-module (core-store) "Core"))
-	(contexts (list
-			      ;;  (get-context-spec "theme")
-			      ;;(get-context-spec "Allsorts")
+	 (contexts (list
+		    ;;  (get-context-spec "theme")
+		    ;;(get-context-spec "Allsorts")
 			      
-			      ;; (get-context-spec "repl")
-			      ;;(get-context-spec "Data Specs")
-			      (get-context-spec (core-store ) "Context Specs")
-			      ;;  (get-context-spec "report")
-			      ;; (get-context-spec "report-view")
-			      (get-context-spec (core-store ) "Modules")
-			      (get-context-spec (core-store ) "Licenses")
-			      (get-context-spec (core-store ) "Entities")
-			      (get-context-spec (core-store ) "Named Lists")
-			      (get-context-spec (core-store ) "Users")
-			      (get-context-spec (core-store ) "License Users")
-			      (get-context-spec (core-store ) "Lambdas")
-			      (get-context-spec (core-store ) "Packages")
-			      (get-context-spec (core-store ) "Java Scripts")
-			      (get-context-spec (core-store ) "Stylesheets")
+		    ;; (get-context-spec "repl")
+		    ;;(get-context-spec "Data Specs")
+		    (get-context-spec (core-store ) "Context Specs")
+		    ;;  (get-context-spec "report")
+		    ;; (get-context-spec "report-view")
+		    (get-context-spec (core-store ) "Modules")
+		    (get-context-spec (core-store ) "Licenses")
+		    (get-context-spec (core-store ) "Entities")
+		    (get-context-spec (core-store ) "Named Lists")
+		    (get-context-spec (core-store ) "Users")
+		    (get-context-spec (core-store ) "User Profiles")
+		    (get-context-spec (core-store ) "License Users")
+		    (get-context-spec (core-store ) "Lambdas")
+		    (get-context-spec (core-store ) "Packages")
+		    (get-context-spec (core-store ) "Java Scripts")
+		    (get-context-spec (core-store ) "Stylesheets")
 			     			   
-			      (get-context-spec (core-store ) "Email Accounts")
-			      (get-context-spec (core-store )
-						"Entity Email Accounts")
-			      (get-context-spec (core-store ) "Reports")
-			      (get-context-spec (core-store ) "Entity Reports")
-			      ;; (get-context-spec "import-data")
+		    (get-context-spec (core-store ) "Email Accounts")
+		    (get-context-spec (core-store ) "Entity Email Accounts")
+		    (get-context-spec (core-store ) "Reports")
+		    (get-context-spec (core-store ) "Entity Reports")
+		    ;; (get-context-spec "import-data")
 			      
-			      ))
-	(menu-items (loop for spec in contexts
-			   when spec
-			   collect (make-item
-				    :data-type "menu-item"
-				    :values
-				    (list
-				     :name (digx spec :name)
-				     :context-spec
-				     spec)))))
+		    ))
+	 (menu-items (loop for spec in contexts
+			when spec
+			collect (make-item
+				 :data-type "menu-item"
+				 :values
+				 (list
+				  :name (digx spec :name)
+				  :context-spec
+				  spec)))))
 
     (setf menu-items (append menu-items
 			     (list
@@ -210,7 +210,7 @@
 			       :data-type "menu-item"
 			       :values
 			       (list
-				:name "REPL"
+				:name "Import"
 				:context-spec 
 				(get-context-spec (core-store )
 						  "Import")))			      
@@ -265,17 +265,17 @@
 	    (remove-if #'not contexts))
       
       (setf (getf sys-mod :menu)
-	      (list (make-item
-		     :data-type "menu-item"
-		     :values
-		     (list :name "System"
-			   :menu-items  menu-items)))))
+	    (list (make-item
+		   :data-type "menu-item"
+		   :values
+		   (list :name "System"
+			 :menu-items  menu-items)))))
 
     (setf sys-mod (persist-object (core-collection "modules") sys-mod))
     
     (setup-file-upload *system*)
     
-   )
+    )
   (call-next-method))
 
 

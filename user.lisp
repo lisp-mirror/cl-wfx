@@ -113,8 +113,7 @@
 				      :mrs
 				      :miss
 				      :prof
-				      :dr
-				      ))
+				      :dr))
 	     :attributes (:display t :editable t)
 	     :documentation "")
       (:name :name
@@ -478,8 +477,6 @@ must be valid email to enable confirmation.")
 
 (defmethod match-entities ((user item) license-code entities)
   (intersection (available-entities license-code) entities))
-
-
 
 (defun user-context-permission-p (context permission)
   (let ((permission-p)

@@ -18,9 +18,14 @@
    (web-folder :initarg :web-folder
 	       :accessor web-folder
 	       :initform "/web/")
+   
    (system-web-folder :initarg :system-web-folder
 		      :accessor system-web-folder
-	       :initform "/web/")
+		      :initform "/web/")
+   (system-email :initarg :system-email
+	       :accessor system-email
+	       :initform nil
+	       :documentation "Used to send system mails, like password reset codes.")
    (universe :initarg :universe
 	     :accessor universe
 	     :initform (make-instance 'wfx-universe :location "~/data-universe/")

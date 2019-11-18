@@ -396,7 +396,7 @@
 ;; that have a system/core function ie destination
 (defun system-context-p (context)
   (if (find (name *system*) (getx (active-user) :selected-licenses) :test 'equalp)
-      (if (getx  context :collection)
+      (if (getx context :collection)
 	  (or (find :core
 		    (getf (find-collection-def *system* (getx  context :collection))
 			  :destinations)
@@ -535,10 +535,8 @@
 		     (cl-who:str (or selected-value "")))
 
 	   
-	    (when (getx (current-user) :super-user-p)
-	    
-	      (setf list (append (list (name (system-store))) list))
-		)
+	    (when (getx (current-user) :super-user-p)	    
+	      (setf list (append (list (string-capitalize (name (system-store)))) list)))
 	    
 	    (:div :class "dropdown-menu w-100"
 		  (dolist (option list)
@@ -1586,7 +1584,7 @@
 		(:div :class "card"
 		      (:div :class "card-block"
 			    (:h4 :class "card-title"
-				 "Add New User")
+				 "Reset User Password")
 			    (:form :method "post"
 				   :action ""			       
 				   (:input :type "hidden" :id "contextid" 
