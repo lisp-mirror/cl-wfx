@@ -377,8 +377,6 @@ must be valid email to enable confirmation.")
 		    :permissions (or permissions '(:update :delete :search))))
 	     context-permissions))
 
-  
-    
     (dolist (data-type exclude-data-types)	    
 	    (push
 	     (make-item
@@ -393,12 +391,11 @@ must be valid email to enable confirmation.")
       (unless (find code (getx user :license-codes) :test #'equalp)
 	(setf (getx user :license-codes)
 	      (append (getx user :license-codes)
-		      (list code)))
-	(persist-object
-	   (item-collection user)
-	   user))
+		      (list code))))
       
-     ;; 
+     (persist-object
+	   (item-collection user)
+	   user)
       
       (let ((lic-user (get-license-user code email)))
 
@@ -406,6 +403,8 @@ must be valid email to enable confirmation.")
 	(when lic-user
 	  (setf (getx lic-user :permissions) context-permissions)
 	  (setf (getx lic-user :accessible-entities) entities)
+	  (setf (getx lic-user :data-type-permissions) data-type-permissions)
+	  
 	  (persist-object (license-collection code "license-users") lic-user))
 	
 	(unless lic-user	  

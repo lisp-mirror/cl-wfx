@@ -18,6 +18,16 @@
 	     :initform (make-hash-table :test #'equalp)))
   (:documentation "An instance of a context within the current user session."))
 
+(defgeneric context-parameter (parameter))
+
+(defmethod context-parameter (parameter)
+  (if *context*
+      (gethash parameter (cache *context*))))
+
+(defmethod (setf context-parameter) (value parameter)
+  (if *context*
+      (setf (gethash parameter (cache *context*)) value)))
+
 (defgeneric start-context (session context-name &key &allow-other-keys)
   (:documentation "Creates a context instance."))
 

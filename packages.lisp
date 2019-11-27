@@ -56,11 +56,12 @@
    :apply-lambda
 
    ;;### Request
+   :request-parameter
    :action-handler
    :parameter
    
    ;;#### context.lisp
-   
+   :context-parameter
    :context
    :context-id
    :module
@@ -100,6 +101,7 @@
    :start-sys
   
    ;;### Session
+   :session-parameter
    :current-user
    :active-user
 

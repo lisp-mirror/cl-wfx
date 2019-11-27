@@ -266,7 +266,7 @@
       
       (setf (getf sys-mod :menu)
 	    (list (make-item
-		   :data-type "menu-item"
+		   :data-type "menu"
 		   :values
 		   (list :name "System"
 			 :menu-items  menu-items)))))

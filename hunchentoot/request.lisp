@@ -1,6 +1,6 @@
 (in-package :cl-wfx)
 
-(defmethod parameter* (parameter (request hunch-request))
+(defmethod request-parameter* (parameter (request hunch-request))
   (or (hunchentoot:post-parameter parameter (request-object request))
       (hunchentoot:get-parameter parameter (request-object request))))
 

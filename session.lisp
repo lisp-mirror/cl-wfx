@@ -42,6 +42,16 @@
   (:documentation "Sessions are used to handle displaying of ui independantly for different users. A session starts life before a user login so user is added to the session afterwards."))
 
 
+(defgeneric session-parameter (parameter))
+
+(defmethod session-parameter (parameter)
+  (if *session*
+      (gethash parameter (cache *session*))))
+
+(defmethod (setf session-parameter) (value parameter)
+  (if *session*
+      (setf (gethash parameter (cache *session*)) value)))
+
 (defgeneric locale-language (locale))
 
 (defmethod locale-language ((locale locale))
@@ -79,9 +89,9 @@
   (:documentation "Starts a session for the ui."))
 
 (defmethod start-session ((system system) &key)
-  
+
   (let ((session (gethash (hunchentoot:session-id hunchentoot:*session*) 
-			  (sessions system))))
+						    (sessions system))))
     (unless session
       (setf session (make-instance 'session :session-id
 				   (hunchentoot:session-id hunchentoot:*session*)))

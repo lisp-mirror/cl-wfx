@@ -1,5 +1,8 @@
 (in-package :cl-wfx)
 
+(defgeneric parameter (parameter))
+
+
 ;;Enable ISO 8601 date-time
 (local-time:enable-read-macros)
 
@@ -56,12 +59,12 @@ Dont set manually use with-system macro.")
 			    :fill-pointer 0 :adjustable t)))
 
       (with-output-to-string (s lambda-result)
-	(let ((sandbox::*msg-value-prefix* "")
-	      (sandbox::*msg-error-prefix* "")
-	      (sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
-	      (sandbox::*msg-no-value-message* "Nil"))
+	(let ((kunru-sandbox::*msg-value-prefix* "")
+	      (kunru-sandbox::*msg-error-prefix* "")
+	      (kunru-sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
+	      (kunru-sandbox::*msg-no-value-message* "Nil"))
 	  
-	  (sandbox::read-eval-print lambdax  s)
+	  (kunru-sandbox::read-eval-print lambdax  s)
 	  lambda-result))))
 
 
