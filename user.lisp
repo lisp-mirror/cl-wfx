@@ -224,7 +224,7 @@
 	     :attributes (:display t :editable t)
 	     :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
-    :destinations (:core :license))
+    :destinations (:license))
  
    (:collection
     (:name "license-users"
