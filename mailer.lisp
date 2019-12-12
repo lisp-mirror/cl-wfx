@@ -45,19 +45,19 @@
 	     :db-type :string
 	     :attributes (:display t :editable t)
 	     :documentation "")))
-    :destinations (:license))
+    :destinations (:system :license))
 
 
    (:collection
     (:name "email-logs"
      :label "Email Logs"
      :data-type "email-log")
-    :destinations (:license)
+    :destinations (:system :license)
     :access
     (:stores
      (:core
       (:user-levels
-        
+        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
    
    
@@ -90,18 +90,19 @@
 	     :documentation "")
       
       ))
-    :destinations ( :license))
+    :destinations (:system :license))
 
 
    (:collection
     (:name "email-templates"
      :label "Email Templates"
      :data-type "email-template")
-    :destinations (:license)
+    :destinations (:system :license)
     :access
     (:stores
      (:core
       (:user-levels
+       (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
    
    (:data-type
@@ -148,7 +149,7 @@
     (:name "email-accounts"
      :label "Email Accounts"
      :data-type "email-account")
-    :destinations (:license)
+    :destinations (:system :license)
     :access
     (:stores
      (:core
@@ -233,6 +234,7 @@
 (defun send-mail (mail-account to from subject message html-message
 		  &key data cc bcc reply-to extra-headers display-name attachments
 		    bubble-errors-p)
+  
   (let ((*mail-data* data))
     (handler-case
 	(progn

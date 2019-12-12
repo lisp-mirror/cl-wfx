@@ -140,6 +140,17 @@
    :tsa
    :custom-render-context
    :render-page
+
+   ;;### mailer.lisp
+   :*mail-data*
+   :get-email-account
+   :get-entity-email-account
+   :send-mail
+   :get-email-template
+   :send-template-mail-by-description
+   :log-email
+   :send-template-mail
+   
    
    ))
 
