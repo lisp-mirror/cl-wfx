@@ -180,17 +180,23 @@ Dont set manually use with-system macro.")
 			      *package*)))
 	      (eval-blob% (getx object :code))))
 	   ((stringp object)
-	    (read-eval object))
+	    (let ((*package* (or (and package-name (or (find-package package-name)
+						       (make-package package-name)))
+				 *package*)))
+	      (read-eval object)))
 	   (t
 	    (clear-eval-log)
-	    
-	    (handler-case
+	    (let ((*package* (or (and package-name (or (find-package package-name)
+						       (make-package package-name)))
+				 *package*)))
+              
+	      (handler-case
+		  
+		  (eval object)
 		
-		(eval object)
-	      
-	      (error (c)
-		(log-eval c nil (sb-debug:list-backtrace))
-		(error c))))))
+		(error (c)
+		  (log-eval c nil (sb-debug:list-backtrace))
+		  (error c)))))))
 
 
 (defun load-blob% (blob)

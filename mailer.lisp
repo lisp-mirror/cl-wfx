@@ -231,6 +231,9 @@
 	    (string-equal (getx item :email) email))))
 
 
+
+
+
 (defun send-mail (mail-account to from subject message html-message
 		  &key data cc bcc reply-to extra-headers display-name attachments
 		    bubble-errors-p)
@@ -275,6 +278,7 @@
 	  
 	  nil)
       (error (c)
+	(break "~A" c)
 	(if bubble-errors-p
 	    (error c)
 	    (princ-to-string c))))))
@@ -289,9 +293,9 @@
    :query (lambda (item)
 	    (string-equal (getx item :description) description))))
 
-(defun send-template-mail-by-description (description)
+(defun send-template-mail-by-description (description &key data)
   (let ((template (get-email-template description)))
-    (send-template-mail template)))
+    (send-template-mail template :data data)))
 
 (defun log-email (email-account email-template to status error)
   (let ((collection (wfx-get-collection "email-logs")))
@@ -307,16 +311,18 @@
 			      :error error))
      :collection (wfx-get-collection "email-logs"))))
 
-(defun send-template-mail (template)
+(defun send-template-mail (template &key data)
   (let ((*email-account* (getx template :email-account))
 	(*email-template* template)
+	(*mail-data* data)
 	(email))
 
-    (when (and *email-account* (getx template :send-script))
+    
+    (when (and *email-account* (getx template :email-script))
       (setf email (eval% (getx template :email-script)))
       (when email
 	(handler-case
-	    (progn
+	    (progn              
 	      (send-mail
 	       *email-account*
 	       (getx email :to)
@@ -324,13 +330,15 @@
 	       (getx email :subject)
 	       (getx email :message)
 	       (getx email :html-message)
-	       (getx email :cc)
-	       (getx email :bcc)
-	       (getx email :reply-to)
-	       (getx email :display-name))
+	       :cc (getx email :cc)
+	       :bcc (getx email :bcc)
+	       :reply-to (getx email :reply-to)
+	       :display-name (getx email :display-name)
+	       :data data )
 
 	      (log-email (getx template :email-account) (getx template :description)
 			 (getx email :to) :sent  nil))
 	  (error (c)
+	    
 	    (log-email (getx template :email-account) (getx template :description)
 		       (getx email :to) :error  c)))))))

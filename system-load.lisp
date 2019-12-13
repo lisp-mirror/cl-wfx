@@ -136,6 +136,20 @@
 		    :for-everyone t 
 		    :collection "entity-email-accounts"
 		    :icon "fa-envelope"))
+
+  (persist-object (core-collection "context-specs")
+		  '(:name "Email Templates"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "email-templates"
+		    :icon "fa-edit"))
+
+  (persist-object (core-collection "context-specs")
+		  '(:name "Email Logs"
+		    :permissions (:update :delete)
+		    :for-everyone t 
+		    :collection "email-Logs"
+		    :icon "fa-archive"))
   
   (persist-object (core-collection "context-specs")
 		  '(:name "Reports"
@@ -172,23 +186,33 @@
 			      
 		    ;; (get-context-spec "repl")
 		    ;;(get-context-spec "Data Specs")
+		    (get-context-spec (core-store ) "Named Lists")
 		    (get-context-spec (core-store ) "Context Specs")
 		    ;;  (get-context-spec "report")
 		    ;; (get-context-spec "report-view")
 		    (get-context-spec (core-store ) "Modules")
 		    (get-context-spec (core-store ) "Licenses")
 		    (get-context-spec (core-store ) "Entities")
-		    (get-context-spec (core-store ) "Named Lists")
+		    :divider
+		    
 		    (get-context-spec (core-store ) "Users")
 		    (get-context-spec (core-store ) "User Profiles")
 		    (get-context-spec (core-store ) "License Users")
+
+		    :divider
+		    
 		    (get-context-spec (core-store ) "Lambdas")
 		    (get-context-spec (core-store ) "Packages")
 		    (get-context-spec (core-store ) "Java Scripts")
 		    (get-context-spec (core-store ) "Stylesheets")
-			     			   
+
+		    :divider
+		    
 		    (get-context-spec (core-store ) "Email Accounts")
 		    (get-context-spec (core-store ) "Entity Email Accounts")
+		    (get-context-spec (core-store ) "Email Templates")
+		    (get-context-spec (core-store ) "Email Logs")
+		     :divider
 		    (get-context-spec (core-store ) "Reports")
 		    (get-context-spec (core-store ) "Entity Reports")
 		    ;; (get-context-spec "import-data")
@@ -198,11 +222,11 @@
 			when spec
 			collect (make-item
 				 :data-type "menu-item"
-				 :values
-				 (list
-				  :name (digx spec :name)
-				  :context-spec
-				  spec)))))
+				 :values (list
+					  :name (if (item-p spec)
+						    (digx spec :name)
+						    :divider)
+					  :context-spec spec)))))
 
     (setf menu-items (append menu-items
 			     (list

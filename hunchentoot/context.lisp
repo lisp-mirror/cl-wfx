@@ -313,22 +313,27 @@
 				     (digx item :context-spec)))
 
 			    (when (system-context-p (digx item :context-spec))
-			      (cl-who:htm
-			       
-			       (:a :class "dropdown-item"
-				   :href 
-				   (if parameters
-				       (frmt "~A&~A" 
-					     (context-url 
-					      (digx item :context-spec :name))
-					     parameters)
-				       (context-url 
-					(digx item :context-spec :name)))
-				   (:i	:class (frmt "fa far fab ~A"
-						     (digx item :context-spec :icon))
-					:style "width:25px;")
-				   " "
-				   (cl-who:str (digx item :name)))))))))))))))
+			      (when (equalp (digx item :context-spec) :divider)
+				(cl-who:htm (:div :class "dropdown-divider")))
+
+
+			      (unless (equalp (digx item :context-spec) :divider)
+				 (cl-who:htm
+				  (:a :class "dropdown-item"
+				      :href 
+				      (if parameters
+					  (frmt "~A&~A" 
+						(context-url 
+						 (digx item :context-spec :name))
+						parameters)
+					  (context-url 
+					   (digx item :context-spec :name)))
+				      (:i	:class (frmt "fa far fab ~A"
+							     (digx item :context-spec :icon))
+						:style "width:25px;")
+				      " "
+				      (cl-who:str (digx item :name)))))
+			      )))))))))))
 
 (defun render-header-display (text)
   (with-html-string
@@ -395,17 +400,19 @@
 ;;When super-user has selected the system license then exclude grids which dont have collections
 ;; that have a system/core function ie destination
 (defun system-context-p (context)
-  (if (find (name *system*) (getx (active-user) :selected-licenses) :test 'equalp)
-      (if (getx context :collection)
-	  (or (find :core
-		    (getf (find-collection-def *system* (getx  context :collection))
-			  :destinations)
-		    :test 'equalp)
-	      (find :system
-		    (getf (find-collection-def *system* (getx  context :collection))
-			  :destinations)
-		    :test 'equalp)))
-      t))
+  (if (equalp context :divider)
+      t
+      (if (find (name *system*) (getx (active-user) :selected-licenses) :test 'equalp)
+	  (if (getx context :collection)
+	      (or (find :core
+			(getf (find-collection-def *system* (getx  context :collection))
+			      :destinations)
+			:test 'equalp)
+		  (find :system
+			(getf (find-collection-def *system* (getx  context :collection))
+			      :destinations)
+			:test 'equalp)))
+	  t)))
 
 (defun render-menu-item (item)
   (with-html-string
