@@ -1048,7 +1048,7 @@
 		 (cl-who:str body)))
 	  (cl-who:htm
 	   (unless (active-user)
-	     (hunchentoot:redirect (frmt "~Acor/login" (site-url system))))
+	     (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url system))))
 	   (:div :class "wrapper"
 		 (cl-who:str (render-left-user-menu))
 		 
@@ -1715,7 +1715,7 @@
 					  :menu-p t)))
 	       (with-html-string
 		 "<!doctype html>"
-		 (cl-who:str "Context not defined."))))
+		 (cl-who:str "Access Denied"))))
 	  ((not (empty-p (getx context-spec :collection)))
 	   (check-user-access)
 	   
@@ -1796,7 +1796,6 @@
 				      (render-login)
 				      :menu-p nil))))
 	  ((not (empty-p (getx context-spec :renderer)))
-	   
 	   (eval%
 	    (getx context-spec :renderer)))
 	  (t

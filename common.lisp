@@ -309,7 +309,7 @@ is replaced with replacement."
        when pos do (write-string replacement out)
        while pos))))
 
-(defun replace-all-shit (string value-pairs)
+(defun replace-all-list (string value-pairs)
   (let ((new-val string))
     (dolist (value-pair value-pairs)
       (setf new-val (replace-all new-val
@@ -452,7 +452,8 @@ is replaced with replacement."
        (declare (ignore a b c))
        (values year month day)))))
 
-(defvar *month-days* #(31 28 31 30 31 30 31 31 30 31 30 31))
+(defvar *month-days* '(31 28 31 30 31 30 31 31 30 31 30 31))
+
 
 (defun leap-year-p (year)
   (cond
@@ -461,13 +462,24 @@ is replaced with replacement."
     ((zerop (rem year 4)) t)))
 
 
+(defun month-days (month-number year)
+  (if (and (leap-year-p year)
+	   (= month-number 2))
+      29      
+      (nth (1- month-number)
+	   *month-days*)))
+
+
 (defun check-date (date month year)
   ;; Technically, there can be a 31 dec 1899 date, if the time-zone is
   ;; west of GMT, but it's not particularly important.
   (when (and (typep year '(integer 1900))
              (typep month '(integer 1 12))
              (plusp date))
-    (let ((days (svref *month-days* (1- month))))
+    
+    (let ((days ;;(svref *month-days* (1- month))
+	   (month-days month year)
+	   ))
       (cond ((and (= month 2)
                   (leap-year-p year))
              (<= date 29))
