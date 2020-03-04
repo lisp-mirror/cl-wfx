@@ -18,6 +18,7 @@
    :ensure-parse-integer
    :parse-date
    :format-date
+   :format-universal-date-web
    :date-diff
    :replace-all
    :frmt-money

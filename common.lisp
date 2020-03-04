@@ -523,6 +523,16 @@ is replaced with replacement."
           (declare (ignore a b c))
           (build-date year month day)))))
 
+(defun format-universal-date-web (universal-date)
+  (when universal-date
+    (if (stringp universal-date)
+        universal-date
+        (multiple-value-bind (a b c day month year)
+            (decode-universal-time universal-date
+                                   *time-zone*)
+          (declare (ignore a b c))
+          (frmt "~A-~2,'0d-~2,'0d" year month day)))))
+
 (defun format-date (date)
   (if (typep date 'unsigned-byte)
       (format-universal-date date)

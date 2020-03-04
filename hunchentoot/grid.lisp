@@ -807,16 +807,13 @@
 
 					      (unless (equalp (complex-type field)
 							      :item)
-					
-					  
+                                        
 						(cl-who:str
 						 (render-grid-edit-row
 						  data-type name
 						  field label
 						  item parent-item
-						  hierarchy)))
-				      
-					      )))))
+						  hierarchy))))))))
 		    
 			    (dolist (field fields)
 			      (when (and (digx field :attributes :display) 
@@ -2536,6 +2533,9 @@
 			  (trim-whitespace
 			   (accessor-value option accessors)))))))))))))
 
+(defun get-field-accessor (data-type collection)
+  (let ((cl-naive-items::get-data-type ))))
+
 (defun ajax-auto-complete-x (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (let* (
@@ -2626,6 +2626,7 @@
 (defun ajax-grid-edit (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
+  
   (let* ((data-type (string-downcase (parameter "data-type")))
 	 (fields )
 	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
@@ -2653,6 +2654,8 @@
     (when root-item
       (setf edit-objects (list (list :data-type root-type :item root-item)))
 
+      
+      
       (if (> (length hierarchy) 1)
 	  (let ((item)
 		(item-type root-type))
@@ -2677,7 +2680,6 @@
 			      root-item root-type
 			      (reverse edit-objects)))
 	  (progn
-	    
 	    (setf (getcx data-type :edit-object) edit-objects)
 	    (render-grid-edit root-type fields root-item nil nil
 				     (list (list :data-type data-type
