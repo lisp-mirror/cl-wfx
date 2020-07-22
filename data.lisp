@@ -3,9 +3,9 @@
 (defclass wfx-universe (universe)
   ((store-class :initarg :store-class
 		 :accessor store-class
-		 :initform 'item-store
+		 :initform 'document-store
 		 :allocation :class
-		 :documentation "Overriding store class here to influence data-type-class and collection-class.")))
+		 :documentation "Overriding store class here to influence document-type-class and collection-class.")))
 
 (defparameter *core-store-definitions* nil)
 
@@ -17,12 +17,12 @@
   (setf (data-definitions system)
 	(append (data-definitions system) definitions)))
 
-(defclass extended-collection (item-collection)
+(defclass extended-collection (document-collection)
   ((destinations :initarg :destinations
 		    :accessor destinations
 		    :initform nil)))
 
-(defclass extended-data-type (data-type)
+(defclass extended-document-type (document-type)
   ((entity-accessor :initarg :entity-accessor
 		    :accessor entity-accessor
 		    :initform nil)
@@ -30,35 +30,33 @@
 		    :accessor destinations
 		    :initform nil)))
 
-(defun init-data-types (universe destination store-name definitions)
+(defun init-document-types (universe destination store-name definitions)
 
   (dolist (definition definitions)
       (let ((destinations (or (getf definition :destinations)
 			      (list destination))))
 	(when (find destination destinations :test 'equalp)
-	  (let ((data-type-def (getf definition :data-type)))
-	    (when data-type-def
-	      (let ((fields))
-		(dolist (field (getf data-type-def :fields))
+	  (let ((document-type-def (getf definition :type-def)))
+	    (when document-type-def
+	      (let ((elements))
+		(dolist (element (getf document-type-def :elements))
 		  (setf
-		   fields 
-		   (append fields 
+		   elements 
+		   (append elements 
 			   (list (make-instance 
-				  'field
-				  :name (getf field :name)
-				  :key-p (getf field :key-p)
-				  :type-def (getf field :type-def)
-				  :attributes (getf field :attributes))))))
+				  'element
+				  :name (getf element :name)
+				  :key-p (getf element :key-p)
+				  :type-def (getf element :db-type)
+				  :attributes (getf element :attributes))))))
 
-		(add-data-type
+		(add-document-type
 		 (get-store universe store-name)
 		 (make-instance 
-		  'extended-data-type
-		  :name (getf data-type-def :name)
-		  :label (getf data-type-def :label)
-		  :top-level-p
-		  (getf data-type-def :top-level-p)
-		  :fields fields
+		  'extended-document-type
+		  :name (getf document-type-def :name)
+		  :label (getf document-type-def :label)
+		  :elements elements
 		  :destinations
 		  (getf definition :destinations)
 		  :entity-accessor
@@ -75,31 +73,31 @@
 	    
 	    
 	    (when collection-def
-	      (let ((data-type (get-data-type (get-store universe store-name)
-					      (getf collection-def :data-type))))
+	      (let ((document-type (get-document-type (get-store universe store-name)
+					      (getf collection-def :type-def))))
 		
-		(unless data-type
+		(unless document-type
 		  #|
-		  (break "?~A~%~S" (getf collection-def :data-type) collection-def)
-		  (break "??~A~%~A" (getf collection-def :data-type)
-			 (get-data-type (get-store universe store-name)
-					(getf collection-def :data-type)))
+		  (break "?~A~%~S" (getf collection-def :type-def) collection-def)
+		  (break "??~A~%~A" (getf collection-def :type-def)
+			 (get-document-type (get-store universe store-name)
+					(getf collection-def :type-def)))
 		  |#
-		  (error (frmt "Collection data-type (~A) not found." (getf collection-def :data-type))))
+		  (error (frmt "Collection document-type (~A) not found." (getf collection-def :type-def))))
 		
 		(add-collection 
 		 (get-store universe store-name)
 		 (make-instance 
 		  'extended-collection
 		  :name (getf collection-def :name)
-		  :data-type data-type
+		  :document-type document-type
 		  :destinations (getf definition :destinations)))))
 
 	  ))))))
 
 (defun init-definitions (universe destination store-name definitions)
   ;;Data Types need to be done before collections.
-  (init-data-types universe destination store-name definitions)
+  (init-document-types universe destination store-name definitions)
   (init-col-definitions universe destination store-name definitions))
 
 
@@ -107,7 +105,7 @@
   (unless *core-store-definitions*
     (warn (frmt "init-core ~A" *core-store-definitions*)))
   (add-store (universe system) 
-	     (make-instance 'item-store
+	     (make-instance 'document-store
 			    :name "core"))
  
   (dolist (def *core-store-definitions*)
@@ -118,7 +116,7 @@
   (unless (data-definitions system)
     (warn (frmt "init-system ~A" (data-definitions system))))
   (add-store (universe system) 
-	     (make-instance 'item-store
+	     (make-instance 'document-store
 			    :name (name system)))
    (init-definitions (universe system)
 		    :system (name system) (data-definitions system)))
@@ -126,7 +124,7 @@
 (defmethod init-license-universe ((system system) license-code
 				  &key &allow-other-keys)
   (add-store (universe system) 
-	     (make-instance 'item-store
+	     (make-instance 'document-store
 			    :name license-code))
   (init-definitions (universe system) :license license-code
 		     *core-store-definitions*)
@@ -134,22 +132,22 @@
 		    (data-definitions system)))
 
 (defun core-store ()
-  (cl-naive-store::get-store* (universe *system*) "core"))
+  (naive-impl::get-store* (universe *system*) "core"))
 
 (defun core-collection (name)
-  (cl-naive-store::get-collection* (core-store) name))
+  (naive-impl::get-collection* (core-store) name))
 
 (defun system-store ()
-  (cl-naive-store::get-store* (universe *system*) (name *system*)))
+  (naive-impl::get-store* (universe *system*) (name *system*)))
 
 (defun system-collection (name)
-  (cl-naive-store::get-collection* (system-store) name))
+  (naive-impl::get-collection* (system-store) name))
 
 (defun license-store (license-code)
-  (cl-naive-store::get-store* (universe *system*) license-code))
+  (naive-impl::get-store* (universe *system*) license-code))
 
 (defun license-collection (license-code name)
-  (cl-naive-store::get-collection* (license-store license-code) name))
+  (naive-impl::get-collection* (license-store license-code) name))
 
 (defun get-store-from-short-mod (mod)
   (cond ((equalp mod "cor")
@@ -162,32 +160,44 @@
 (defun find-collection-def (system name)
   (let ((definitions (data-definitions system)))
     (dolist (def definitions)
-      (let ((col (dig def :collection)))  
-	(when (and col (string-equal (dig col :name) name))
+      (let ((col (digx def :collection)))  
+	(when (and col (string-equal (digx col :name) name))
 	  (return-from find-collection-def def))))))
 
 (defun find-type-def (system name)
   (let ((definitions (data-definitions system)))
     
     (dolist (def definitions)
-      (let ((col (dig def :data-type)))  
+      (break "poes ~A" def)
+      (let ((col (digx def :type-def)))  
 
-	(when (and col (string-equal (dig col :name) name))
+	(when (and col (string-equal (digx col :name) name))
 	  (return-from find-type-def def))))))
+
+(defun find-type-defenition (system collection def-name)
+  (let ((stores (collection-stores system collection))
+	(store))
+
+    (dolist (storex stores)
+      (setf store storex))
+    
+    (cl-naive-document-types:get-document-type store def-name)))
 
 (defun collection-stores (system collection)
   "To enable \"auto\" customization, stores adhere to a hieghrarchy
-where license store items overide, system which overrides
-core items. So stores are fetched in core,system,license order
-so that when items are merged when fetched, later
-items override earlier ones. See append-items."
+where license store documents overide, system which overrides
+core documents. So stores are fetched in core,system,license order
+so that when documents are merged when fetched, later
+documents override earlier ones. See append-documents."
   (let ((core-store)
 	(system-store)
 	(license-store)
 	(destinations
-	 (if (stringp collection)
-	     (digx  (find-collection-def system collection) :destinations)
-	     (destinations collection))))
+	 (if (not collection)
+	     (list :core :system :license)
+	     (if (stringp collection)
+		 (digx  (find-collection-def system collection) :destinations)
+		 (destinations collection)))))
 
     (dolist (dest (list :core :system :license))
       (when (find dest destinations :test #'equalp)
@@ -207,7 +217,7 @@ items override earlier ones. See append-items."
       (remove-if #'not (list core-store system-store license-store))))
 
 (defun collection-store (collection-name)
-  "Selecting the last store from stores list ensure hierarchy of items
+  "Selecting the last store from stores list ensure hierarchy of documents
 that override others to the correct level."
   (first (last (collection-stores *system*
 				  collection-name))))
@@ -217,31 +227,31 @@ that override others to the correct level."
   (get-collection (collection-store collection-name)
 		  collection-name))
 
-(defun append-items (items more-items)
-  (let ((merged-items items))
-    (dolist (item (remove-if #'not items))
-      (dolist (more-item (remove-if #'not more-items))
-	(when (equalp (item-hash item)
-		      (item-hash more-item))
+(defun append-documents (documents more-documents)
+  (let ((merged-documents documents))
+    (dolist (document (remove-if #'not documents))
+      (dolist (more-document (remove-if #'not more-documents))
+	(when (equalp (document-hash document)
+		      (document-hash more-document))
 	  
-	  (setf merged-items (remove item merged-items)))))
-    (append merged-items more-items)))
+	  (setf merged-documents (remove document merged-documents)))))
+    (append merged-documents more-documents)))
 
 (defun wfx-query-data (collection &key query)
-  (let ((items)
+  (let ((documents)
 	(collection-name (if (stringp collection)
 			     collection
 			     (name collection))))
   
     (dolist (store (collection-stores *system* collection-name))      
       (when (get-collection store collection-name)
-	(setf items (append-items
-		     items
+	(setf documents (append-documents
+		     documents
 		     (query-data (get-collection store collection-name)
 				 :query query)))))
-    items))
+    documents))
 
-(defun wfx-query-data-object (collection &key query)
+(defun wfx-query-document (collection &key query)
   (first (last (wfx-query-data
 		collection
 		:query query))))
@@ -249,8 +259,8 @@ that override others to the correct level."
 ;;TODO: do something to force correct order of stores searched instead of relying on order of stores!!!
 
 (defun wfx-query-context-data (collection &key query)
-  (let* ((items)
-	 (item-count 0)
+  (let* ((documents)
+	 (document-count 0)
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name)))
@@ -262,23 +272,23 @@ that override others to the correct level."
 				  store 
 				  collection-name)))
 	(when collection
-	  (setf items
-		(append-items items
+	  (setf documents
+		(append-documents documents
 			(query-data
 			 collection
-			 :query (lambda (item)
-				 (when item				  
-				   (when (match-context-entities item)
-				     (incf item-count)
+			 :query (lambda (document)
+				 (when document				  
+				   (when (match-context-entities document)
+				     (incf document-count)
 				     (if query
-					 (funcall query item)
-					 item))))))))))
+					 (funcall query document)
+					 document))))))))))
     
-    (values items item-count)))
+    (values documents document-count)))
 
-(defun wfx-query-context-data-object (collection &key query)
-  (let* ((items)
-	 (other-items)
+(defun wfx-query-context-document (collection &key query)
+  (let* ((documents)
+	 (other-documents)
 	(collection-name (if (stringp collection)
 			     collection
 			     (digx collection :collection :name)))
@@ -290,25 +300,25 @@ that override others to the correct level."
 				  collection-name)))
 	(when collection
 	  (multiple-value-bind (object others)
-	      (query-data-object
+	      (query-document
 			collection
-			:query (lambda (item)
-				(when item
-				  (when (match-context-entities item)
+			:query (lambda (document)
+				(when document
+				  (when (match-context-entities document)
 				    (if query
-					(funcall query item)
-					item)))))
-	    (setf items
-		  (append-items
-		   items
+					(funcall query document)
+					document)))))
+	    (setf documents
+		  (append-documents
+		   documents
 		   (list object)))
-	    (setf other-items
-		  (append-items
-		   other-items
+	    (setf other-documents
+		  (append-documents
+		   other-documents
 		   others))))))
     
   
-    (values (first items) (rest items) other-items)))
+    (values (first documents) (rest documents) other-documents)))
 
 (defun in-place-subst (file refs)
   (let ((backup-file (format nil "~A.shash.bak" file)))

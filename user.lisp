@@ -1,15 +1,15 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "user-permission"
      :label "User Permission"
-     :top-level-p nil
-     :fields ((:name :context-spec
+     
+     :elements ((:name :context-spec
 		     :label "Context Spec"
-		     :db-type (:type :item
+		     :db-type (:type :document
 				     :complex-type :collection
-				     :data-type "context-spec"
+				     :type-def "context-spec"
 				     :collection "context-specs"
 				     :accessor :name)
 		     :key-p t
@@ -22,11 +22,11 @@
 		     :attributes (:display t :editable t))))
     :destinations (:core :license))
 
-   (:data-type
-    (:name "data-type-permission"
+   (:type-def
+    (:name "document-type-permission"
      :label "Data-Type Permission"
-     :top-level-p nil
-     :fields ((:name :type-name
+     
+     :elements ((:name :type-name
 		     :label "Type Name"
 		     :db-type :string
 		     :key-p t
@@ -40,11 +40,11 @@
 		     :attributes (:display t :editable t))))
     :destinations (:core :license))
    
-   (:data-type
+   (:type-def
     (:name "user-profile"
      :label "User Profile"
-     :top-level-p t
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :db-type :string
 		     :key-p t
@@ -55,15 +55,15 @@
 		     :key nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "user-permission"
+				     :type-def "user-permission"
 				     :accessor (:context-spec :name))
 		     :attributes (:display t :editable t))
-	      (:name :data-type-permissions 
+	      (:name :type-def-permissions 
 		     :label "Data Type Permissions"
 		     :key nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "data-type-permission"
+				     :type-def "document-type-permission"
 				     :accessor (:name))
 		     :attributes (:display t :editable t)))
      :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
@@ -72,14 +72,14 @@
    (:collection
     (:name "user-profiles"
      :label "User Profiles"
-     :data-type "user-profile")
+     :type-def "user-profile")
     :destinations (:core :license))
    
-   (:data-type
+   (:type-def
     (:name "user-preference"
      :label "User Preference"
-      :top-level-p nil
-     :fields ((:name :name 
+      
+     :elements ((:name :name 
 		     :label "name"
 		     :db-type :string
 		     :key-p t
@@ -92,12 +92,12 @@
      :documentation "")
     :destinations (:core))
    
-   (:data-type
+   (:type-def
     (:name
      "user"
      :label "User"
-     :top-level-p t
-     :fields
+     
+     :elements
      (
       (:name :email
 	     :label "Email"
@@ -109,7 +109,7 @@
 	     :label "Title"
 	     :db-type (:type :keyword
 			     :complex-type :value-list
-			     :values (:mr
+			     :elements (:mr
 				      :mrs
 				      :miss
 				      :prof
@@ -145,14 +145,14 @@
 	     :key nil
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "user-permission"
+			     :type-def "user-permission"
 			     :accessor (:context-spec :name))
 	     :attributes (:display t :editable t))     
       (:name :preferences
 	     :label "Preferences"
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "user-preference"
+			     :type-def "user-preference"
 			     :accessor :name)			  
 	     :attributes (:display t :editable t))      
       (:name :super-user-p
@@ -164,7 +164,7 @@
 	     :label "Status"
 	     :db-type (:type :keyword
 			     :complex-type :value-list
-			     :values (:active :suspended :locked :disabled))
+			     :elements (:active :suspended :locked :disabled))
 	     :attributes (:display t :editable t)
 	     :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -173,7 +173,7 @@
    (:collection
     (:name "users"
      :label "Users"
-     :data-type "user")
+     :type-def "user")
     :destinations (:core)
     :access (:stores
 	     (:core
@@ -181,12 +181,12 @@
 	       (:core (:update :delete :lookup))
 	       (:system (:update :delete :lookup))))))
    
-   (:data-type
+   (:type-def
     (:name
      "license-user"
      :label "License User"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :email
 	     :label "Email"
 	     :key-p t
@@ -197,22 +197,22 @@
 	     :label "Permissions"
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "user-permission"
+			     :type-def "user-permission"
 			     :accessor (:context-spec :name))
 	     :attributes (:display t :editable t))
-      (:name :data-type-permissions 
+      (:name :type-def-permissions 
 	     :label "Data Type Permissions"
 	     :key nil
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "data-type-permission"
+			     :type-def "document-type-permission"
 			     :accessor (:name))
 	     :attributes (:display t :editable t))
       (:name :accessible-entities 
 	     :label "Accessible Entities"
 	     :db-type (:type :list
 			     :complex-type :collection-objects
-			     :data-type"entity"
+			     :type-def"entity"
 			     :collection "entities"
 			     :accessor :name)
 	     :attributes (:display t :editable t))
@@ -220,7 +220,7 @@
 	     :label "Status"
 	     :db-type (:type :keyword
 			     :complex-type :value-list
-			     :values (:active :suspended :locked :disabled))
+			     :elements (:active :suspended :locked :disabled))
 	     :attributes (:display t :editable t)
 	     :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -229,7 +229,7 @@
    (:collection
     (:name "license-users"
      :label "License Users"
-     :data-type "license-user")
+     :type-def "license-user")
     :destinations (:license)
     :access
     (:stores		  
@@ -239,12 +239,12 @@
 	(:system (:update :delete :lookup))
 	(:license (:update :delete :lookup))))))
    
-   (:data-type
+   (:type-def
     (:name
      "active-user"
      :label "Active User"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :email
 	     :label "Mail"
 	     :key-p t
@@ -266,7 +266,7 @@ must be valid email to enable confirmation.")
 	     :key nil
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "entity"
+			     :type-def "entity"
 			     :accessor :name)
 	     :attributes (:display t :editable t))))
     :destinations (:core))
@@ -274,7 +274,7 @@ must be valid email to enable confirmation.")
    (:collection
     (:name "active-users"
      :label "Active Users"
-     :data-type "active-user")
+     :type-def "active-user")
     :destinations (:core)
     :access
     (:stores
@@ -307,7 +307,7 @@ must be valid email to enable confirmation.")
 (defgeneric check-password (user password)
   (:documentation "Check password given against user stored password."))
 
-(defmethod check-password ((user item) password)
+(defmethod check-password ((user document) password)
   (equalp
    (getx user :password)
    (hash-password password (getx user :salt))))
@@ -315,7 +315,7 @@ must be valid email to enable confirmation.")
 (defun make-user (email password &key name phone-no license-codes super-user-p)
   (multiple-value-bind (password salt)
       (make-password password)
-    (persist-object (core-collection "users") 
+    (persist-document (core-collection "users") 
 		  (list :license-codes license-codes
 			:email email
 			:name name
@@ -330,26 +330,26 @@ must be valid email to enable confirmation.")
           (make-password new-password))))
 
 (defun get-user (email)
-  (query-data-object
+  (query-document
    (core-collection "users")
-   :query (lambda (item)	    
-	   (string-equal email (getx item :email)))))
+   :query (lambda (document)	    
+	   (string-equal email (getx document :email)))))
 
 (defun get-license-user (license-code email) 
-  (query-data-object
+  (query-document
    (license-collection license-code "license-users" )
-   :query (lambda (item)
-	   (string-equal email (getx item :email)))))
+   :query (lambda (document)
+	   (string-equal email (getx document :email)))))
 
 
 (defparameter *user* nil)
 
-(defun add-user (email password &key name licenses contexts exclude-data-types
+(defun add-user (email password &key name licenses contexts exclude-document-types
 				  entities super-user-p permissions)
   (let ((user (get-user email))
 	(context-permissions)
-	(data-type-permissions))
-    
+	(document-type-permissions))
+
     (when user
       (multiple-value-bind (password salt)
 	  (make-password password)
@@ -357,35 +357,32 @@ must be valid email to enable confirmation.")
 	(setf (getx user :salt) salt))
       (setf (getx user :name) name)
       (setf (getx user :license-codes) licenses)
-      (persist user))
+      (persist-document (document-collection user) user))
     
     (unless user
       (setf user (cl-wfx::make-user email password
 				    :name name
 				    :license-codes licenses
 				    :super-user-p super-user-p)))
-
-   ;; (break "~A~%~A" email contexts)
-    
     (dolist (context contexts)	    
 	    (push
-	     (make-item
-	      :data-type "user-permission"
-	      :values
+	     (make-document
+	      :type-def "user-permission"
+	      :elements
 	      (list :context-spec
 		    context
 		    :permissions (or permissions '(:update :delete :search))))
 	     context-permissions))
 
-    (dolist (data-type exclude-data-types)	    
+    (dolist (document-type exclude-document-types)	    
 	    (push
-	     (make-item
-	      :data-type "data-type-permission"
-	      :values
+	     (make-document
+	      :type-def "document-type-permission"
+	      :elements
 	      (list :type-name
-		    data-type
+		    document-type
 		    :permissions permissions))
-	     data-type-permissions))
+	     document-type-permissions))
     
     (dolist (code licenses)
       (unless (find code (getx user :license-codes) :test #'equalp)
@@ -393,8 +390,8 @@ must be valid email to enable confirmation.")
 	      (append (getx user :license-codes)
 		      (list code))))
       
-     (persist-object
-	   (item-collection user)
+     (persist-document
+	   (document-collection user)
 	   user)
       
       (let ((lic-user (get-license-user code email)))
@@ -403,17 +400,17 @@ must be valid email to enable confirmation.")
 	(when lic-user
 	  (setf (getx lic-user :permissions) context-permissions)
 	  (setf (getx lic-user :accessible-entities) entities)
-	  (setf (getx lic-user :data-type-permissions) data-type-permissions)
+	  (setf (getx lic-user :type-def-permissions) document-type-permissions)
 	  
-	  (persist-object (license-collection code "license-users") lic-user))
+	  (persist-document (license-collection code "license-users") lic-user))
 	
 	(unless lic-user	  
-	  (persist-object
+	  (persist-document
 	   (license-collection code "license-users")
 	   (list
 	    :email email
 	    :permissions context-permissions
-	    :data-type-permissions data-type-permissions
+	    :type-def-permissions document-type-permissions
 	    :accessible-entities entities	   
 	    :status :active)))))
     user))
@@ -448,9 +445,9 @@ must be valid email to enable confirmation.")
 	  (*user* (get-user "admin@cl-wfx.com"))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-item
-				 :data-type "user"
-				 :values (list :email "admin@cl-wfx.com" 
+			  :user (make-document
+				 :type-def "user"
+				 :elements (list :email "admin@cl-wfx.com" 
 					       :selected-licenses nil
 					       :selected-entities nil)))))
      (when *user*
@@ -462,9 +459,9 @@ must be valid email to enable confirmation.")
 	  (*user* (get-user ,user))	
 	  (*session* 
 	   (make-instance 'session
-			  :user (make-item
-				 :data-type "user"
-				 :values (list :email ,user 
+			  :user (make-document
+				 :type-def "user"
+				 :elements (list :email ,user 
 					       :selected-licenses nil
 					       :selected-entities nil)))))
      (when *user*
@@ -474,7 +471,7 @@ must be valid email to enable confirmation.")
 
 (defgeneric match-entities (user license-code entities))
 
-(defmethod match-entities ((user item) license-code entities)
+(defmethod match-entities ((user document) license-code entities)
   (intersection (available-entities license-code) entities))
 
 (defun user-context-permission-p (context permission)

@@ -4,29 +4,29 @@
 (defparameter *limit-columns* 7)
 
 
-(defun complex-type (field)
-  (if (listp (getf field :db-type))
-      (or (dig field :db-type :complex-type)
-	  (dig field :db-type :type))
-      (getf field :db-type)))
+(defun complex-type (element)
+  (if (listp (digx element :type-def))
+      (or (digx element :type-def :complex-type)
+	  (digx element :type-def :type))
+      (digx element :type-def)))
 
-(defun simple-type (field)
-  (if (listp (getf field :db-type))
-      (dig field :db-type :type)
-      (getf field :db-type)))
+(defun simple-type (element)
+  (if (listp (digx element :type-def))
+      (digx element :type-def :type)
+      (digx element :type-def)))
 
-(defun entity-type-p (fields)
-  (dolist (field fields)
-    (when (equalp (getf field :name) :entity)
+(defun entity-type-p (elements)
+  (dolist (element elements)
+    (when (equalp (getx element :name) :entity)
       (return-from entity-type-p t))))
 
-(defun check-top-level-p (data-type)  
-  (when data-type
-    (when (getcx data-type :data-type)
-      (dig (getcx data-type :data-type) :data-type :top-level-p))))
+(defun check-top-level-p (document-type)  
+  (when document-type
+    (when (getcx document-type :type-def)
+      (digx (getcx document-type :type-def) :top-level-p))))
 
-(defun sub-grid-p (field)
-  (find (complex-type field)
+(defun sub-grid-p (element)
+  (find (complex-type element)
 	(list :collection-objects
 	      :list-objects
 	      :hierarchical)))
@@ -69,7 +69,7 @@
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
 		  (dolist (option list)
 		    (cl-who:htm
-		     (:span :class "dropdown-item"
+		     (:span :class "dropdown-document"
 			    :onclick (if select-onclick-func
 					 (funcall
 					  select-onclick-func option))
@@ -88,60 +88,60 @@
 
 
 
-(defmethod render-input-val ((type (eql :value-list)) field item
-			     &key parent-item hierarchy &allow-other-keys)
-  (let* ((name (getf field :name))
+(defmethod render-input-val ((type (eql :value-list)) element document
+			     &key parent-document hierarchy &allow-other-keys)
+  (let* ((name (getx element :name))
 	 (list (or
-		(and (dig field :db-type :values-lambda)
-		     (eval% (dig field :db-type :values-lambda)))
+		(and (digx element :type-def :elements-lambda)
+		     (eval% (digx element :type-def :elements-lambda)))
 
-		(dig field :db-type :values)))
+		(digx element :type-def :elements)))
 	  
 	 (selected ))
     
     (when (functionp list)      
-	(setf list (funcall (eval% (dig field :db-type :values-lambda)) item parent-item hierarchy)))
+	(setf list (funcall (eval% (digx element :type-def :elements-lambda)) document parent-document hierarchy)))
 
   
-    (setf selected (find (getfx item field) list :test #'equalp))
+    (setf selected (find (getx document element) list :test #'equalp))
     (with-html-string
       (cl-who:str (render-dropdown name selected list)))))
 
 ;;delete this
-(defmethod render-input-val-x ((type (eql :value-list)) field item
+(defmethod render-input-val-x ((type (eql :value-list)) element document
 			       &key &allow-other-keys)
-  (let* ((name (getf field :name))
-	 (list (or (and (dig field :db-type :values-lambda)
-			(cond ((equalp (first (dig field :db-type :values-lambda))
+  (let* ((name (getx element :name))
+	 (list (or (and (digx element :type-def :elements-lambda)
+			(cond ((equalp (first (digx element :type-def :elements-lambda))
 				       'cl-wfx::get-named-list-sorted-values)
-			       (eval% (dig field :db-type :values-lambda)))
-			      ((equalp (first (dig field :db-type :values-lambda))
+			       (eval% (digx element :type-def :elements-lambda)))
+			      ((equalp (first (digx element :type-def :elements-lambda))
 				       'cl:lambda)
 			       (break "render-input-val-x ??? value-lambda")
 			       )))
-		   (dig field :db-type :values)))
-	 (selected (find (getfx item field) list :test #'equalp)))
+		   (digx element :type-def :elements)))
+	 (selected (find (getx document element) list :test #'equalp)))
 
     (with-html-string
       (cl-who:str (render-dropdown name selected list)))))
 
-(defmethod render-input-val ((type (eql :hierarchical)) field item 
+(defmethod render-input-val ((type (eql :hierarchical)) element document 
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
 (defmethod render-input-val ((type (eql :collection-objects))
-			     field item &key &allow-other-keys)
-  (render-input-val* type field item))
+			     element document &key &allow-other-keys)
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :list-objects)) field item
+(defmethod render-input-val ((type (eql :list-objects)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :item)) field item
+(defmethod render-input-val ((type (eql :document)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defun render-item-list-auto-complete-x (collection data-type field-name selected
+(defun render-document-list-auto-complete-x (collection document-type element-name selected
 			&key  select-prompt
 			  value-func
 			  context-state-selected)
@@ -149,16 +149,16 @@
 			    (if value-func
 				(funcall value-func selected)
 				selected)
-			    (or (parameter (frmt "~A-drop" field-name))
+			    (or (parameter (frmt "~A-drop" element-name))
 				context-state-selected))))
     (with-html-string
       (:div :class "col"
 	    
        (:div :class "auto-complete"
 	     (:input :type "hidden" :class "selected-value" 
-		     :name (frmt "~A" field-name)
+		     :name (frmt "~A" element-name)
 		     :value (html-value (or
-					 (parameter (frmt "~A" field-name))
+					 (parameter (frmt "~A" element-name))
 					 selected-value
 					 "")))
 	     
@@ -168,42 +168,42 @@
 		     :placeholder
 		     (or select-prompt
 			 "Press Ctrl for list or start typing and then press Ctrl for list...")
-		     :name (frmt "~A-drop" field-name) 
-		     :id (frmt "~A-drop" field-name)
+		     :name (frmt "~A-drop" element-name) 
+		     :id (frmt "~A-drop" element-name)
 		     :value (html-value (or selected-value ""))
 		     :onkeydown
 		     ;;fires ajax call on Ctrl (13)
 		     (js-render-event-key 
-		      (frmt "~A-drop" field-name)
+		      (frmt "~A-drop" element-name)
 		      17
 		      "cl-wfx:ajax-auto-complete-x"
-		      (frmt "~A-drop-div" field-name)
+		      (frmt "~A-drop-div" element-name)
 		      nil
-		      (js-pair "data-type"
-			       data-type)
-		      (js-pair "field-name"
-			       (frmt "~A" field-name))
+		      (js-pair "document-type"
+			       document-type)
+		      (js-pair "element-name"
+			       (frmt "~A" element-name))
 		      (js-pair "collection"
 			       (frmt "~A" collection))
 		      (js-pair "wfxaction" "auto-complete")))
 	     
-	     (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
+	     (:div :id (frmt "~A-drop-div" element-name) :class "auto-list"))))))
 
 
-(defun render-item-list-auto-complete (data-type field item selected
+(defun render-document-list-auto-complete (document-type element document selected
 				       &key  select-prompt
 					 value-func
 					 context-state-selected
 					 required-p
 					 hierarchy)
-  (declare (ignore hierarchy) (ignore item))
+  (declare (ignore hierarchy) (ignore document))
   
-  (let* ((field-name (dig field :name))
+  (let* ((element-name (digx element :name))
 	(selected-value (if selected
 			    (if value-func
 				(funcall value-func selected)
 				selected)
-			    (or (parameter (frmt "~A" field-name))
+			    (or (parameter (frmt "~A" element-name))
 				context-state-selected))))
 
     (with-html-string
@@ -211,11 +211,11 @@
 	    
 	    (:div :class "auto-complete"
 		  (:input :type "hidden" :class "selected-value" 
-			  :name (frmt "~A" field-name)
+			  :name (frmt "~A" element-name)
 			  :value (html-value (or
-					      (parameter (frmt "~A" field-name))
-					      (if (item-p selected)
-						  (item-hash selected)
+					      (parameter (frmt "~A" element-name))
+					      (if (document-p selected)
+						  (document-hash selected)
 						  selected-value)
 					      "")))
 		  
@@ -225,29 +225,29 @@
 			  :placeholder
 			  (or select-prompt
 			      "Press Ctrl for list or start typing and then press Ctrl for list...")
-			  :name (frmt "~A-drop" field-name) 
-			  :id (frmt "~A-drop" field-name)
+			  :name (frmt "~A-drop" element-name) 
+			  :id (frmt "~A-drop" element-name)
 			  :value (html-value (or selected-value ""))
 			  :required (if required-p
 					"required")
 			  :onkeydown
 			  ;;fires ajax call on Ctrl (17)
 			  (js-render-event-key 
-				 (frmt "~A-drop" field-name)
+				 (frmt "~A-drop" element-name)
 				 17
 				 "cl-wfx:ajax-auto-complete"
-				 (frmt "~A-drop-div" field-name)
+				 (frmt "~A-drop-div" element-name)
 				 (string-downcase
-				  (frmt "grid-edit-~A"  data-type))
-				 (js-pair "data-type"
-					  data-type)
-				 (js-pair "field-name"
-					  (frmt "~A" field-name))
+				  (frmt "grid-edit-~A"  document-type))
+				 (js-pair "document-type"
+					  document-type)
+				 (js-pair "element-name"
+					  (frmt "~A" element-name))
 				 (js-pair "wfxaction" "grid-auto-complete")))
 		  
-		  (:div :id (frmt "~A-drop-div" field-name) :class "auto-list"))))))
+		  (:div :id (frmt "~A-drop-div" element-name) :class "auto-list"))))))
 
-(defun accessor-value (item accessors)
+(defun accessor-value (document accessors)
   (let ((value))
     (if accessors
 	(if (listp accessors)
@@ -255,209 +255,209 @@
 		(let ((values))
 		  (dolist (accessor accessors)
 		    (push
-		     (apply #'digx
-			     item
+		     (apply #'digx 
+			     document
 			     accessor)
 		     values))
 		  (setf value (format nil
 				      "~{~a~^ ~}"
 				      (reverse values))))
-		(setf value (apply #'digx
-				   item
+		(setf value (apply #'digx 
+				   document
 				   accessors)))
-	    (setf value (apply #'digx
-				item
+	    (setf value (apply #'digx 
+				document
 				(list accessors))))
-	item)))
+	document)))
 
-(defun fetch-contained-item-list (field edit-item)
+(defun fetch-contained-document-list (element edit-document)
   
   (let ((list-containers
 	 (wfx-query-context-data
-	  (dig field :db-type :collection)
-	  :query (lambda (itemx)
-		  (if (getf field :filter)
+	  (digx element :type-def :collection)
+	  :query (lambda (documentx)
+		  (if (getx element :filter)
 		      (funcall
-		       (eval% (getf field :filter))
-		       itemx
-		       edit-item
-		       (getcx (dig field :db-type :data-type) :edit-object))
+		       (eval% (getx element :filter))
+		       documentx
+		       edit-document
+		       (getcx (digx element :type-def :type-def) :edit-object))
 		      t))))
 	      
-	(container-accessors (dig field :db-type :container-accessor))
-	(accessors (dig field :db-type :accessor))
+	(container-accessors (digx element :type-def :container-accessor))
+	(accessors (digx element :type-def :accessor))
 	(list))
 
     
-    (when (not (dig field :db-type :container-fetch))
+    (when (not (digx element :type-def :container-fetch))
       
-      (dolist (list-item list-containers)
+      (dolist (list-document list-containers)
 	
-	(setf list (pushnew (accessor-value list-item container-accessors) list))))
+	(setf list (pushnew (accessor-value list-document container-accessors) list))))
 
 
-    (when (dig field :db-type :container-fetch)
+    (when (digx element :type-def :container-fetch)
       
-      (dolist (list-item list-containers)
+      (dolist (list-document list-containers)
 	(setf list
 	      (append list (funcall
-			    (eval% (dig field :db-type :container-fetch))
-			    (accessor-value list-item container-accessors)
-			    edit-item
-			    (getcx (dig field :db-type :data-type) :edit-object))))))
+			    (eval% (digx element :type-def :container-fetch))
+			    (accessor-value list-document container-accessors)
+			    edit-document
+			    (getcx (digx element :type-def :type-def) :edit-object))))))
 
     (sort (copy-list list) #'string<
-	  :key (lambda (item)
-		 (accessor-value item accessors)))))
+	  :key (lambda (document)
+		 (accessor-value document accessors)))))
 
 
-(defmethod render-input-val ((type (eql :collection-contained-item)) field item 
-			     &key data-type hierarchy &allow-other-keys)
+(defmethod render-input-val ((type (eql :collection-contained-document)) element document 
+			     &key document-type hierarchy &allow-other-keys)
 
-  (let* ((name (getf field :name))
+  (let* ((name (getx element :name))
 	
-	 (list (fetch-contained-item-list field item))
+	 (list (fetch-contained-document-list element document))
 	 (selected)
-	 (accessors (dig field :db-type :accessor)))
+	 (accessors (digx element :type-def :accessor)))
 
-    (setf selected (find (getx item name)  
+    (setf selected (find (getx document name)  
 			 list :test #'equalp))
     
     
     (with-html-string
-      (cl-who:str (render-item-list-auto-complete
-		   data-type field item selected
-		   :value-func (lambda (item)
-				 (accessor-value item accessors))
+      (cl-who:str (render-document-list-auto-complete
+		   document-type element document selected
+		   :value-func (lambda (document)
+				 (accessor-value document accessors))
 		   :context-state-selected (getcx 
-					    (dig field :db-type :data-type)
+					    (digx element :type-def :type-def)
 					    (frmt "~A-drop" name))
-		   :required-p (getf field :key-p)
+		   :required-p (getx element :key-p)
 		   :hierarchy hierarchy)))))
 
 
-(defun find-in-hierarchy (data-type hierarchy)
-  (dolist (hierarchy-item hierarchy)
-    (when (string-equal (getf hierarchy-item :data-type)
-			data-type)
-      (return-from find-in-hierarchy (getf hierarchy-item :item)))))
+(defun find-in-hierarchy (document-type hierarchy)
+  (dolist (hierarchy-document hierarchy)
+    (when (string-equal (getx hierarchy-document :type-def)
+			document-type)
+      (return-from find-in-hierarchy (getx hierarchy-document :document)))))
 
-(defmethod render-input-val ((type (eql :collection)) field item 
-			     &key data-type hierarchy &allow-other-keys)
+(defmethod render-input-val ((type (eql :collection)) element document 
+			     &key document-type hierarchy &allow-other-keys)
 
-  (let* ((name (getf field :name))
+  (let* ((name (getx element :name))
 	 (list (wfx-query-context-data
-		(dig field :db-type :collection)
-		:query (lambda (itemx)
-			(if (getf field :filter)
+		(digx element :type-def :collection)
+		:query (lambda (documentx)
+			(if (getx element :filter)
 			    (funcall
-			     (eval% (getf field :filter))
-			     itemx
-			     item
+			     (eval% (getx element :filter))
+			     documentx
+			     document
 			     hierarchy)
 			    t))))
-	 (selected (find (getx item name)  
+	 (selected (find (getx document name)  
 			 list :test #'equalp))
-	 (accessors (dig field :db-type :accessor)))
+	 (accessors (digx element :type-def :accessor)))
     
     (with-html-string
-      (cl-who:str (render-item-list-auto-complete
-		   data-type field item selected
-		   :value-func (lambda (item)
-				 (accessor-value item accessors))
+      (cl-who:str (render-document-list-auto-complete
+		   document-type element document selected
+		   :value-func (lambda (document)
+				 (accessor-value document accessors))
 		   :context-state-selected (getcx 
-					    (dig field :db-type :data-type)
+					    (digx element :type-def :type-def)
 					    (frmt "~A-drop" name))
-		   :required-p (getf field :key-p)
+		   :required-p (getx element :key-p)
 		   :hierarchy hierarchy
 		    )))))
 
-(defmethod render-input-val ((type (eql :contained-item)) field item 
-			     &key parent-item &allow-other-keys)
-  (declare (ignore parent-item))
-  (let* ((name (getf field :name))
-	 (list (apply #'digx
-		      (getf
-		       (second (getcx (parameter "data-type") :edit-object))
-		       :item)
-		      (dig field :db-type :container-accessor)))
-	 (selected (find (getx item name)  
+(defmethod render-input-val ((type (eql :contained-document)) element document 
+			     &key parent-document &allow-other-keys)
+  (declare (ignore parent-document))
+  (let* ((name (getx element :name))
+	 (list (apply #'digx 
+		      (getx
+		       (second (getcx (parameter "document-type") :edit-object))
+		       :document)
+		      (digx element :type-def :container-accessor)))
+	 (selected (find (getx document name)  
 			 list :test #'equalp))
-	 (accessors (dig field :db-type :accessor)))
+	 (accessors (digx element :type-def :accessor)))
 
     (with-html-string
       (cl-who:str
        (render-dropdown name selected list
-			:key-func 'cl-naive-items:item-hash
-			:value-func (lambda (item)
-				      (accessor-value item accessors)))))))
+			:key-func 'cl-naive-documents:document-hash
+			:value-func (lambda (document)
+				      (accessor-value document accessors)))))))
 
-(defun grid-js-render-form-values (data-type form-id 
+(defun grid-js-render-form-values (document-type form-id 
 				   &key action action-lambda
-				     action-data item-id
+				     action-data document-id
 				     hierarchy)
   (let ((active-page (getcx 
-		      data-type :active-page)))
+		      document-type :active-page)))
    
 
     (js-render-form-values 
      "cl-wfx:ajax-grid"
      (gethash :collection-name (cache *context*))
      form-id
-     (js-pair "data-type"
-	      (frmt "~A" data-type))
+     (js-pair "document-type"
+	      (frmt "~A" document-type))
      
      (js-pair "wfxaction" (or action ""))
 
      (js-pair "action-lambda" (or action-lambda ""))
      (js-pair "action-data" (or action-data ""))
      
-     (js-pair "item-id" (frmt "~A" (or item-id (getcx data-type :item-id)
+     (js-pair "document-id" (frmt "~A" (or document-id (getcx document-type :document-id)
 				       "")))
-     (js-pair "item-hierarchy"
+     (js-pair "document-hierarchy"
 	      (hierarchy-string hierarchy))
      (js-pair "pages"
 	      (or (parameter "pages") 50))
      (js-pair "page"
 	      (or active-page 1)))))
 
-(defun grid-js-render-file-upload (data-type form-id row-id field-name)
+(defun grid-js-render-file-upload (document-type form-id row-id element-name)
   (js-render-form-values 
      "cl-wfx:ajax-render-file-upload"
      row-id
      form-id
-     (js-pair "data-type"
-	      (frmt "~A" data-type))
-     (js-pair "field-name" field-name)
+     (js-pair "document-type"
+	      (frmt "~A" document-type))
+     (js-pair "element-name" element-name)
      (js-pair "wfxaction" "upload-file")))
 
-(defun grid-js-render (data-type &key action item-id)
-  (let ((active-page (getcx data-type :active-page)))
+(defun grid-js-render (document-type &key action document-id)
+  (let ((active-page (getcx document-type :active-page)))
 
     (js-render "cl-wfx:ajax-grid"
 	       (gethash :collection-name (cache *context*))	      
-	       (js-pair "data-type" (frmt "~A" data-type))
+	       (js-pair "document-type" (frmt "~A" document-type))
 	       
 	       (js-pair "wfxaction" (or action ""))
 	       
-	       (js-pair "item-id" (frmt "~A" (or item-id "")))
+	       (js-pair "document-id" (frmt "~A" (or document-id "")))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
 	       (js-pair "page"
 			(or active-page 1)))))
 
-(defun render-expand-buttons (subs data-type item)
+(defun render-expand-buttons (subs document-type document)
   (if subs
       (if (string-equal
-	  (frmt "~A" (getcx data-type :expand-id)) 
-	  (frmt "~A" (item-hash item)))
+	  (frmt "~A" (getcx document-type :expand-id)) 
+	  (frmt "~A" (document-hash document)))
 	  (with-html-string
 	    (:button
 	     :name "expand" :type "submit" 
 	     :class "btn btn-sm border-0 active"
 	     :aria-pressed "true"
-	     :onclick (grid-js-render data-type
+	     :onclick (grid-js-render document-type
 				      :action "unexpand")
 	     (:i :class "fa far fa-chevron-circle-up fa-lg  text-secondary")
 	     
@@ -467,12 +467,12 @@
 	     :name "expand" :type "submit" 
 	     :class "btn btn-sm border-0"
 	     :aria-pressed "false"
-	     :onclick (grid-js-render data-type
+	     :onclick (grid-js-render document-type
 					    :action "expand"
-					    :item-id (item-hash item))
+					    :document-id (document-hash document))
 	     (:i :class "fa far fa-chevron-circle-right fa-lg text-light"))))))
 
-(defun render-select-button (item)
+(defun render-select-button (document)
   (with-html-string
     (:div :class "form-check"
 	  (:input
@@ -481,20 +481,20 @@
 	   :type "checkbox"
 	   :id "grid-selection"
 	   :name "grid-selection"
-	   :value (frmt "~A" (item-hash item))	    
+	   :value (frmt "~A" (document-hash document))	    
 	   :aria-label "Select Row"))))
 
-(defun grid-js-render-delete (data-type &key item hierarchy)
-  (let ((active-page (getcx data-type :active-page)))
+(defun grid-js-render-delete (document-type &key document hierarchy)
+  (let ((active-page (getcx document-type :active-page)))
 
     (js-render "cl-wfx:ajax-grid"
 	       (gethash :collection-name (cache *context*))	      
-	       (js-pair "data-type" (frmt "~A" data-type))
+	       (js-pair "document-type" (frmt "~A" document-type))
 	       
 	       (js-pair "wfxaction" "delete")
 	       
-	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
-	       (js-pair "item-hierarchy"
+	       (js-pair "document-id" (frmt "~A" (or (document-hash document) "")))
+	       (js-pair "document-hierarchy"
 			(hierarchy-string hierarchy))
 
 	       (js-pair "pages"
@@ -502,18 +502,18 @@
 	       (js-pair "page"
 			(or active-page 1)))))
 
-(defun grid-js-render-action (data-type action &key item)
-  (let ((active-page (getcx data-type :active-page)))
+(defun grid-js-render-action (document-type action &key document)
+  (let ((active-page (getcx document-type :active-page)))
     (js-render "cl-wfx:ajax-grid"
 	       (gethash :collection-name (cache *context*))	      
-	       (js-pair "data-type" (frmt "~A" data-type))
+	       (js-pair "document-type" (frmt "~A" document-type))
 	       
 	       
-	       (js-pair "wfxaction" "item-action")
+	       (js-pair "wfxaction" "document-action")
 	       (js-pair "action-name" (string-downcase (frmt "~A" (or action ""))))
 
 		       
-	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
+	       (js-pair "document-id" (frmt "~A" (or (document-hash document) "")))
 
 
 	       (js-pair "pages"
@@ -521,39 +521,39 @@
 	       (js-pair "page"
 			(or active-page 1)))))
 
-(defun hierarchy-string (items)
+(defun hierarchy-string (documents)
   (let ((hierarchy ""))
-     (dolist (item items)
+     (dolist (document documents)
       (setf hierarchy  (concatenate 'string hierarchy " "
 				    (frmt "(~A ~A)"
-					  (getf item :data-type)
-					  (if (getf item :item)
-					      (if (item-p (getf item :item))
-						  (item-hash (getf item :item))
-						  (getf item :item)
+					  (getx document :type-def)
+					  (if (getx document :document)
+					      (if (document-p (getx document :document))
+						  (document-hash (getx document :document))
+						  (getx document :document)
 						  )
 					      )))))
     (frmt "(~A)" hierarchy)))
 
-(defun grid-js-render-edit (data-type &key action item hierarchy)
-  (let ((active-page (getcx data-type :active-page)))
+(defun grid-js-render-edit (document-type &key action document hierarchy)
+  (let ((active-page (getcx document-type :active-page)))
     
        (js-render "cl-wfx:ajax-grid-edit"
-	       (frmt "ajax-edit-~A" (item-hash item))	      
-	       (js-pair "data-type" (frmt "~A" data-type))
+	       (frmt "ajax-edit-~A" (document-hash document))	      
+	       (js-pair "document-type" (frmt "~A" document-type))
 	       
 	       (js-pair "wfxaction" (string-downcase (frmt "~A" (or action ""))))
 	     
 	       
-	       (js-pair "item-id" (frmt "~A" (or (item-hash item) "")))
-	       (js-pair "item-hierarchy"
+	       (js-pair "document-id" (frmt "~A" (or (document-hash document) "")))
+	       (js-pair "document-hierarchy"
 			(hierarchy-string hierarchy))
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
 	       (js-pair "page"
 			(or active-page 1)))))
 
-(defun render-grid-buttons (data-type item hierarchy)
+(defun render-grid-buttons (document-type document hierarchy)
   (let ((permissions (getx (context-spec *context*) :permissions)))
     (with-html-string
       (dolist (permission permissions)
@@ -568,21 +568,21 @@
 		     "fa fa-file-o fa-2x ")
 		 :style "color:#5DADE2  "
 		 :aria-pressed 
-		 (if (and (parameter "item-id")
+		 (if (and (parameter "document-id")
 			  (string-equal 
-			   (parameter "item-id") 
-			   (frmt "~A" (item-hash item))))
+			   (parameter "document-id") 
+			   (frmt "~A" (document-hash document))))
 		     "true"
 		     "false")
 		 :onclick
 		 (frmt "~A;toggle_tbody(\"ajax-edit-~A\");toggle_tbody(\"ajax-editing-row-~A\");toggle_tbody(\"ajax-expand-row-~A\");"
-		       (grid-js-render-edit data-type
+		       (grid-js-render-edit document-type
 					    :action "edit"
-					    :item item
+					    :document document
 					    :hierarchy hierarchy)
-		       (item-hash item)
-		       (item-hash item)
-		       (item-hash item)))))
+		       (document-hash document)
+		       (document-hash document)
+		       (document-hash document)))))
 	      ((and (equalp permission :delete)
 		    (user-context-permission-p
 		     (getx (context-spec *context*) :name)
@@ -594,49 +594,49 @@
 		  :style "color:#EC7063  "
 		 :onclick
 		 (frmt "if(confirm(\"Are you sure you want to delete?\")){~A}"
-		       (grid-js-render-delete data-type
-					      :item item
+		       (grid-js-render-delete document-type
+					      :document document
 					      :hierarchy hierarchy)))))))
       
       
 
-      (dolist (action (getf (getcx data-type :data-type) :item-actions))
-	(cond ((equalp (getf action :type) :button)
+      (dolist (action (getx (getcx document-type :type-def) :document-actions))
+	(cond ((equalp (getx action :type) :button)
 	       (cl-who:htm
 		(:button
-		 :name (getf action :name)
+		 :name (getx action :name)
 		 :type "submit"
 		 :onclick
 		 
-		 (if (getf action :confirmation)
+		 (if (getx action :confirmation)
 		     (frmt "~A;alert(\"~A\")"
 			   
-			   (grid-js-render-action data-type
-						  (getf action :name)
-						  :item item)
-			   (getf action :confirmation))
-		     (grid-js-render-action data-type
-						  (getf action :name)
-						  :item item))
+			   (grid-js-render-action document-type
+						  (getx action :name)
+						  :document document)
+			   (getx action :confirmation))
+		     (grid-js-render-action document-type
+						  (getx action :name)
+						  :document document))
 		 
-		 (cl-who:str (getf action :label))
+		 (cl-who:str (getx action :label))
 		 )))
-	      ((equalp (getf action :type) :link)
+	      ((equalp (getx action :type) :link)
 	       (cl-who:htm
 		(:a :class "btn"  :role "button"
 		    :target "_blank"
 		    :href (cl-who:str (apply%
 				       (eval%
-					(getf action :action))
-				       (list item
-					     (getcx data-type :parent-item))))
-		    (cl-who:str (getf action :label))))
+					(getx action :action))
+				       (list document
+					     (getcx document-type :parent-document))))
+		    (cl-who:str (getx action :label))))
 
 	       ))
 	)
       )))
 
-(defun render-edit-buttons (data-type hierarchy)
+(defun render-edit-buttons (document-type hierarchy)
   (with-html-string
     
     (when (user-context-permission-p
@@ -647,27 +647,27 @@
 	   :class "fa fa-save fa-2x text-success"
 	   :onclick
 	   (frmt "if(document.getElementById(\"grid-edit-~A\").checkValidity()) {~A}else console.log(\"invalid form\");"
-		 data-type
+		 document-type
 		 (grid-js-render-form-values			 
-		  data-type
+		  document-type
 		  (string-downcase
-		   (frmt "grid-edit-~A"  data-type))
+		   (frmt "grid-edit-~A"  document-type))
 		  
 		  :action "save"
 		  :hierarchy hierarchy)))))
     (:i :name "cancel" 				   
 	:class "fa fa-eject fa-2x text-dark"
 	:onclick (frmt "~A;toggle_display(\"ajax-edit-row-~A\");"
-		       (grid-js-render data-type
+		       (grid-js-render document-type
 				       :action "cancel")
-		       (item-hash (getcx data-type :edit-item))))))
+		       (document-hash (getcx document-type :edit-document))))))
 
 
-(defun render-grid-edit-row (data-type name field label item parent-item hierarchy)
+(defun render-grid-edit-row (document-type name element label document parent-document hierarchy)
   (with-html-string
    (:div
     :class
-    (if (digx field
+    (if (digx  element
 	      :attributes :editable)
 	"form-group"
 	"form-group disabled")
@@ -687,26 +687,26 @@
     (or
      (cl-who:str
       (render-input-val 
-       (complex-type field) 
-       field item
-       :parent-item
-       parent-item
-       :data-type data-type
+       (complex-type element) 
+       element document
+       :parent-document
+       parent-document
+       :type-def document-type
        :hierarchy hierarchy))))))
 
 
-(defun render-grid-edit-more (field item hierarchy)
+(defun render-grid-edit-more (element document hierarchy)
   (with-html-string
-    (let* ((sub-data-type
-	    (digx field :db-type
-		  :data-type))
-	   (sub-fields
-	    (getcx sub-data-type :fields)))
+    (let* ((sub-document-type
+	    (digx  element :type-def
+		  :type-def))
+	   (sub-elements
+	    (getcx sub-document-type :elements)))
 
-      (unless sub-fields
-	(set-type-context sub-data-type)
-	(setf sub-fields
-	      (getcx sub-data-type :fields)))
+      (unless sub-elements
+	(set-type-context (getx sub-document-type :collection)  sub-document-type)
+	(setf sub-elements
+	      (getcx sub-document-type :elements)))
       
       (cl-who:htm
        (:div
@@ -716,120 +716,120 @@
 	      (:button :class "btn btn-primary"
 		       :type "button"
 		       :data-toggle "collapse"
-		       :data-target (frmt "#~A-more" sub-data-type)
+		       :data-target (frmt "#~A-more" sub-document-type)
 		       :area-expanded "false"
-		       :area-controls (frmt "~A-more" sub-data-type)
-		       (cl-who:str (getf field :label)))
+		       :area-controls (frmt "~A-more" sub-document-type)
+		       (cl-who:str (getx element :label)))
 	      ))
   
-       (let ((sub-item (getx item (getf field :name))))
-	 (unless sub-item
-		(setf sub-item (make-item :data-type sub-data-type)))
+       (let ((sub-document (getx document (getx element :name))))
+	 (unless sub-document
+		(setf sub-document (make-document :type-def sub-document-type)))
 	 (cl-who:htm
 	  (:div
-	   :class "row collapse" :id (frmt "~A-more" sub-data-type)
+	   :class "row collapse" :id (frmt "~A-more" sub-document-type)
 	   (:div :class "col" 
-		 (dolist (sub-field sub-fields)
-		   (unless (sub-grid-p sub-field)
+		 (dolist (sub-element sub-elements)
+		   (unless (sub-grid-p sub-element)
 		     (cl-who:str
 		      (render-grid-edit-row
-		       sub-data-type
-		       (getf sub-field :name)
-		       sub-field
-		       (getf sub-field :label)
-		       sub-item
-		       item
+		       sub-document-type
+		       (getx sub-element :name)
+		       sub-element
+		       (getx sub-element :label)
+		       sub-document
+		       document
 		       hierarchy)))
 		   
 		   )))))
        ))))
 
-(defun render-grid-edit (data-type fields item parent-item
+(defun render-grid-edit (document-type elements document parent-document
 			 parent-spec hierarchy)
-  (setf (getcx data-type :edit-item) item)
-  (setf (getcx data-type :parent-spec) parent-item)
-  (setf (getcx data-type :parent-spec) parent-spec)
-  (setf (getcx (parameter "data-type") :item-id)
-	(if item
-	    (item-hash item)
+  (setf (getcx document-type :edit-document) document)
+  (setf (getcx document-type :parent-spec) parent-document)
+  (setf (getcx document-type :parent-spec) parent-spec)
+  (setf (getcx (parameter "document-type") :document-id)
+	(if document
+	    (document-hash document)
 	    nil))
 
-  (let ((header-fields (get-header-fields fields))
-	(sub-fields (get-sub-fields fields)))
+  (let ((header-elements (get-header-elements elements))
+	(sub-elements (get-sub-elements elements)))
     (with-html-string
       
       (:tbody :id (frmt "ajax-edit-~A"
-			(if item
-			    (item-hash item)
+			(if document
+			    (document-hash document)
 			    nil))	
 	      (:tr :class "bg-light"
 
-		   (if sub-fields
+		   (if sub-elements
 		       (cl-who:htm
 			(:td :style "width: 25px;" )))
 	
-		   (dolist (field (limit-fields (get-data-fields
-						 header-fields)
-						parent-item))	  
-		     (cl-who:str (render-table-cell field item)))
+		   (dolist (element (limit-elements (get-data-elements
+						 header-elements)
+						parent-document))	  
+		     (cl-who:str (render-table-cell element document)))
 
 	
 
 		   (:td 
 			(:div
-			 (cl-who:str (render-edit-buttons data-type hierarchy)))))
+			 (cl-who:str (render-edit-buttons document-type hierarchy)))))
        
 	      (:tr 
-	       (:td :colspan (if sub-fields
-				 (+ (length (limit-fields header-fields
-							  parent-item))
+	       (:td :colspan (if sub-elements
+				 (+ (length (limit-elements header-elements
+							  parent-document))
 				    2)
-				 (+ (length (limit-fields header-fields
-							  parent-item))
+				 (+ (length (limit-elements header-elements
+							  parent-document))
 				    1))		 
 		    (:form :class "card"
 			   :style "border-left-style: dotted;border-width:3px; border-left-color:#F1948A;min-width:255px;max-width:99%"
-			   :id (string-downcase (frmt "grid-edit-~A"  data-type))
+			   :id (string-downcase (frmt "grid-edit-~A"  document-type))
 
 			   (:div
 			    :class "card-body p-0 m-0"
 
 			    (:div :class "row" 
-				  :id (frmt "~A" data-type)
+				  :id (frmt "~A" document-type)
 				  (:div :class "col"
 					
-					(dolist (field fields)
-					  (let* ((name (getf field :name))
-						 (label (getf field :label)))
+					(dolist (element elements)
+					  (let* ((name (getx element :name))
+						 (label (getx element :label)))
 					
-					    (when (and (digx field :attributes :display) 
-						       (not (sub-grid-p field)))
+					    (when (and (digx  element :attributes :display) 
+						       (not (sub-grid-p element)))
 
-					      (unless (equalp (complex-type field)
-							      :item)
+					      (unless (equalp (complex-type element)
+							      :document)
                                         
 						(cl-who:str
 						 (render-grid-edit-row
-						  data-type name
-						  field label
-						  item parent-item
+						  document-type name
+						  element label
+						  document parent-document
 						  hierarchy))))))))
 		    
-			    (dolist (field fields)
-			      (when (and (digx field :attributes :display) 
-					 (not (sub-grid-p field)))
+			    (dolist (element elements)
+			      (when (and (digx  element :attributes :display) 
+					 (not (sub-grid-p element)))
 
-				(when (equalp (complex-type field)
-					      :item)
+				(when (equalp (complex-type element)
+					      :document)
 			  
-				  (when (data-type-access-p (digx field :db-type :data-type))
+				  (when (document-type-access-p (digx  element :type-def :type-def))
 				    (cl-who:str
-				     (render-grid-edit-more field item hierarchy)))))))
+				     (render-grid-edit-more element document hierarchy)))))))
 
 			   
-			   (when (getcx data-type :validation-errors)
-			     (let ((errors (getcx data-type :validation-errors)))
-			       (setf (getcx data-type :validation-errors) nil)
+			   (when (getcx document-type :validation-errors)
+			     (let ((errors (getcx document-type :validation-errors)))
+			       (setf (getcx document-type :validation-errors) nil)
 			       (cl-who:htm
 				(:div :class "card-footer"
 				      (:div :class "row"
@@ -839,7 +839,7 @@
 						    (frmt "Errors ~S"
 							  errors))))))))))))))))
 
-(defun render-grid-col-filter (data-type col-name)
+(defun render-grid-col-filter (document-type col-name)
    (with-html-string
     (:input :class "w-100"
 	    :type "text" 
@@ -847,7 +847,7 @@
 
 	    :id (frmt "~A-filter" col-name)
 	    :value (or (parameter (frmt "~A-filter" col-name))
-		       (getcx data-type
+		       (getcx document-type
 		       (intern (string-upcase
 				(frmt "~A-filter" col-name))))
 		       "")
@@ -859,21 +859,21 @@
 	     "cl-wfx:ajax-grid"
 	     (gethash :collection-name (cache *context*))
 	     "collapseFilter"
-	     (js-pair "data-type"
-		      (frmt "~A" data-type))
+	     (js-pair "document-type"
+		      (frmt "~A" document-type))
 	     (js-pair "wfxaction" "grid-col-filter")))))
 
-(defun limit-fields (fields hierarchy)
-  (if (> (length fields) 1)
-      (if (and (not (item-p hierarchy))
+(defun limit-elements (elements hierarchy)
+  (if (> (length elements) 1)
+      (if (and (not (document-p hierarchy))
 	       (>= (length hierarchy) 1))
-	  (if (> (length fields) 3)
-	      (subseq fields 0 3)
-	      fields)
-	  (if (> (length fields) 7)
-		  (subseq fields 0 7)
-		  fields))
-      fields))
+	  (if (> (length elements) 3)
+	      (subseq elements 0 3)
+	      elements)
+	  (if (> (length elements) 7)
+		  (subseq elements 0 7)
+		  elements))
+      elements))
 
 (defun rough-half-list (list &optional (half-if-length 2))
   (when list
@@ -887,30 +887,30 @@
 	     (subseq list half)))
 	  (list list)))))
 
-(defun get-sub-fields (fields)
-  (let ((sub-fields))
-    (dolist (field fields)
+(defun get-sub-elements (elements)
+  (let ((sub-elements))
+    (dolist (element elements)
       (when (and
-	     (sub-grid-p field)
+	     (sub-grid-p element)
 	     )
-	(pushnew field sub-fields)))
-    (reverse sub-fields)))
+	(pushnew element sub-elements)))
+    (reverse sub-elements)))
 
-(defun get-header-fields (fields)
-  (let ((header-fields))
-    (dolist (field fields)
-      (when (and (digx field :attributes :display)
-		 (not (sub-grid-p field)))
-	(pushnew field header-fields)))
-    (reverse header-fields)))
+(defun get-header-elements (elements)
+  (let ((header-elements))
+    (dolist (element elements)
+      (when (and (digx  element :attributes :display)
+		 (not (sub-grid-p element)))
+	(pushnew element header-elements)))
+    (reverse header-elements)))
 
-(defun render-filter-row (data-type fields subs)
+(defun render-filter-row (document-type elements subs)
   (let* ((search-term (or (parameter "search") 
 			  (getcx 
-			   data-type :search)))
+			   document-type :search)))
 	 (search-p (not (empty-p search-term)))
-	 (filter-p (or (getcx data-type :filter)
-		       (getcx data-type :filter-fields))))
+	 (filter-p (or (getcx document-type :filter)
+		       (getcx document-type :filter-elements))))
     (with-html-string
       
       (:tr :class (if (or search-p filter-p)
@@ -925,24 +925,24 @@
 	       (cl-who:htm (:th)))
 	   
 	   
-	   (dolist (field (limit-fields (get-header-fields fields)
+	   (dolist (element (limit-elements (get-header-elements elements)
 					nil))
-		 (let* ((name (getf field :name)))
+		 (let* ((name (getx element :name)))
 						
 		   (cl-who:htm
 		    (:th
 			  (cl-who:str
 			   (render-grid-col-filter 
-			    data-type name))))))
+			    document-type name))))))
 	   (:th)))))
 
-(defun limit-sub-fields (fields)
-  (if (> (length fields) 2)
-      (subseq fields 0 2)
-      fields))
+(defun limit-sub-elements (elements)
+  (if (> (length elements) 2)
+      (subseq elements 0 2)
+      elements))
 
-(defun render-header-row (data-type fields subs hierarchy)
-  (let ((header-fields (limit-fields (get-header-fields fields)
+(defun render-header-row (document-type elements subs hierarchy)
+  (let ((header-elements (limit-elements (get-header-elements elements)
 				     hierarchy)))
     (with-html-string
       
@@ -951,9 +951,9 @@
 	   (if subs
 	       (cl-who:htm (:th :style "width:25px;")))
 	   
-	   (dolist (field header-fields)
-	     (let* ((name (getf field :name))
-		    (label (getf field :label)))
+	   (dolist (element header-elements)
+	     (let* ((name (getx element :name))
+		    (label (getx element :label)))
 	       
 	       (cl-who:htm
 		(:th ;;:class "text-center"
@@ -968,7 +968,7 @@
 	   (:th 
 	    )
 	   
-	   (when (check-top-level-p data-type)
+	   (when (check-top-level-p document-type)
 	     
 	     (cl-who:htm
 	      
@@ -989,36 +989,36 @@
 		   
 		   )))))))
 
-(defun render-grid-header (data-type sub-p hierarchy)
-  (let ((fields (getcx	data-type :fields))
+(defun render-grid-header (document-type sub-p hierarchy)
+  (let ((elements (getcx	document-type :elements))
 	(subs))
 
-    (dolist (field fields)
-      (when (sub-grid-p field)
-	(pushnew field subs)))
+    (dolist (element elements)
+      (when (sub-grid-p element)
+	(pushnew element subs)))
     
     (with-html-string
       (unless sub-p
 	(cl-who:str
-	       (render-filter-row data-type fields subs)))
+	       (render-filter-row document-type elements subs)))
       
-      (cl-who:str (render-header-row data-type fields subs hierarchy)))))
+      (cl-who:str (render-header-row document-type elements subs hierarchy)))))
 
-(defun get-data-fields (fields)
-  (let ((data-fields))
-    (dolist (field fields)
-      (when (and (digx field :attributes :display)
-		 (not (sub-grid-p field)))
-	(pushnew field data-fields)))
-    (reverse data-fields)))
+(defun get-data-elements (elements)
+  (let ((data-elements))
+    (dolist (element elements)
+      (when (and (digx  element :attributes :display)
+		 (not (sub-grid-p element)))
+	(pushnew element data-elements)))
+    (reverse data-elements)))
 
 
-(defun render-select-actions (data-type)  
+(defun render-select-actions (document-type)  
   (let ((action-list))
 
     (dolist (lambdax (getx (context-spec *context*) :lambdas))
       (when (find :select-action-list (getx lambdax :events) :test 'equalp)
-	(setf action-list (eval% (digx lambdax :lambda :code)))))
+	(setf action-list (eval% (digx  lambdax :lambda :code)))))
 
     (when (user-context-permission-p
 	   (getx (context-spec *context*) :name)
@@ -1038,80 +1038,80 @@
 		  nil
 		  action-list			       
 		  :key-func (lambda (action)
-				(getf action :action-name))
+				(getx action :action-name))
 		  :value-func (lambda (action)
-				(getf action :action-name))
+				(getx action :action-name))
 		  :select-onclick-func
 		  (lambda (action)
 		    (js-render-form-values
 		     "cl-wfx:ajax-grid"
 		     (gethash :collection-name
 			      (cache *context*))
-		     (frmt "~A" data-type)
+		     (frmt "~A" document-type)
 		     (js-pair "wfxaction"
 			      "grid-select-action")
 		     
 		     (js-pair "action-data"
-			      (or (getf action :data) ""))
+			      (or (getx action :data) ""))
 		     (js-pair "action-handler-lambda"
-			      (frmt "~A" (getf action :handler-lambda)))
+			      (frmt "~A" (getx action :handler-lambda)))
 		     (js-pair "pages"
 			      (or (parameter "pages") 50))
 		     (js-pair "page"
 			      (or (getcx 
-				   data-type :active-page)
+				   document-type :active-page)
 				  1)))))))))))
 
 
 (defvar *rendering-shit* nil)
 
-(defun keysx (fields)
+(defun keysx (elements)
   (let ((keys))   
-    (dolist (field fields)
-      (when (getf field :key-p)
+    (dolist (element elements)
+      (when (getx element :key-p)
 	(setf keys
 	      (append keys
 		      (list
 		       (list
-			:name (getf field :name)
-			:accessor (if (sub-grid-p field)
-				      (dig field :db-type :accessor)
-				      (if (find (complex-type field)
+			:name (getx element :name)
+			:accessor (if (sub-grid-p element)
+				      (digx element :type-def :accessor)
+				      (if (find (complex-type element)
 						(list :collection
-						      :collection-contained-items))
-					  (dig field :db-type :accessor))
+						      :collection-contained-documents))
+					  (digx element :type-def :accessor))
 				      )))))))
     keys))
 
-(defun sort-by-keys (items keys)
-  (flet ((sort-val (item)
+(defun sort-by-keys (documents keys)
+  (flet ((sort-val (document)
 	   (let ((values))
 	     (dolist (key keys)
-	       (let* ((accessor (getf key :accessor))
+	       (let* ((accessor (getx key :accessor))
 		      (val (if accessor
-			       (accessor-value (getx item (getf key :name)) accessor)
-			       (getx item (getf key :name)))))
+			       (accessor-value (getx document (getx key :name)) accessor)
+			       (getx document (getx key :name)))))
 		
 		 (setf values (frmt "~A~A" values val))))	    
 	     values)))
-    (sort (copy-list items) #'string-lessp :key #'sort-val)))
+    (sort (copy-list documents) #'string-lessp :key #'sort-val)))
 
 
-(defun grid-js-render-new (data-type hierarchy)
-  (let ((active-page (getcx data-type :active-page))
-	(items))
+(defun grid-js-render-new (document-type hierarchy)
+  (let ((active-page (getcx document-type :active-page))
+	(documents))
 
-    (setf items (append hierarchy (list (list :data-type data-type
-					      :item 0))))
+    (setf documents (append hierarchy (list (list :type-def document-type
+					      :document 0))))
     
     (js-render "cl-wfx:ajax-grid-edit"
-	       (frmt "ajax-new-~A" data-type)	      
-	       (js-pair "data-type" (frmt "~A" data-type))
+	       (frmt "ajax-new-~A" document-type)	      
+	       (js-pair "document-type" (frmt "~A" document-type))
 	       
 	       (js-pair "wfxaction" "new")
 	       
-	       (js-pair "item-hierarchy"
-			(hierarchy-string items))
+	       (js-pair "document-hierarchy"
+			(hierarchy-string documents))
 
 	       (js-pair "pages"
 			(or (parameter "pages") 50))
@@ -1146,49 +1146,49 @@
        (:i :class "fa fa-plus-square")))
     ))
 
-(defun render-table-cell (field item)
+(defun render-table-cell (element document)
   
-  (let ((val (print-item-val 
-	      (complex-type field)
-	      field item)))
-   
+  (let ((val (print-document-val 
+	      (complex-type element)
+	      element document)))
+    
     (with-html-string
       (cl-who:htm
        (:td
 
 	:style (cond
-		 ((or (equalp (simple-type field) :integer)
-		      (equalp (simple-type field) :number))
+		 ((or (equalp (simple-type element) :integer)
+		      (equalp (simple-type element) :number))
 		  "text-align:right;")
 		 (t
 		  "text-align:left;"))
 	(cond
 	  ((empty-p val)
 	   (cl-who:str val))
-	  ((or (equalp (complex-type field) :lambda)
-	       (equalp (complex-type field) :lisp-code)
-	       (equalp (complex-type field) :css)
-	       (equalp (complex-type field) :html)
-	       (equalp (complex-type field) :java-script))
+	  ((or (equalp (complex-type element) :lambda)
+	       (equalp (complex-type element) :lisp-code)
+	       (equalp (complex-type element) :css)
+	       (equalp (complex-type element) :html)
+	       (equalp (complex-type element) :java-script))
 	   (cl-who:htm
 	    (:textarea :readonly "readonly" :style "width:100%;"
 		       (cl-who:str val))))
 	      
-	  ((equalp (complex-type field) :text)
+	  ((equalp (complex-type element) :text)
 	   (cl-who:htm
 	    (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
 		  (cl-who:str val)
 		  )))
-	  ((and (or (equalp (complex-type field) :string)
-		    (equalp (complex-type field) :link)
-		    (equalp (complex-type field) :list)
-		    (equalp (complex-type field) :collection))
+	  ((and (or (equalp (complex-type element) :string)
+		    (equalp (complex-type element) :link)
+		    (equalp (complex-type element) :list)
+		    (equalp (complex-type element) :collection))
 		(or (> (length val) 15)
 		    (and
 		     (> (length val) 15)
-		     (> (length val) (length (getf field :label))))))
+		     (> (length val) (length (getx element :label))))))
 
-	   (if (equalp (complex-type field) :link)
+	   (if (equalp (complex-type element) :link)
 		(cl-who:htm
 		 (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
 		       (:a :target "_blank" :href val (cl-who:str val))))
@@ -1196,8 +1196,8 @@
 		 (:div :style "resize: vertical; text-overflow: ellipsis;overflow: hidden;height:15px;"
 		       (cl-who:str val))))
 	   )
-	  ((or (equalp (complex-type field) :number)
-	       (equalp (complex-type field) :integer))
+	  ((or (equalp (complex-type element) :number)
+	       (equalp (complex-type element) :integer))
 	   (cl-who:str val))
 	  (t
 	       
@@ -1208,8 +1208,8 @@
 			    
 	     (cl-who:str val))))))))))
 
-(defun render-item-row (subs data-type item fields hierarchy)
-  (let ((row-fields (limit-fields (get-data-fields fields)
+(defun render-document-row (subs document-type document elements hierarchy)
+  (let ((row-elements (limit-elements (get-data-elements elements)
 				  (if (> (length hierarchy) 1)
 				      hierarchy
 				      nil))))
@@ -1218,15 +1218,15 @@
       (:tbody
        :class "grow"
        :style "display:table-row-group;"
-       :id (frmt "ajax-editing-row-~A" (item-hash item))
-       :data-hash (item-hash item)
-       :data-type data-type
+       :id (frmt "ajax-editing-row-~A" (document-hash document))
+       :data-hash (document-hash document)
+       :type-def document-type
        :data-action "expand"
        :data-pages (or (parameter "pages") 50)
-       :data-page (or (getcx data-type :active-page)  1)
+       :data-page (or (getcx document-type :active-page)  1)
        :data-collection (gethash :collection-name (cache *context*))
-       :data-expanded (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-					(frmt "~A" (item-hash item)))
+       :data-expanded (if (string-equal (frmt "~A" (getcx document-type :expand-id)) 
+					(frmt "~A" (document-hash document)))
 			  "Yes"
 			  "No")
        :data-subs (if subs
@@ -1238,74 +1238,74 @@
 	    (cl-who:htm
 	     (:td :style "width:25px;"
 		  (cl-who:str
-		   (render-expand-buttons subs data-type item)))))
+		   (render-expand-buttons subs document-type document)))))
 	
-	(dolist (field row-fields)
-	  (cl-who:str (render-table-cell field item)))
+	(dolist (element row-elements)
+	  (cl-who:str (render-table-cell element document)))
 
 	(:td :style "width:40px;"
 	      (:div :class "btn-group"
 		   
 		   (when (not *rendering-shit*)
 		     (cl-who:str			      
-		      (render-grid-buttons data-type item hierarchy)))
+		      (render-grid-buttons document-type document hierarchy)))
 		   
 		   ))
-	(when (check-top-level-p data-type)
+	(when (check-top-level-p document-type)
 	  (cl-who:htm
 	   (:td :style "width:40px;text-align:center;"
 	    
 	    (cl-who:str
-	     (render-select-button item)))))
+	     (render-select-button document)))))
 	
 	)))))
 
 
 
-(defun render-select-item-row (data-type items fields)
+(defun render-select-document-row (document-type documents elements)
   (with-html-string
       (:tbody :style "display:table-row-group;"
 	      :id (frmt "select-from-~A"
-			data-type)
-	      (dolist (item items)
+			document-type)
+	      (dolist (document documents)
 		(cl-who:htm
 		 (:tr
 		  (:td)
 	
-		  (dolist (field (limit-fields fields
+		  (dolist (element (limit-elements elements
 					       nil))
-		    (cl-who:str (render-table-cell field item)))
+		    (cl-who:str (render-table-cell element document)))
 
 		  (:td :width "5px"
 		       (:div :class "btn-group"
 			     (cl-who:str
-				(render-select-button item))))))))))
+				(render-select-button document))))))))))
 
-(defun render-select-from-grid (data-type sub sub-data-spec hierarchy)
+(defun render-select-from-grid (document-type sub sub-data-spec hierarchy)
  
   (when (and (equalp (parameter "wfxaction")
 		     "select-from")
 	     (string-equal
-	      (parameter "data-type")
+	      (parameter "document-type")
 	      (frmt "~A" sub-data-spec)))
 
 
     (let ((*rendering-shit* t)
-	  (fields (get-data-fields
-		   (getcx (dig sub :db-type :data-type) :fields))))
+	  (elements (get-data-elements
+		   (getcx (digx sub :type-def :type-def) :elements))))
       
       (with-html-string
 	(:tbody :style "display:table-row-group;"
 		:id (frmt "ajax-select-from-group-~A"
-			  (dig sub :db-type :data-type))
+			  (digx sub :type-def :type-def))
 		(:tr
-		 (:td :colspan (+ (length (limit-fields fields
+		 (:td :colspan (+ (length (limit-elements elements
 							nil))
 				  2)
 		      (:span :class "font-weight-bold"
 		       (cl-who:str
 			  (frmt "Select ~A to add..."
-				(dig sub :db-type
+				(digx sub :type-def
 				     :collection))))
 
 		      (:i :name "cancel" 				   
@@ -1313,9 +1313,9 @@
 			  :onclick
 			  (frmt
 			   "~A;toggle_display(\"ajax-select-from-group-~A\");"
-			   (grid-js-render data-type
+			   (grid-js-render document-type
 					   :action "cancel")
-			   (dig sub :db-type :data-type)))
+			   (digx sub :type-def :type-def)))
 		      (:span :class "float-right"
 		       "&nbsp")
 		      (:button
@@ -1329,66 +1329,67 @@
 			   (gethash :collection-name (cache *context*))
 			   (frmt "select-from-~A"
 				 sub-data-spec)
-			   (js-pair "data-type"
+			   (js-pair "document-type"
 				    (frmt "~A" sub-data-spec))
 		       
 			   (js-pair "wfxaction" "add-selection")
-			   (js-pair "add-selection-field"
-				    (frmt "~A" (dig sub :name)))
-			   (js-pair "item-hierarchy"
+			   (js-pair "add-selection-element"
+				    (frmt "~A" (digx sub :name)))
+			   (js-pair "document-hierarchy"
 				    (hierarchy-string hierarchy))
 			   (js-pair "pages"
 				    (or (parameter "pages") 50))
 			   (js-pair "page"
-				    (or (getcx data-type :active-page) 1)))
+				    (or (getcx document-type :active-page) 1)))
 			  (cl-who:str "Add Selection")))))
 	
 	(:tbody :style "display:table-row-group;"
 		(:tr
-		 (:td :colspan (+ (length (limit-fields fields
+		 (:td :colspan (+ (length (limit-elements elements
 							nil))
 				  2)		      
 		      (:table :class "table table-sm grid-table-stuffx"
-		       (cl-who:str (render-select-item-row
-				    (dig sub :db-type :data-type)
+		       (cl-who:str (render-select-document-row
+				    (digx sub :type-def :type-def)
 				    (wfx-query-context-data
-				     (dig sub :db-type :collection)
-				     :query (lambda (item)
-					     (if (getf sub :filter)
+				     (digx sub :type-def :collection)
+				     :query (lambda (document)
+					     (if (getx sub :filter)
 						 (funcall
-						  (eval% (getf sub :filter))
-						  item
+						  (eval% (getx sub :filter))
+						  document
 						  (first (last (car hierarchy)))
 						  hierarchy)
-						 item)))
-				    fields))))))))))
+						 document)))
+				    elements))))))))))
 
-(defun render-expand (data-type item subs sub-level hierarchy)
+(defun render-expand (document-type document subs sub-level hierarchy)
 
-  (when (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-		      (frmt "~A" (item-hash item)))
+  (when (string-equal (frmt "~A" (getcx document-type :expand-id)) 
+		      (frmt "~A" (document-hash document)))
 
    
     (with-html-string
       (:div :class "row card-columns"
 	    (dolist (sub subs)
-	      (let* ((sub-data-spec (dig sub :db-type :data-type)))
+	      (let* ((sub-data-spec (digx sub :type-def :type-def)))
 
-		(setf (getcx sub-data-spec :parent-item) item)
+		(setf (getcx sub-data-spec :parent-document) document)
 
 		(setf (getcx sub-data-spec :collection-name)
-		      (dig sub :db-type :collection))
-			    
-		(unless (getcx sub-data-spec :data-type)
-		  (setf (getcx sub-data-spec :data-type)
-			(find-type-def *system* 
+		      (digx sub :type-def :collection))
+
+                
+		(unless (getcx sub-data-spec :type-def)
+		  (setf (getcx sub-data-spec :type-def)
+			(find-type-defenition *system* (digx sub :type-def :collection)
 				       sub-data-spec))
 			      
-		  (setf (getcx sub-data-spec :fields) 
-			(dig (getcx sub-data-spec :data-type)
-			     :data-type :fields)))
+		  (setf (getcx sub-data-spec :elements) 
+			(digx (getcx sub-data-spec :type-def)
+			     :elements)))
 			    
-		(setf (getcx sub-data-spec :active-item) item)
+		(setf (getcx sub-data-spec :active-document) document)
 
 			    
 		(cl-who:htm
@@ -1399,7 +1400,7 @@
 			     (:h5 :class "card-header"
 				  (cl-who:str
 				   (frmt "~A" (string-capitalize
-					       (getf sub :name))))
+					       (getx sub :name))))
 				  (cl-who:str
 				   (render-sub-new-button
 				    sub
@@ -1428,119 +1429,119 @@
 						  
 						  (render-grid-data
 						   sub-data-spec
-						   (getfx item sub) 
+						   (getx document sub) 
 						   (+ sub-level 1)
-						   item
-						   data-type
+						   document
+						   document-type
 						   hierarchy))))))
 			     
 			     (cl-who:str
 			      (render-select-from-grid
-			       data-type sub
+			       document-type sub
 			       sub-data-spec
 			       hierarchy)))))))))))
 
 
 
-(defun render-row-goodies (subs sub-level data-type
-			   item  parent-item parent-spec
-			   fields
+(defun render-row-goodies (subs sub-level document-type
+			   document  parent-document parent-spec
+			   elements
 			   hierarchy)
   (unless *rendering-shit*
-    (let ((header-fields (get-header-fields fields)))
+    (let ((header-elements (get-header-elements elements)))
 
       (with-html-string
 	
 	(if (and (equalp (parameter "wfxaction") "save")
-		 (getcx data-type :edit-object)
-		 (getcx data-type :validation-errors))
+		 (getcx document-type :edit-object)
+		 (getcx document-type :validation-errors))
 	    
-	    (cl-who:str (render-grid-edit data-type
-					  fields
-					  item
-					  parent-item
+	    (cl-who:str (render-grid-edit document-type
+					  elements
+					  document
+					  parent-document
 					  parent-spec
 					  hierarchy
 					  ))
 	    (cl-who:htm (:tbody
 			 :class ""
 			 :style "display:none"
-				:id (frmt "ajax-edit-~A" (item-hash item)))
+				:id (frmt "ajax-edit-~A" (document-hash document)))
 			(:tbody
 			 :class ""
-			 :id (frmt "ajax-expand-row-~A" (item-hash item))
-			 :style (if (and (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-						       (frmt "~A" (item-hash item))))
+			 :id (frmt "ajax-expand-row-~A" (document-hash document))
+			 :style (if (and (string-equal (frmt "~A" (getcx document-type :expand-id)) 
+						       (frmt "~A" (document-hash document))))
 				    "display:table-row-group"
 				    "display:none")
-			 (if (string-equal (frmt "~A" (getcx data-type :expand-id)) 
-					   (frmt "~A" (item-hash item)))
+			 (if (string-equal (frmt "~A" (getcx document-type :expand-id)) 
+					   (frmt "~A" (document-hash document)))
 		    
 			     (cl-who:htm
 			      (:tr
 			  
 			       (:td :colspan (if subs
 						 (+ (length
-						     (limit-fields header-fields
+						     (limit-elements header-elements
 								   (if (> (length hierarchy) 1)
 								       hierarchy)))
 						    3)
 						 (+ (length
-						     (limit-fields header-fields
+						     (limit-elements header-elements
 								   (if (> (length hierarchy) 1)
 								       hierarchy)))
 						    1))
 			   
-				    (cl-who:str (render-expand data-type item subs
+				    (cl-who:str (render-expand document-type document subs
 							       sub-level
 							       hierarchy)))))))))
 	
 	))))
 
 
-(defun render-new-edit (data-type fields parent-item parent-spec hierarchy)
+(defun render-new-edit (document-type elements parent-document parent-spec hierarchy)
   (with-html-string
 
     (:tbody ;;:style "display:none"
-	    :id (frmt "ajax-new-~A" data-type)
+	    :id (frmt "ajax-new-~A" document-type)
 	    
-	    (when (and (getcx data-type :edit-item)
-		       (not (item-hash (getcx data-type :edit-item))))
+	    (when (and (getcx document-type :edit-document)
+		       (not (document-hash (getcx document-type :edit-document))))
 
 	      (when (and (and (equalp (parameter "wfxaction") "save")
-			      (getcx data-type :edit-object)
-			      (getcx data-type :validation-errors))
-			 (string-equal (parameter "data-type")
-				       (frmt "~A" data-type)))
+			      (getcx document-type :edit-object)
+			      (getcx document-type :validation-errors))
+			 (string-equal (parameter "document-type")
+				       (frmt "~A" document-type)))
 		
 		(cl-who:str
-		 (render-grid-edit data-type fields
-				   (getcx data-type :edit-item)
-				   parent-item parent-spec
+		 (render-grid-edit document-type elements
+				   (getcx document-type :edit-document)
+				   parent-document parent-spec
 				   hierarchy)))))))
 
 
-(defun data-type-access-p (data-type)
+(defun document-type-access-p (document-type)
   (let ((access-p))
   
     (when (and (active-user)
-	       (digx (active-user) :selected-licenses))
+	       (digx  (active-user) :selected-licenses))
       (cond ((getx (current-user) :super-user-p)
 	     (setf access-p t))
-	    (t (dolist (lic (digx (active-user)
+	    (t (dolist (lic (digx  (active-user)
 				  :selected-licenses))
 		 (when (license-user lic)
 		   (let ((no-spec t))
 		     (dolist (permission
 			       (getx (license-user lic)
-				     :data-type-permissions))
+				     :type-def-permissions))
 		       
-		       (when (equalp data-type
-				     (digx permission
+		       (when (equalp document-type
+				     (digx  permission
 					   :type-name))
 			 (setf no-spec nil)
 			 
-			 (when (getf (digx permission
+			 (when (getx (digx  permission
 					   :permissions)
 				     :update)
 			   (setf access-p t))))
@@ -1548,55 +1549,55 @@
 		       (setf access-p t))))))))
     access-p))
 
-(defun render-grid-data (data-type page-items sub-level
-			 parent-item parent-spec hierarchy)
-  (let ((data-objects))
+(defun render-grid-data (document-type page-documents sub-level
+			 parent-document parent-spec hierarchy)
+  (let ((documents))
 
     
     
     (with-html-string
-      (let ((fields (getcx data-type :fields))
+      (let ((elements (getcx document-type :elements))
 	    (subs))
 		    
-	(dolist (field fields)
-	  (when (sub-grid-p field)
+	(dolist (element elements)
+	  (when (sub-grid-p element)
 	 
-	    (when (data-type-access-p (getf (getf field :db-type)
-					    :data-type))
+	    (when (document-type-access-p (getx (digx element :type-def)
+					    :type-def))
 	     
-	      (pushnew field subs))))
+	      (pushnew element subs))))
 
 	
-	(setf data-objects (sort-by-keys page-items (keysx fields)))	
+	(setf documents (sort-by-keys page-documents (keysx elements)))	
 
-	(dolist (item data-objects)
-	  (let ((item-hierarchy (append hierarchy (list (list :data-type
-							     data-type
-							     :item item)))))
+	(dolist (document documents)
+	  (let ((document-hierarchy (append hierarchy (list (list :type-def
+							     document-type
+							     :document document)))))
 
 	    (unless (and (equalp (parameter "wfxaction") "save")
-			 (getcx data-type :edit-object)
-			 (getcx data-type :validation-errors))
+			 (getcx document-type :edit-object)
+			 (getcx document-type :validation-errors))
 	      (cl-who:str
-	       (render-item-row subs data-type item fields
-				item-hierarchy)))
+	       (render-document-row subs document-type document elements
+				document-hierarchy)))
 
 	    
 	    (cl-who:str
 	     (render-row-goodies subs
 				 sub-level
-				 data-type
-				 item
-				 parent-item
+				 document-type
+				 document
+				 parent-document
 				 parent-spec
-				 fields
-				 item-hierarchy))))
+				 elements
+				 document-hierarchy))))
 		    
-	(cl-who:str (render-new-edit data-type fields
-				     parent-item parent-spec
+	(cl-who:str (render-new-edit document-type elements
+				     parent-document parent-spec
 				     hierarchy))))))
 
-(defun render-grid-sizing (data-type)
+(defun render-grid-sizing (document-type)
   (with-html-string
     (:input :type "text" :name "pages"
 	    :class "float-right form-control-sm"
@@ -1604,7 +1605,7 @@
 	    :id "pages"
 	    :value (or (parameter "pages")
 		       (getcx 
-			data-type :show-pages-count)
+			document-type :show-pages-count)
 		       50)
 	    :onkeydown
 	    ;;fires ajax call on enter (13)
@@ -1614,11 +1615,11 @@
 	     "cl-wfx:ajax-grid"
 	     (gethash :collection-name (cache *context*))
 	     nil
-	     (js-pair "data-type"
-		      (frmt "~A" data-type))	     
+	     (js-pair "document-type"
+		      (frmt "~A" document-type))	     
 	     (js-pair "wfxaction" "grid-sizing")))))
 
-(defun render-grid-search (data-type)
+(defun render-grid-search (document-type)
   (with-html-string
     (:input :type "text"
 	     :class "form-control" ;;"form-control-sm float-right"
@@ -1626,7 +1627,7 @@
 	     :id "search"
 	     :value (or (parameter "search")
 			(getcx 
-			 data-type :search)
+			 document-type :search)
 			"")
 	     :placeholder "Enter a deep search value..."
 	     :onkeydown
@@ -1637,76 +1638,76 @@
 	      "cl-wfx:ajax-grid"
 	      (gethash :collection-name (cache *context*))
 	      nil
-	      (js-pair "data-type"
-		       (frmt "~A" data-type))
+	      (js-pair "document-type"
+		       (frmt "~A" document-type))
 	      (js-pair "wfxaction" "grid-search")))))
 
-(defun fetch-grid-page-data (data-type items)
+(defun fetch-grid-page-data (document-type documents)
 
   (let* ((keys (keysx (getcx 
-		      data-type 
-		      :fields)))
+		      document-type 
+		      :elements)))
 
-	 (sorted-items (sort-by-keys items keys)))
+	 (sorted-documents (sort-by-keys documents keys)))
 
-    (setf (getcx data-type :show-pages-count) 
+    (setf (getcx document-type :show-pages-count) 
 	  (if (not (empty-p (parameter "pages")))
 	      (parse-integer (parameter "pages"))
 	      (or (getcx 
-		   data-type :show-pages-count)
+		   document-type :show-pages-count)
 		  50)))
     
-    (setf (getcx data-type :active-page)
+    (setf (getcx document-type :active-page)
 	  (if (not (empty-p (parameter "page")))
 	      (parse-integer (parameter "page"))
 	      (or (getcx 
-		   data-type :active-page)
+		   document-type :active-page)
 		  1)))
 
     (multiple-value-bind (page-count rem)
-	(floor (ensure-num (getcx data-type :data-count)) 
-	       (getcx data-type :show-pages-count))
+	(floor (ensure-num (getcx document-type :data-count)) 
+	       (getcx document-type :show-pages-count))
       
-      (setf (getcx data-type :page-count) page-count)
-      (setf (getcx data-type :page-count-remaining) rem))
+      (setf (getcx document-type :page-count) page-count)
+      (setf (getcx document-type :page-count-remaining) rem))
  
     
-    (setf (getcx data-type :start-page-count) 
+    (setf (getcx document-type :start-page-count) 
 	  (- (* (ensure-num (getcx 
-			     data-type :active-page)) 
+			     document-type :active-page)) 
 		(ensure-num (getcx 
-			     data-type :show-pages-count))) 
+			     document-type :show-pages-count))) 
 	     (ensure-num (getcx 
-			  data-type :show-pages-count))))
+			  document-type :show-pages-count))))
 
-    (setf (getcx data-type :end-page-count) 
+    (setf (getcx document-type :end-page-count) 
 	  (if (< (* (getcx 
-		     data-type :active-page)
+		     document-type :active-page)
 		    (getcx 
-		     data-type :show-pages-count)) 
+		     document-type :show-pages-count)) 
 		 (getcx 
-		  data-type :data-count))
+		  document-type :data-count))
 	      (* (getcx 
-		  data-type :active-page)
+		  document-type :active-page)
 		 (getcx 
-		  data-type :show-pages-count))))
+		  document-type :show-pages-count))))
  
-    (when (or (not (getcx data-type :end-page-count))
-	      (>= (getcx data-type :end-page-count)
-		  (length sorted-items)))
-      (setf (getcx data-type :end-page-count) (length sorted-items)))
+    (when (or (not (getcx document-type :end-page-count))
+	      (>= (getcx document-type :end-page-count)
+		  (length sorted-documents)))
+      (setf (getcx document-type :end-page-count) (length sorted-documents)))
 
 
-    (setf (getcx data-type :data-subset-count) (length items))
+    (setf (getcx document-type :data-subset-count) (length documents))
     
-    (when items
-      (subseq sorted-items 
-	      (getcx data-type :start-page-count) 
-	      (getcx data-type :end-page-count)))))
+    (when documents
+      (subseq sorted-documents 
+	      (getcx document-type :start-page-count) 
+	      (getcx document-type :end-page-count)))))
 
 (defun found-nil-p (list)
-  (dolist (item list)
-    (unless item
+  (dolist (document list)
+    (unless document
       (return-from found-nil-p t))))
 
 (defun filter-found-p (filter-term val)
@@ -1719,53 +1720,53 @@
 	    found))    
     (remove-if #'not found)))
 
-(defun filter-function (data-type)
-  (lambda (item)
+(defun filter-function (document-type)
+  (lambda (document)
     (let ((found nil))
-      (dolist (field (getcx 
-		      data-type 
-		      :filter-fields))
+      (dolist (element (getcx 
+		      document-type 
+		      :filter-elements))
 	(let ((filter-term 
 	       (or
 		(parameter 
-		 (frmt "~A-filter" (getf field :name)))
-		(getcx data-type
+		 (frmt "~A-filter" (getx element :name)))
+		(getcx document-type
 		       (intern (string-upcase
-				(frmt "~A-filter" (getf field :name))))))))
+				(frmt "~A-filter" (getx element :name))))))))
 	  (when filter-term			       
-	    (when (getf field :db-type)
-	      (when (sub-grid-p field)
-		(let ((accessor (dig field :db-type :accessor)))
-		  (dolist (sub-val (getfx item field))
+	    (when (digx element :type-def)
+	      (when (sub-grid-p element)
+		(let ((accessor (digx element :type-def :accessor)))
+		  (dolist (sub-val (getx document element))
 		    (when sub-val
-		      (let* ((val (accessor-value item accessor)))
+		      (let* ((val (accessor-value document accessor)))
 		
 			(if (filter-found-p filter-term val)
 			    (push t found)
 			    (push nil found)))))))
 	      
-	      (let ((val (print-item-val 
-			  (complex-type field) field item)))
+	      (let ((val (print-document-val 
+			  (complex-type element) element document)))
 		(if (filter-found-p filter-term val)
 		    (push t found)
 		    (push nil found)))))))
       (unless (found-nil-p found)
-	item))))
+	document))))
 
-(defun search-function (data-type search-term)
-  (lambda (item)
+(defun search-function (document-type search-term)
+  (lambda (document)
     (let ((found nil))
-      (dolist (field (getcx 
-		      data-type 
-		      :fields))
-	(when (getf field :db-type)
-	    (when (sub-grid-p field)
-	      (let ((accessor (dig field :db-type :accessor)))
+      (dolist (element (getcx 
+		      document-type 
+		      :elements))
+	(when (digx element :type-def)
+	    (when (sub-grid-p element)
+	      (let ((accessor (digx element :type-def :accessor)))
 	
-		(dolist (sub-val (getfx item field))
+		(dolist (sub-val (getx document element))
 		  (when sub-val
 		    
-		    (let* ((val (accessor-value item accessor)))
+		    (let* ((val (accessor-value document accessor)))
 		     
 		      (when val
 			(when (search search-term 
@@ -1776,8 +1777,8 @@
 
 	   
 
-	    (let ((val (print-item-val 
-			(complex-type field) field item)))
+	    (let ((val (print-document-val 
+			(complex-type element) element document)))
 	      
 	      (when val
 		(when (search search-term 
@@ -1786,85 +1787,85 @@
 		  (unless found		       				     
 		    (setf found t)))))))
       (when found
-	item))))
+	document))))
 
-(defun fetch-grid-data (data-type &key test)
-  (let* ((items )
+(defun fetch-grid-data (document-type &key test)
+  (let* ((documents )
 	 (collection-name (gethash :collection-name (cache *context*)))
 	 (search-term (or (parameter "search") 
 			  (getcx 
-			   data-type :search)))
+			   document-type :search)))
 	 (search-p (not (empty-p search-term)))
-	 (filter-p (getcx data-type :filter)))
+	 (filter-p (getcx document-type :filter)))
 
     (unless (or search-p filter-p)
       
-      (multiple-value-bind (itemsx count)
+      (multiple-value-bind (documentsx count)
 	    (wfx-query-context-data collection-name
 				    :query test)
-	  (setf (getcx data-type :data-count) count)
-	  (setf items itemsx)))
+	  (setf (getcx document-type :data-count) count)
+	  (setf documents documentsx)))
 
-    (when (or search-p filter-p (getcx data-type :filter-fields))
+    (when (or search-p filter-p (getcx document-type :filter-elements))
       (when (getcx 
-	     data-type 
-	     :filter-fields)
-	(multiple-value-bind (itemsx count)
+	     document-type 
+	     :filter-elements)
+	(multiple-value-bind (documentsx count)
 	    (wfx-query-context-data collection-name
-				     :query (filter-function data-type))
-	  (setf (getcx data-type :data-count) count)
-	  (setf items itemsx))
+				     :query (filter-function document-type))
+	  (setf (getcx document-type :data-count) count)
+	  (setf documents documentsx))
 	
-	(when items
-	  (setf items
+	(when documents
+	  (setf documents
 		(query-data
-		 items
-		 :query (search-function data-type search-term)))))
+		 documents
+		 :query (search-function document-type search-term)))))
       (unless (getcx 
-	       data-type 
-	       :filter-fields)
+	       document-type 
+	       :filter-elements)
 
-	(multiple-value-bind (itemsx count)
+	(multiple-value-bind (documentsx count)
 	    (wfx-query-context-data collection-name
 				       :query (search-function
-					      data-type search-term))
-	  (setf (getcx data-type :data-count) count)
-	  (setf items itemsx))))
+					      document-type search-term))
+	  (setf (getcx document-type :data-count) count)
+	  (setf documents documentsx))))
 
     
     
-    (fetch-grid-page-data data-type (if (listp items)
-					items
-					(list items)))))
+    (fetch-grid-page-data document-type (if (listp documents)
+					documents
+					(list documents)))))
 
-(defun render-grid-paging (data-type)  
+(defun render-grid-paging (document-type)  
   (let ((active-page (getcx 
-		      data-type :active-page))
+		      document-type :active-page))
 	(how-many-rem (getcx 
-		       data-type :page-count-remaining))
+		       document-type :page-count-remaining))
 	(how-many-pages (getcx 
-			 data-type :page-count)))
+			 document-type :page-count)))
     
     (with-html
       (:nav
        (:ul :class "pagination justify-content-end"
 
-	    (:li :class "page-item"
+	    (:li :class "page-document"
 		 (:span :class "font-weight-bold"
 		  (cl-who:str
 			 (frmt "Showing ~A of ~A"
-			       (if (> (getcx data-type :data-count)
+			       (if (> (getcx document-type :data-count)
 				      (cl-wfx::parse-integer
 				       (or (parameter "pages") "50")))
-				   (if (< (getcx data-type :data-subset-count)
+				   (if (< (getcx document-type :data-subset-count)
 					  (or (and (parameter "pages") (parse-integer (parameter "pages"))) 50))
-				       (getcx data-type :data-subset-count)
+				       (getcx document-type :data-subset-count)
 				       (or (parameter "pages") 50))
-				   (getcx data-type :data-count))
-			       (getcx data-type :data-count))))
+				   (getcx document-type :data-count))
+			       (getcx document-type :data-count))))
 		 (:span "&nbsp"))
 	    
-	    (:li :class "page-item"
+	    (:li :class "page-document"
 		 (:button ;;:tabindex -1 ;;when disabled
 		  :name "page" :type "submit" 
 		  :class (if (> active-page 1)
@@ -1874,8 +1875,8 @@
 		  :onclick 
 		  (js-render "cl-wfx:ajax-grid"
 			     (gethash :collection-name (cache *context*))
-			     (js-pair "data-type"
-				      (frmt "~A" data-type))
+			     (js-pair "document-type"
+				      (frmt "~A" document-type))
 			     (js-pair "pages"
 				      (or (parameter "pages") 50))
 			     (js-pair "page"
@@ -1890,16 +1891,16 @@
 	      (dotimes (i real-page-count)		
 		(cl-who:htm
 		 (:li :class (if (equalp active-page (+ i 1))
-				 "page-item active"
-				 "page-item")
+				 "page-document active"
+				 "page-document")
 		      (:button 
 		       :name "page" :type "submit" 
 		       :class "btn page-link"
 		       :onclick 
 		       (js-render "cl-wfx:ajax-grid"
 				  (gethash :collection-name (cache *context*))
-				  (js-pair "data-type"
-					   (frmt "~A" data-type))
+				  (js-pair "document-type"
+					   (frmt "~A" document-type))
 				  (js-pair "pages"
 					   (or (parameter "pages") 50))
 				  (js-pair "page"
@@ -1908,7 +1909,7 @@
 		       (cl-who:str (+ i 1))))))
 	      
 	      (cl-who:htm
-	       (:li :class "page-item"
+	       (:li :class "page-document"
 		    (:button ;;:tabindex -1
 		     :name "page" :type "submit" 
 		     :class (if (< active-page real-page-count)
@@ -1918,8 +1919,8 @@
 		     :onclick 
 		     (js-render "cl-wfx:ajax-grid"
 				(gethash :collection-name (cache *context*))
-				(js-pair "data-type"
-					 (frmt "~A" data-type))
+				(js-pair "document-type"
+					 (frmt "~A" document-type))
 				(js-pair "pages"
 					 (or (parameter "pages") 50))
 				(js-pair "page"
@@ -1941,38 +1942,38 @@
 	    (setf persist-p t)
 
 	    (pushnew
-	     (wfx-query-context-data-object
-	      (getcx (parameter "data-type")
+	     (wfx-query-context-document
+	      (getcx (parameter "document-type")
 		     :collection-name)
-	      :query (lambda (item)
+	      :query (lambda (document)
 		       (string-equal
-			(frmt "~A" (item-hash item))
+			(frmt "~A" (document-hash document))
 			(frmt "~A" (second spliff)))))
-	     (getx (getcx (parameter "data-type") :active-item)
-		   (intern (string-upcase (parameter "add-selection-field"))
+	     (getx (getcx (parameter "document-type") :active-document)
+		   (intern (string-upcase (parameter "add-selection-element"))
 
 			   :keyword)))))))
     (when persist-p
 
            
-      (let* ((hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
+      (let* ((hierarchy (cl-wfx:read-no-eval (parameter "document-hierarchy")))
 	     (root-hash (if hierarchy
 			    (second (first hierarchy))))
-	     (root-item
-	      (fetch-grid-root-edit-item root-hash)))
+	     (root-document
+	      (fetch-grid-root-edit-document root-hash)))
 
-	(persist-object
+	(persist-document
 	 (wfx-get-collection	
 	  (gethash :collection-name (cache *context*)))
-	 (if (listp root-item)
-	     (first root-item)
-	     root-item))))))
+	 (if (listp root-document)
+	     (first root-document)
+	     root-document))))))
 
 (defun delete-selected (selected)
-  (dolist (item selected)
-    (setf (item-deleted-p item) t)
-    (persist-object (item-collection item) item)
-    ;;(cl-naive-store::remove-data-object (item-collection item) item)
+  (dolist (document selected)
+    (setf (document-deleted-p document) t)
+    (persist-document (document-collection document) document)
+    ;;(cl-naive-store::remove-document (document-collection document) document)
     ))
 
 (defmethod action-handler ((action (eql :grid-select-action)) 
@@ -1986,135 +1987,136 @@
 	(let ((spliff (split-sequence:split-sequence #\, (cdr param))))
 	  (when (equalp (first spliff) "true")
 	    (pushnew
-	     (wfx-query-context-data-object
+	     (wfx-query-context-document
 	      (gethash :collection-name (cache *context*))
-	      :query (lambda (item)				      
+	      :query (lambda (document)				      
 		      (string-equal
-		       (frmt "~A" (item-hash item))
+		       (frmt "~A" (document-hash document))
 		       (frmt "~A" (second spliff)))))
 	     selected)))))
     
-    (setf (getcx (parameter "data-type") :selected-grid-items) selected)
+    (setf (getcx (parameter "document-type") :selected-grid-documents) selected)
     
     (cond ((string-equal (parameter "action-handler-lambda")
 			 :delete-selected)
 	   (delete-selected selected))
 	  (t
 	   (dolist (lambdax (getx (context-spec *context*) :lambdas))	     
-	     (when (string-equal (digx lambdax :event)
+	     (when (string-equal (digx  lambdax :event)
 				 :select-action-handler)
-	       (eval% (digx lambdax :lamda :code))))))
+	       (eval% (digx  lambdax :lamda :code))))))
     
-    (setf (getcx (parameter "data-type") :selected-grid-items) nil)))
+    (setf (getcx (parameter "document-type") :selected-grid-documents) nil)))
 
 
 
-(defmethod action-handler ((action (eql :item-action)) 
+(defmethod action-handler ((action (eql :document-action)) 
 			   (context context) 
 			   (request hunch-request)
 			   &key &allow-other-keys)
   
-  (let* ((data-type (getcx (parameter "data-type") :data-type))
-	 (item (wfx-query-context-data-object
+  (let* ((document-type (getcx (parameter "document-type") :type-def))
+	 (document (wfx-query-context-document
 		(gethash :collection-name (cache *context*))
-		:query (lambda (item)				      
+		:query (lambda (document)				      
 			(string-equal
-			 (frmt "~A" (item-hash item))
-			 (frmt "~A" (parameter "item-id")))))))
+			 (frmt "~A" (document-hash document))
+			 (frmt "~A" (parameter "document-id")))))))
     
 
-    (when item
+    (when document
       
-      (dolist (action (getf data-type :item-actions))
-	(when (string-equal (parameter "action-name") (getf action :name))
+      (dolist (action (getx document-type :document-actions))
+	(when (string-equal (parameter "action-name") (getx action :name))
 
-	  (funcall% (eval% (getf action :action))  item )
+	  (funcall% (eval% (getx action :action))  document )
 	  )))))
 
 (defun getcx (&rest indicators)
   (let* ((indicator (pop indicators))
 	 (place (gethash indicator (cache *context*))))
-    
+
     (if indicators
-	(progn
-	  
-	  (apply 'digx place indicators)) ;;digx also uses rest and that causes to many ()
+	(apply 'digx  place indicators)
 	place)))
 
 (defun (setf getcx) (value &rest indicators)
   (let* ((indicator (pop indicators))
 	 (place (gethash indicator (cache *context*))))
-    
+
     (if indicators
-	(setf (gethash indicator (cache *context*)) 
-	      (cl-naive-items::set-naive-dig place indicators value)) 
+	(progn
+	  (unless place
+	    (setf place (list (first indicators) nil)))
+	  (setf (digx place indicators) value)          
+	  (setf (gethash indicator (cache *context*)) 
+		place)) 
 	(setf (gethash indicator (cache *context*)) value))))
 
-(defun set-grid-search (data-type)
+(defun set-grid-search (document-type)
   (when (or (equalp (parameter "wfxaction") "filter")
 	    (equalp (parameter "wfxaction") "un-filter"))
     
     (when (equalp (parameter "wfxaction") "filter")
       (if (empty-p (parameter "search"))
-	  (setf (getcx data-type :search)
+	  (setf (getcx document-type :search)
 		(parameter "search"))))
     
     (when (equalp (parameter "wfxaction") "un-filter")
-      (setf (getcx data-type :search) nil)))
+      (setf (getcx document-type :search) nil)))
 
   (unless (or (equalp (parameter "wfxaction") "filter")
 	      (equalp (parameter "wfxaction") "un-filter"))
     (if (and (parameter "search") (not (empty-p (parameter "search"))))
-	(setf (getcx data-type :search) (parameter "search"))
+	(setf (getcx document-type :search) (parameter "search"))
 	(if (string-equal (parameter "search") "")
-	    (setf (getcx data-type :search) nil)))))
+	    (setf (getcx document-type :search) nil)))))
 
-(defun set-grid-filter (data-type)
+(defun set-grid-filter (document-type)
   (when (equalp (parameter "wfxaction") "filter")
-    (setf (getcx data-type :filter) t))
+    (setf (getcx document-type :filter) t))
   
   (when (equalp (parameter "wfxaction") "un-filter")
-    (setf (getcx data-type :filter) nil))
+    (setf (getcx document-type :filter) nil))
 
-  (let ((fields (getcx data-type :filter-fields)))
-    (dolist (field (getcx data-type :fields))
-	(when (parameter (frmt "~A-filter" (getf field :name)))
-	  (pushnew field fields)
-	  (setf (getcx data-type
+  (let ((elements (getcx document-type :filter-elements)))
+    (dolist (element (getcx document-type :elements))
+	(when (parameter (frmt "~A-filter" (getx element :name)))
+	  (pushnew element elements)
+	  (setf (getcx document-type
 		       (intern (string-upcase
-				(frmt "~A-filter" (getf field :name)))))  
-		(parameter (frmt "~A-filter" (getf field :name))))))
+				(frmt "~A-filter" (getx element :name)))))  
+		(parameter (frmt "~A-filter" (getx element :name))))))
     
-      (setf (getcx data-type :filter-fields) fields)))
+      (setf (getcx document-type :filter-elements) elements)))
 
-(defun set-type-context (data-type)
-  (unless (getcx data-type :data-type)
-    (setf (getcx data-type :data-type)
-	  (find-type-def *system* data-type))
-    
-    (setf (getcx data-type :fields) 
-	  (dig (getcx data-type :data-type) :data-type :fields))))
+(defun set-type-context (collection document-type)
+  (unless (getcx document-type :type-def)
+    (setf (getcx document-type :type-def)
+	  (find-type-defenition *system* (digx collection :collection :name) document-type))    
+    (setf (getcx document-type :elements) 
+	  (digx (getcx document-type :type-def) :elements))))
 
-(defun set-grid-context (collection-name data-type)
+(defun set-grid-context (collection-name document-type)
   (unless (gethash :collection-name (cache *context*))
     (setf  (gethash :collection-name (cache *context*)) collection-name)
-    (setf  (gethash :data-type (cache *context*)) data-type)
+    (setf  (gethash :type-def (cache *context*)) document-type)
     
     (unless (equalp (parameter "wfxaction") "save")
-      (setf (getcx data-type :root-item) nil))))
+      (setf (getcx document-type :root-document) nil))))
 
 (defun set-grid-expand ()  
   (when (equalp (parameter "wfxaction") "expand")
-    (setf (getcx (parameter "data-type") :expand-id) (parameter "item-id")))
+    (setf (getcx (parameter "document-type") :expand-id) (parameter "document-id")))
   
   (when (equalp (parameter "wfxaction") "unexpand")    
-    (setf (getcx (parameter "data-type") :expand-id) nil)))
+    (setf (getcx (parameter "document-type") :expand-id) nil)))
 
 
 
-(defun render-grid-menu (collection-name data-type)
+(defun render-grid-menu (collection-name document-type)
   (with-html-string
-    (:div :class "navitem dropdown dropleft"
+    (:div :class "navdocument dropdown dropleft"
 	  (:button :class "btn btn-sm dropdown-toggle"
 		   :id "gridDropdown" 
 		   :data-toggle "dropdown" 
@@ -2135,7 +2137,7 @@
        
 			   :class "btn btn-light"
 			   :style "width:45px;"
-			   :onclick (grid-js-render-new data-type nil)
+			   :onclick (grid-js-render-new document-type nil)
 			   
 			   (:i	
 			    :class "fa far fa-plus"))
@@ -2145,7 +2147,7 @@
 			    :class "btn btn-light w-100 text-left"
 			    :name "new"
 			    :type "button"	
-			    :onclick (grid-js-render-new data-type nil)
+			    :onclick (grid-js-render-new document-type nil)
 			    (cl-who:str "Add New"))))))
 		
 
@@ -2276,7 +2278,7 @@
        
 			   :class "btn btn-light"
 			   :style "width:45px;"
-			   :onclick (grid-js-render-new data-type nil)
+			   :onclick (grid-js-render-new document-type nil)
 			   
 			   (:i	
 			    :class "fa far fa-plus"))
@@ -2289,7 +2291,7 @@
 			    ;;TODO: Figure out ajax call that does not render. Or give feeback stats.
 			    :onclick (js-render "cl-wfx:ajax-sanitize-collection"
 						(gethash :collection-name (cache *context*))	      
-						(js-pair "data-type" (frmt "~A" data-type))
+						(js-pair "document-type" (frmt "~A" document-type))
 						(js-pair "wfxaction" "sanitize-collection"))
 			    (cl-who:str "Sanitize Collection"))))))
 		
@@ -2303,7 +2305,7 @@
 			      :id "pages"
 			      :value (or (parameter "pages")
 					 (getcx 
-					  data-type :show-pages-count)
+					  document-type :show-pages-count)
 					 50)
 			      :onkeydown
 			      ;;fires ajax call on enter (13)
@@ -2313,8 +2315,8 @@
 			       "cl-wfx:ajax-grid"
 			       (gethash :collection-name (cache *context*))
 			       nil
-			       (js-pair "data-type"
-					(frmt "~A" data-type))	     
+			       (js-pair "document-type"
+					(frmt "~A" document-type))	     
 			       (js-pair "wfxaction" "grid-sizing"))))
 		))))
 
@@ -2323,24 +2325,24 @@
     (let* ((collection (if (not (gethash :collection-name (cache *context*)))
 			   (find-collection-def *system*   
 						collection-name)))
-	   (data-type (or (gethash :data-type (cache *context*))
+	   (document-type (or (gethash :type-def (cache *context*))
 			  (and collection
-			       (dig collection :collection :data-type)))))   
+			       (digx collection :collection :type-def)))))   
 
-      (set-grid-context collection-name data-type)
+      (set-grid-context collection-name document-type)
       
 
-      (set-type-context data-type)
+      (set-type-context collection document-type)
 
-     ;; (set-type-context (parameter "data-type"))
+     ;; (set-type-context (parameter "document-type"))
 
-      (set-grid-search data-type)
+      (set-grid-search document-type)
 	
-      (set-grid-filter data-type)
+      (set-grid-filter document-type)
 	
       (set-grid-expand)
 	
-      (let ((page-items (fetch-grid-data data-type)))
+      (let ((page-documents (fetch-grid-data document-type)))
 	(with-html-string  
 	  (:div
 	   :class "card"
@@ -2359,7 +2361,7 @@
 		     
 		       (:div :class "col"
 			     (cl-who:str
-			      (render-grid-search data-type)))
+			      (render-grid-search document-type)))
 		  
 		      
 		       
@@ -2373,13 +2375,13 @@
 				 :type "submit" 
 				 :aria-pressed "false"
 				 :onclick 
-				 (grid-js-render-new data-type nil)
+				 (grid-js-render-new document-type nil)
 				 (cl-who:str "+")))
 			       (:td
-				(cl-who:str (render-grid-menu collection-name data-type))))))))
+				(cl-who:str (render-grid-menu collection-name document-type))))))))
 	
 		(:div :class "card-body  p-0 m-0" 		    
-		      :id data-type
+		      :id document-type
 		      (:div :class "row"
 			    (:div :class "col"
 				  (:table
@@ -2388,10 +2390,10 @@
 						      
 				   (:tbody
 				    (cl-who:str
-				     (render-grid-header data-type nil nil)))
+				     (render-grid-header document-type nil nil)))
 				   (cl-who:str
 				    (render-grid-data
-				     data-type page-items 0 nil nil
+				     document-type page-documents 0 nil nil
 				     nil))))))
 
 		(:div :class "card-footer"
@@ -2402,18 +2404,18 @@
 				   :class "btn btn-outline-success"
 				   :aria-pressed "false"
 				   :onclick 
-				   (grid-js-render-new data-type nil)
+				   (grid-js-render-new document-type nil)
 				   (cl-who:str "+")))
 			    (:div :class "col"
 				  (cl-who:str
 				   (render-select-actions
-				    data-type)))))
+				    document-type)))))
 		  
 		(:div :class "card-footer"
 		      (:div :class "row"	  
 			    (:div :class "col"
 				  (cl-who:str
-				   (render-grid-paging data-type))))))
+				   (render-grid-paging document-type))))))
 	  (:div
 	   
 	   (cl-who:str (gethash :context-lambda-event (cache *context*))))
@@ -2442,148 +2444,147 @@
 				  collection-name)))
 
 	(when collection
-	  (sanitize-data-file collection))))
-    
-    )
+	  (cl-naive-store:sanitize-data-file collection)))))
   
  
   (render-grid (getx (context-spec *context*) :name)))
 
-(defun get-child (fields parent-item data-type hash)
-  (dolist (field fields)
-    (when (sub-grid-p field)
-      (when (string-equal data-type (dig field :db-type :data-type))
-	(dolist (item (getx parent-item (getf field :name)))
-	  (when (string-equal (frmt "~A" (item-hash item))
+(defun get-child (elements parent-document document-type hash)
+  (dolist (element elements)
+    (when (sub-grid-p element)
+      (when (string-equal document-type (digx element :type-def :type-def))
+	(dolist (document (getx parent-document (getx element :name)))
+	  (when (string-equal (frmt "~A" (document-hash document))
 			      (frmt "~A" hash))
-	      (return-from get-child (list (getf field :name) item))))
+	      (return-from get-child (list (getx element :name) document))))
 
-	(return-from get-child (list (getf field :name)
-				     (make-item :data-type
+	(return-from get-child (list (getx element :name)
+				     (make-document :type-def
 						(string-downcase
-						 (frmt "~A" data-type)))))))))
+						 (frmt "~A" document-type)))))))))
 
-(defun fetch-grid-root-edit-item (hash)
+(defun fetch-grid-root-edit-document (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))   
-    (wfx-query-context-data-object
+    (wfx-query-context-document
      collection-name
-     :query (lambda (item)
-	     (when (string-equal (frmt "~A" (item-hash item))
+     :query (lambda (document)
+	     (when (string-equal (frmt "~A" (document-hash document))
 				 (frmt "~A" hash))
-	       item)))))
+	       document)))))
 
 (defun ajax-auto-complete (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
-  (let* ((data-type (parameter "data-type"))
-	 (field-name (intern (parameter "field-name") :KEYWORD))
-	 (fields (getcx data-type :fields))
-	 (field))
-    (dolist (fieldx fields)
-      (when (string-equal (getf fieldx :name) field-name)
-	(setf field fieldx)))
+  (let* ((document-type (parameter "document-type"))
+	 (element-name (intern (parameter "element-name") :KEYWORD))
+	 (elements (getcx document-type :elements))
+	 (element))
+    (dolist (elementx elements)
+      (when (string-equal (getx elementx :name) element-name)
+	(setf element elementx)))
 
-    (when field
+    (when element
       
-      (let* ((accessors (dig field :db-type :accessor))
+      (let* ((accessors (digx element :type-def :accessor))
 	     (list ))
-	(cond ((equalp (complex-type field) :collection-contained-item)
+	(cond ((equalp (complex-type element) :collection-contained-document)
 	       
-	       (setf list (fetch-contained-item-list field (getcx data-type :edit-item))))
+	       (setf list (fetch-contained-document-list element (getcx document-type :edit-document))))
 	      
 	      (t
 
 	       (setf list (wfx-query-context-data		   
-			   (dig field :db-type :collection)
-			   :query (lambda (item)
+			   (digx element :type-def :collection)
+			   :query (lambda (document)
 				   
 				    (and
-				     (if (getf field :filter)
+				     (if (getx element :filter)
 					 (funcall
-					  (eval% (getf field :filter))
-					  item
-					  (getcx data-type :edit-item)
-					  (getcx data-type :edit-object))
+					  (eval% (getx element :filter))
+					  document
+					  (getcx document-type :edit-document)
+					  (getcx document-type :edit-object))
 					 t)
 			     			  
 				     (or
 				      (string-equal (parameter
-						     (frmt "~A-drop" field-name))
+						     (frmt "~A-drop" element-name))
 						    "")
 				      (search (parameter
-					       (frmt "~A-drop" field-name))
-					      (accessor-value item accessors)
+					       (frmt "~A-drop" element-name))
+					      (accessor-value document accessors)
 					      :test #'string-equal))))))))
 
 	(with-html-string
 	  (:div
 	   :class "auto-complete-menu nav flex-column bg-white rounded border"
 	   (setf list (sort (copy-list list) #'string<
-			    :key (lambda (item)
-				   (accessor-value item accessors))))
+			    :key (lambda (document)
+				   (accessor-value document accessors))))
 
 	   (setf list (append (list nil) list))
 	   
 	   (dolist (option list)
 	     (cl-who:htm
-	      (:span :class "auto-complete-item nav-link"
+	      (:span :class "auto-complete-document nav-link"
 		     (:input :type "hidden"
-			     :value (frmt "~A" (if option (item-hash option))))
+			     :value (frmt "~A" (if option (document-hash option))))
 		     (cl-who:str
 		      (if option
-			  (trim-whitespace
+			  (naive-impl:trim-whitespace
 			   (accessor-value option accessors)))))))))))))
 
-(defun get-field-accessor (data-type collection)
-  (let ((cl-naive-items::get-data-type ))))
+(defun get-element-accessor (document-type collection)
+  (declare (ignorable document-type) (ignorable collection))
+  (error "Not Imlemented"))
 
 (defun ajax-auto-complete-x (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   (let* (
-	 (field-name (intern (parameter "field-name") :KEYWORD))
+	 (element-name (intern (parameter "element-name") :KEYWORD))
 	 (collection (parameter "collection")))
  
-    (let* ((accessors (list  field-name))
+    (let* ((accessors (list  element-name))
 	   (list (wfx-query-context-data		   
 		  collection
-		  :query (lambda (item)
+		  :query (lambda (document)
 			  (or
 			   (string-equal (parameter
-					  (frmt "~A-drop" field-name))
+					  (frmt "~A-drop" element-name))
 					 "")
 			   (search (parameter
-				    (frmt "~A-drop" field-name))
-				   (accessor-value item accessors)
+				    (frmt "~A-drop" element-name))
+				   (accessor-value document accessors)
 				   :test #'string-equal))))))
 
       (with-html-string
 	(:div
 	 :class "auto-complete-menu nav flex-column bg-white rounded border"
 	 (setf list (sort (copy-list list) #'string<
-			  :key (lambda (item)
-				 (accessor-value item accessors))))
+			  :key (lambda (document)
+				 (accessor-value document accessors))))
 	 (dolist (option list)
 	   (cl-who:htm
-	    (:span :class "auto-complete-item nav-link"
+	    (:span :class "auto-complete-document nav-link"
 		   (:input :type "hidden"
-			   :value (frmt "~A" (item-hash option)))
+			   :value (frmt "~A" (document-hash option)))
 		   (cl-who:str
-		    (trim-whitespace 
+		    (naive-impl:trim-whitespace 
 		     (accessor-value option accessors)))))))))))
 
 (declaim (optimize (debug 3))
 	 (notinline ajax-grid-edit))
 
 (defun set-edit-objects ()
-  (let* ((data-type (string-downcase (parameter "data-type")))
-	 (fields )
-	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
+  (let* ((document-type (string-downcase (parameter "document-type")))
+	 (elements )
+	 (hierarchy (cl-wfx:read-no-eval (parameter "document-hierarchy")))
 	 (root-type)
 	 (root-hash)
-	 (root-item)
+	 (root-document)
 	 (edit-objects))
 
 
-    (setf (getcx data-type :edit-object) nil)
+    (setf (getcx document-type :edit-object) nil)
     
     (setf root-type (if  hierarchy
 			 (string-downcase (frmt "~A"
@@ -2591,33 +2592,33 @@
     (setf root-hash (if hierarchy
 			(second (first hierarchy))))
 
-    (setf fields (getcx root-type :fields))
+    (setf elements (getcx root-type :elements))
      
-    (setf root-item (fetch-grid-root-edit-item root-hash))
+    (setf root-document (fetch-grid-root-edit-document root-hash))
      
-    (unless root-item
-      (setf root-item (make-item :data-type data-type)))
+    (unless root-document
+      (setf root-document (make-document :type-def document-type)))
 
-    (when root-item
-      (setf edit-objects (list (list :data-type root-type :item root-item)))
+    (when root-document
+      (setf edit-objects (list (list :type-def root-type :document root-document)))
        
       (if (> (length hierarchy) 1)
-	  (let ((item)
-		(item-type root-type))
+	  (let ((document)
+		(document-type root-type))
 
 	    (dolist (child (cdr hierarchy))
-	      (setf item (get-child (getcx item-type :fields)
-				    (or (if item (second item)) root-item)
+	      (setf document (get-child (getcx document-type :elements)
+				    (or (if document (second document)) root-document)
 				    (first child)
 				    (second child)))
-	      (setf item-type (string-downcase (frmt "~A" (first child))))
+	      (setf document-type (string-downcase (frmt "~A" (first child))))
 	      (setf edit-objects
-		    (push (list :data-type item-type
-				:item (second item)
-				:field-name (first item))
+		    (push (list :type-def document-type
+				:document (second document)
+				:element-name (first document))
 			  edit-objects)))
-	    (setf (getcx data-type :edit-object) edit-objects))
-	  (setf (getcx data-type :edit-object) edit-objects))
+	    (setf (getcx document-type :edit-object) edit-objects))
+	  (setf (getcx document-type :edit-object) edit-objects))
       edit-objects)))
 
 
@@ -2627,16 +2628,16 @@
   (declare (ignore id) (ignore from-ajax))
 
   
-  (let* ((data-type (string-downcase (parameter "data-type")))
-	 (fields )
-	 (hierarchy (cl-wfx:read-no-eval (parameter "item-hierarchy")))
+  (let* ((document-type (string-downcase (parameter "document-type")))
+	 (elements )
+	 (hierarchy (cl-wfx:read-no-eval (parameter "document-hierarchy")))
 	 (root-type)
 	 (root-hash)
-	 (root-item)
+	 (root-document)
 	 (edit-objects))
 
 
-    (setf (getcx data-type :edit-object) nil)
+    (setf (getcx document-type :edit-object) nil)
     
     (setf root-type (if  hierarchy
 			 (string-downcase (frmt "~A"
@@ -2644,58 +2645,58 @@
     (setf root-hash (if hierarchy
 			(second (first hierarchy))))
     
-    (setf fields (getcx root-type :fields))
+    (setf elements (getcx root-type :elements))
 
-    (setf root-item (fetch-grid-root-edit-item root-hash))
+    (setf root-document (fetch-grid-root-edit-document root-hash))
 
-    (unless root-item
-      (setf root-item (make-item :data-type data-type)))
+    (unless root-document
+      (setf root-document (make-document :type-def document-type)))
 
-    (when root-item
-      (setf edit-objects (list (list :data-type root-type :item root-item)))
+    (when root-document
+      (setf edit-objects (list (list :type-def root-type :document root-document)))
 
       
       
       (if (> (length hierarchy) 1)
-	  (let ((item)
-		(item-type root-type))
+	  (let ((document)
+		(document-type root-type))
 	    
 	    (dolist (child (cdr hierarchy))
-	      (setf item (get-child (getcx item-type :fields)
-				    (or (if item (second item)) root-item)
+	      (setf document (get-child (getcx document-type :elements)
+				    (or (if document (second document)) root-document)
 				    (first child)
 				    (second child)))
-	      (setf item-type (string-downcase (frmt "~A" (first child))))
+	      (setf document-type (string-downcase (frmt "~A" (first child))))
 	      (setf edit-objects
-		    (push (list :data-type item-type
-				:item (second item)
-				:field-name (first item))
+		    (push (list :type-def document-type
+				:document (second document)
+				:element-name (first document))
 			  edit-objects)))
-	    (setf (getcx data-type :edit-object) edit-objects)
+	    (setf (getcx document-type :edit-object) edit-objects)
 
 	    	    
-	    (render-grid-edit item-type
-			      (getcx item-type :fields)
-			      (second item)
-			      root-item root-type
+	    (render-grid-edit document-type
+			      (getcx document-type :elements)
+			      (second document)
+			      root-document root-type
 			      (reverse edit-objects)))
 	  (progn
-	    (setf (getcx data-type :edit-object) edit-objects)
-	    (render-grid-edit root-type fields root-item nil nil
-				     (list (list :data-type data-type
-						 :item root-item))))))))
+	    (setf (getcx document-type :edit-object) edit-objects)
+	    (render-grid-edit root-type elements root-document nil nil
+				     (list (list :type-def document-type
+						 :document root-document))))))))
 
-(defun index-keys-x (fields item-values)
+(defun index-keys-x (elements document-values)
   (let ((keys))
-    (dolist (field fields)
-      (when (getf field :key-p)
-	(if (item-p (getf item-values (getf field :name)))
-	    (push (item-hash (getf item-values (getf field :name))) keys)
-	    (push (getf item-values (getf field :name)) keys))))
+    (dolist (element elements)
+      (when (getx element :key-p)
+	(if (document-p (getx document-values (getx element :name)))
+	    (push (document-hash (getx document-values (getx element :name))) keys)
+	    (push (getx document-values (getx element :name)) keys))))
     (reverse keys)))
 
-(defun move-uploaded-file (fields edit-item)
-  (let ((hash (item-hash edit-item))
+(defun move-uploaded-file (elements edit-document)
+  (let ((hash (document-hash edit-document))
 	(collection (wfx-get-collection
 		     (gethash :collection-name (cache *context*)))))
 
@@ -2704,11 +2705,11 @@
 	    (hashx (uuid:make-v4-uuid)))
 	(setf hash hashx)))
     
-    (dolist (field fields)
+    (dolist (element elements)
 
       (when (or
-	     (equalp (complex-type field) :image)
-	     (equalp (complex-type field) :file))
+	     (equalp (complex-type element) :image)
+	     (equalp (complex-type element) :file))
 	(let* ((server-path
 	       (string-downcase
 		(frmt "~A/files/~A/~A/"
@@ -2718,11 +2719,11 @@
 			   (frmt "~A~A"
 				 (location (store collection))
 				 (name collection))))
-		      (parameter "data-type")
-		      (getf field :name))))
+		      (parameter "document-type")
+		      (getx element :name))))
 	       (file-name (sanitize-file-name
 			   (parameter (string-downcase
-				       (frmt "~A" (getf field :name))))))
+				       (frmt "~A" (getx element :name))))))
 	      (temp-path  (merge-pathnames				 
 			   file-name
 			   (string-downcase
@@ -2734,15 +2735,15 @@
 					     (location (store collection))
 					     (name collection))))
 				  
-				  (parameter "data-type")
-				  (getf field :name)))) ))
+				  (parameter "document-type")
+				  (getx element :name)))) ))
 
 	  (ensure-directories-exist server-path)
 
 	  (unless (probe-file temp-path)
 	   
-	    (setf (getx edit-item (getf field :name))
-		  (getx edit-item (getf field :name))))
+	    (setf (getx edit-document (getx element :name))
+		  (getx edit-document (getx element :name))))
 	  
 	  (when (probe-file temp-path)
 	    (fad:copy-file
@@ -2751,231 +2752,231 @@
 			      server-path)
 	     :overwrite t)
 	    (delete-file temp-path)
-	    (setf (getx edit-item (getf field :name))
+	    (setf (getx edit-document (getx element :name))
 		  (parameter (string-downcase
-			      (frmt "~A" (getf field :name)))))))))))
+			      (frmt "~A" (getx element :name)))))))))))
 
-(defun find-contained-item (hash list)
-  (dolist (item list)
-    (when (string-equal (frmt "~A" (item-hash item))
+(defun find-contained-document (hash list)
+  (dolist (document list)
+    (when (string-equal (frmt "~A" (document-hash document))
 			(frmt "~A" hash))
-      (return-from find-contained-item item))))
+      (return-from find-contained-document document))))
 
 
-(defun synq-value (field edit-item parent-item value)
-  (cond ((equalp (complex-type field) :collection)
-	 (setf (getfx edit-item field)
-		 (wfx-query-context-data-object
-			(dig field :db-type :collection)
-			:query (lambda (item)
-				 (string-equal (frmt "~A" (item-hash item))
+(defun synq-value (element edit-document parent-document value)
+  (cond ((equalp (complex-type element) :collection)
+	 (setf (getx edit-document element)
+		 (wfx-query-context-document
+			(digx element :type-def :collection)
+			:query (lambda (document)
+				 (string-equal (frmt "~A" (document-hash document))
 					       (frmt "~A" value))))))
 	
-	((equalp (complex-type field) :collection-contained-item)
-	 (setf (getfx edit-item field)
+	((equalp (complex-type element) :collection-contained-document)
+	 (setf (getx edit-document element)
 	       (if (not (empty-p value))
 		   (progn
 		     
-		     (find-contained-item
+		     (find-contained-document
 		      value
-		      (fetch-contained-item-list
-		       field
-		       edit-item))))))
+		      (fetch-contained-document-list
+		       element
+		       edit-document))))))
 	
-	((equalp (complex-type field) :contained-item)
-	 (setf (getfx edit-item field)
-	       (find-contained-item
+	((equalp (complex-type element) :contained-document)
+	 (setf (getx edit-document element)
+	       (find-contained-document
 		value
-		(accessor-value parent-item
-				(digx field :db-type :container-accessor)) )))
-	((equalp (complex-type field) :item)
-	 (let* ((sub-data-type (digx field :db-type :data-type))
-		(more-item (or (getfx edit-item field)
-			       (make-item :data-type
-					  sub-data-type))))
-	   (synq-item-values sub-data-type
-			     (getcx sub-data-type :fields)
-			     edit-item
-			     more-item)
+		(accessor-value parent-document
+				(digx  element :type-def :container-accessor)) )))
+	((equalp (complex-type element) :document)
+	 (let* ((sub-document-type (digx  element :type-def :type-def))
+		(more-document (or (getx edit-document element)
+			       (make-document :type-def
+					  sub-document-type))))
+	   (synq-document-values sub-document-type
+			     (getcx sub-document-type :elements)
+			     edit-document
+			     more-document)
 
-	   (setf (getfx edit-item field) more-item)))
+	   (setf (getx edit-document element) more-document)))
 	(t	
-	 (setf (getfx edit-item field) value))))
+	 (setf (getx edit-document element) value))))
 
 
-(defun validate-value (field field-name edit-item parent-item value)
-  (if (equalp (complex-type field) :item)
-      (cond ((equalp (complex-type field) :collection)
-	     (break "~A"(parameter field-name) )
-	     (validate-sfx
-	      (complex-type field)
-	      field 
-	      edit-item 
-	      (parameter field-name)
-	      :items (wfx-query-context-data
-		      (dig field :db-type :collection)
-		      :query (lambda (item)
-			      (string-equal (frmt "~A" (item-hash item))
-					    (frmt "~A" value))))))
+(defun validate-value (element element-name edit-document parent-document value)
+  (if (equalp (complex-type element) :document)
+      (cond ((equalp (complex-type element) :collection)
+             
+	     (validate-xe
+	      edit-document 
+	      element 
+	      (complex-type element)
+	      (parameter element-name)
+	      :documents (wfx-query-context-data
+			  (digx element :type-def :collection)
+			  :query (lambda (document)
+				   (string-equal (frmt "~A" (document-hash document))
+						 (frmt "~A" value))))))
 	    
-	    ((equalp (complex-type field) :collection-contained-item)
-	     (validate-sfx (complex-type field)
-			   field 
-			   edit-item 
-			   (parameter field-name)
-			   :items
-			   (fetch-contained-item-list field edit-item )))
-	    ((equalp (complex-type field) :contained-item)
-	     (validate-sfx (complex-type field)
-			   field 
-			   edit-item 
-			   (parameter field-name)
-			   :items
-			   (accessor-value parent-item
-				(digx field :db-type :container-accessor))))
-	    ((getf field :validation)
-	     (if (functionp (getf field :validation))
-		 (funcall (eval% (getf field :validation)) edit-item value)))
+	    ((equalp (complex-type element) :collection-contained-document)
+	     (validate-xe edit-document
+			   element 
+			   (complex-type element)
+			   (parameter element-name)
+			   :documents
+			   (fetch-contained-document-list element edit-document )))
+	    ((equalp (complex-type element) :contained-document)
+	     (validate-xe edit-document
+			  element 
+			  (complex-type element)
+			  (parameter element-name)
+			  :documents
+			  (accessor-value parent-document
+					  (digx  element :type-def :container-accessor))))
+	    ((getx element :validation)
+	     (if (functionp (getx element :validation))
+		 (funcall (eval% (getx element :validation)) edit-document value)))
 	    (t
 	     (list t nil)))
       (list t nil)))
 
-(defun synq-item-values (data-type fields parent-item edit-item)
+(defun synq-document-values (document-type elements parent-document edit-document)
   
-  (dolist (field fields)
+  (dolist (element elements)
 
-    (when (and (digx field :attributes :editable)
-	       (getf field :db-type)
-	       (not (sub-grid-p field)))
+    (when (and (digx element :attributes :editable)
+	       (digx element :type-def)
+	       (not (sub-grid-p element)))
 
-      (let* ((field-name (frmt "~A" (getf field :name)))
-	     (valid (if (equalp (complex-type field) :item)
-			(validate-value field
-					field-name 
-					edit-item
-					parent-item
+      (let* ((element-name (frmt "~A" (getx element :name)))
+	     (valid (if (equalp (complex-type element) :document)
+			(validate-value element
+					element-name 
+					edit-document
+					parent-document
 					(or
-					 (parameter (string-downcase field-name))
-					 (parameter field-name)))
+					 (parameter (string-downcase element-name))
+					 (parameter element-name)))
 			(list t nil))))
 
 	
 	(unless (first valid)
 	  (pushnew 
-	   (list field-name (second valid))
-	   (getcx data-type :validation-errors)))
+	   (list element-name (second valid))
+	   (getcx document-type :validation-errors)))
 	      
 	(when (first valid)
-	  (synq-value field edit-item parent-item
-		      (or (parameter (string-downcase field-name))
-			  (parameter field-name))))))	  
+	  (synq-value element edit-document parent-document
+		      (or (parameter (string-downcase element-name))
+			  (parameter element-name))))))	  
   
-    (when (getf field :key-p)
+    (when (getx element :key-p)
       
-      (when (empty-p (parameter (getf field :name)))
+      (when (empty-p (parameter (getx element :name)))
 	(pushnew
-	 (frmt "Key values may not be blank. (~A)~%" (getf field :name))
-	 (getcx data-type :validation-errors))))))
+	 (frmt "Key values may not be blank. (~A)~%" (getx element :name))
+	 (getcx document-type :validation-errors))))))
 
-(defun grid-append-child (data-type parent-slot parent-item edit-item)
-  (unless (getcx data-type :validation-errors)
+(defun grid-append-child (document-type parent-slot parent-document edit-document)
+  (unless (getcx document-type :validation-errors)
     ;;Append parent-slot only if new	
     (when parent-slot
-      (let ((exists (find-equalp-item edit-item
-				      (getx parent-item parent-slot))))
+      (let ((exists (find-equalp-document edit-document
+				      (getx parent-document parent-slot))))
 	(if exists
-	    edit-item		  
-	    (setf (getx parent-item parent-slot)
-		  (append (getx parent-item parent-slot)
-			  (list edit-item))))))))
+	    edit-document		  
+	    (setf (getx parent-document parent-slot)
+		  (append (getx parent-document parent-slot)
+			  (list edit-document))))))))
 
-(defun grid-persist-object (data-type root-item)
-  (unless (getcx data-type :validation-errors)
+(defun grid-persist-document (document-type root-document)
+  (unless (getcx document-type :validation-errors)
     (let ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*)))))
     
-      (setf (getx root-item :user) (getx (current-user) :email))
+      (setf (getx root-document :user) (getx (current-user) :email))
       (unless collection
 	(pushnew 
 	 "No default store found check if license is selected."
-	 (getcx data-type :validation-errors)))
+	 (getcx document-type :validation-errors)))
 
       (when collection
-	(setf (item-collection root-item) collection)
-	(setf (item-store root-item) (store collection))
-	(persist-object collection root-item :allow-key-change-p t)))))
+	(setf (document-collection root-document) collection)
+	(setf (document-store root-document) (store collection))
+	(persist-document collection root-document :allow-key-change-p t)))))
 
 (defun prepare-edit-objects ()
-  (let* ((data-type (string-downcase (parameter "data-type")))
+  (let* ((document-type (string-downcase (parameter "document-type")))
 	(edit-objects (reverse (set-edit-objects)))
 	(collection (wfx-get-collection
 		     (gethash :collection-name (cache *context*))))
 	
-	(root-item)
-	(parent-item)
-	(edit-item)
+	(root-document)
+	(parent-document)
+	(edit-document)
 	(parent-slot))
       
     (when edit-objects
       
-      (setf root-item (getf (first edit-objects) :item))
+      (setf root-document (getx (first edit-objects) :document))
 
-      ;;Create new item if saving item higher up in the store
+      ;;Create new document if saving document higher up in the store
       ;;hierarchy
-      (when (item-store root-item)
+      (when (document-store root-document)
 	(unless (equalp (store collection)
-			(item-store root-item))
-	  (setf root-item (make-item :data-type (item-data-type root-item)
+			(document-store root-document))
+	  (setf root-document (make-document :type-def (document-type root-document)
 				     :collection collection
-				     :values (item-values root-item)
-				     :changes (item-changes root-item)))
-	  (setf (getf (first edit-objects) :item) root-item)))
+				     :elements (document-values root-document)
+				     :changes (document-changes root-document)))
+	  (setf (getx (first edit-objects) :document) root-document)))
 
       
       (when (> (length edit-objects) 1)
-	(setf edit-item (getf (first (last edit-objects)) :item))
-	(setf parent-slot (getf (first (last edit-objects)) :field-name))
-	(setf parent-item
-	      (getf (nth (- (length edit-objects) 2) edit-objects) :item)))
+	(setf edit-document (getx (first (last edit-objects)) :document))
+	(setf parent-slot (getx (first (last edit-objects)) :element-name))
+	(setf parent-document
+	      (getx (nth (- (length edit-objects) 2) edit-objects) :document)))
       
-      ;;Create new item if saving item higher up in the store
+      ;;Create new document if saving document higher up in the store
       ;;hierarchy
-      (when (and edit-item (item-store edit-item))
+      (when (and edit-document (document-store edit-document))
 	(unless (equalp (store collection)
-			(item-store edit-item))
-	  (setf edit-item (make-item :data-type data-type
+			(document-store edit-document))
+	  (setf edit-document (make-document :type-def document-type
 				     :collection (wfx-get-collection
-						  (name (item-collection
-							 edit-item)))
-				     :values (item-values edit-item)
-				     :changes (item-changes edit-item)))
-	  (setf (getf (first (last edit-objects)) :item) edit-item)
+						  (name (document-collection
+							 edit-document)))
+				     :elements (document-values edit-document)
+				     :changes (document-changes edit-document)))
+	  (setf (getx (first (last edit-objects)) :document) edit-document)
 
-	  (let ((clean-list (getxo parent-item parent-slot)))
+	  (let ((clean-list (getxo parent-document parent-slot)))
 	    
-	    (dolist (item clean-list)
-	      (when (string-equal (frmt "~A" (item-hash item))
-				  (frmt "~A" (parameter "item-id")))
+	    (dolist (document clean-list)
+	      (when (string-equal (frmt "~A" (document-hash document))
+				  (frmt "~A" (parameter "document-id")))
 		
-		(setf clean-list (remove item clean-list))
-		(setf clean-list (pushnew edit-item clean-list))))
-	    (setf (getx parent-item parent-slot) clean-list))))
+		(setf clean-list (remove document clean-list))
+		(setf clean-list (pushnew edit-document clean-list))))
+	    (setf (getx parent-document parent-slot) clean-list))))
 
       (unless (> (length edit-objects) 1)
-	(setf edit-item root-item)))
+	(setf edit-document root-document)))
 
-    (values root-item parent-slot parent-item edit-item)))
+    (values root-document parent-slot parent-document edit-document)))
 
 
-(defun fire-context-event (context event root-item edit-item)
+(defun fire-context-event (context event root-document edit-document)
   (let ((context-spec (context-spec context)))
     (when (getx context-spec :lambdas)
       (dolist (lambdax (getx context-spec :lambdas))
 	(when (find event (getx lambdax :events) :test 'equalp)
-	  (let* ((code (digx lambdax :lambda :code))
+	  (let* ((code (digx  lambdax :lambda :code))
 		 (result (eval%
-			  `(let ((*root-item* ,root-item)
-				 (*edit-item* ,edit-item))
+			  `(let ((*root-document* ,root-document)
+				 (*edit-document* ,edit-document))
 			     ,code))))
 	    (setf (gethash :context-lambda-code (cache *context*))
 		  code)
@@ -2991,54 +2992,54 @@
 			   &key &allow-other-keys)
 
 
-  (let* ((data-type (string-downcase (parameter "data-type")))
-	 (fields (getcx data-type :fields)))
+  (let* ((document-type (string-downcase (parameter "document-type")))
+	 (elements (getcx document-type :elements)))
 
-    (setf (getcx data-type :validation-errors) nil)
+    (setf (getcx document-type :validation-errors) nil)
     
-    (multiple-value-bind (root-item parent-slot parent-item edit-item)
+    (multiple-value-bind (root-document parent-slot parent-document edit-document)
 	(prepare-edit-objects)
 
-      (when fields
+      (when elements
 	
-	(unless edit-item
-	  (setf edit-item (make-item :data-type data-type)))
+	(unless edit-document
+	  (setf edit-document (make-document :type-def document-type)))
 
 	
-	(when (dig (getcx data-type :data-type) :data-type :client-validation)
-	  (let ((valid (funcall (eval% (dig (getcx data-type :data-type)
-					    :data-type :client-validation))
-				  root-item
-				  edit-item)))
+	(when (digx (getcx document-type :type-def) :type-def :client-validation)
+	  (let ((valid (funcall (eval% (digx (getcx document-type :type-def)
+					    :type-def :client-validation))
+				  root-document
+				  edit-document)))
 	      (unless (first valid)
 		
 		(pushnew 
-		 (list data-type (second valid))
-		 (getcx data-type :validation-errors)))))
+		 (list document-type (second valid))
+		 (getcx document-type :validation-errors)))))
         
-	(unless (getcx data-type :validation-errors)
+	(unless (getcx document-type :validation-errors)
           
-	  (handler-case (synq-item-values data-type fields parent-item edit-item)
+	  (handler-case (synq-document-values document-type elements parent-document edit-document)
 	    (error (c)
               (break "~S" c)
 	      (pushnew 
-	       (list data-type (cl-who:escape-string  (frmt "~S" c)))
-		 (getcx data-type :validation-errors))
+	       (list document-type (cl-who:escape-string  (frmt "~S" c)))
+		 (getcx document-type :validation-errors))
 	      
 	      ))
 	  
           
-	  (unless (getcx data-type :validation-errors)
+	  (unless (getcx document-type :validation-errors)
                   
-		  (move-uploaded-file fields edit-item)   
+		  (move-uploaded-file elements edit-document)   
 		  
-		  (grid-append-child data-type parent-slot parent-item
-				     edit-item)
+		  (grid-append-child document-type parent-slot parent-document
+				     edit-document)
 
 		  
-		  (grid-persist-object data-type root-item)
+		  (grid-persist-document document-type root-document)
 
-		  (fire-context-event context :save root-item edit-item)))
+		  (fire-context-event context :save root-document edit-document)))
 	
 
 	))))
@@ -3049,16 +3050,16 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (multiple-value-bind (root-item parent-slot parent-item edit-item)
+  (multiple-value-bind (root-document parent-slot parent-document edit-document)
 	(prepare-edit-objects)
    
-      (when (and edit-item parent-slot)
-	(let ((clean-list (getx parent-item parent-slot)))
-	  (dolist (item clean-list)
-	    (when (string-equal (frmt "~A" (item-hash item))
-				(frmt "~A" (parameter "item-id")))
+      (when (and edit-document parent-slot)
+	(let ((clean-list (getx parent-document parent-slot)))
+	  (dolist (document clean-list)
+	    (when (string-equal (frmt "~A" (document-hash document))
+				(frmt "~A" (parameter "document-id")))
 	      (setf clean-list
-		    (remove item clean-list))
+		    (remove document clean-list))
 	      (let* ((collection (wfx-get-collection
 		       (gethash :collection-name (cache *context*))))
 		     (server-path
@@ -3070,23 +3071,23 @@
 				  (frmt "~A~A"
 					(location (store collection))
 					(name collection))))
-			     (parameter "data-type")))))
+			     (parameter "document-type")))))
 		
-		(dolist (field (getcx (parameter "data-type") :fields))
-		  (when (or (equalp (simple-type field) :image)
-			    (equalp (simple-type field) :file))
+		(dolist (element (getcx (parameter "document-type") :elements))
+		  (when (or (equalp (simple-type element) :image)
+			    (equalp (simple-type element) :file))
 		    (delete-file
 		     (string-downcase
 		      (frmt "~A~A/~A" server-path
-			    (getf field :name)
+			    (getx element :name)
 			    (sanitize-file-name
-			     (getx edit-item (getf field :name)))))))))))
+			     (getx edit-document (getx element :name)))))))))))
 	  
-	  (setf (getx parent-item parent-slot) clean-list)
+	  (setf (getx parent-document parent-slot) clean-list)
 	  
-	  (persist-object (item-collection root-item) root-item)))
+	  (persist-document (document-collection root-document) root-document)))
 
-      (unless (and edit-item parent-slot)
-	(setf (item-deleted-p root-item) t)
-	(persist-object (item-collection root-item) root-item)
-	(cl-naive-store::remove-data-object (item-collection root-item) root-item))))
+      (unless (and edit-document parent-slot)
+	(setf (document-deleted-p root-document) t)
+	(persist-document (document-collection root-document) root-document)
+	(cl-naive-store::remove-document (document-collection root-document) root-document))))

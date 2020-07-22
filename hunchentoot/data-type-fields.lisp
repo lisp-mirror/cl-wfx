@@ -1,15 +1,15 @@
 (in-package :cl-wfx)
 
-(defun print-item-val-s* (field item &key default-value)
+(defun print-document-val-s* (element document &key default-value)
   (let ((*print-case* :downcase)
-	(val (if item (getfx item field)))
-	(accessors (if (listp (getf field :db-type))
-		       (dig field :db-type :accessor))))
+	(val (if document (getx document element)))
+	(accessors (if (listp (getx element :type-def))
+		       (digx element :type-def :accessor))))
 
     (when (and (listp val)
 	       (or (listp (first val))
-		   (item-p (first val))))
-      (when (item-p val))
+		   (document-p (first val))))
+      (when (document-p val))
 	(setf val (first val)))
     
     (if (if accessors
@@ -20,11 +20,11 @@
 	    default-value
 	    ""))))
 
-(defun print-item-val-a* (field item &key default-value)
+(defun print-document-val-a* (element document &key default-value)  
   (let* ((*print-case* :downcase)
-	(val (if item (getfx item field)))
-	(accessors (if (listp (getf field :db-type))
-		       (dig field :db-type :accessor)))
+	(val (if document (getx document element)))
+	(accessors (if (listp (getx element :type-def))
+		       (digx element :type-def :accessor)))
 	(final-val (if val
 		    (frmt "~A" (if accessors
 				   (accessor-value val accessors)
@@ -32,103 +32,104 @@
 		    (if default-value
 			default-value
 			""))) )
+    
     (replace-all (replace-all final-val "'" "&#39;") "\"" "&#34;")))
 
-(defmethod print-item-val ((type (eql :symbol)) field item
+(defmethod print-document-val ((type (eql :symbol)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :keyword)) field item
+(defmethod print-document-val ((type (eql :keyword)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :lambda)) field item
+(defmethod print-document-val ((type (eql :lambda)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
 
-(defun print-item-blob* (field item &key default-value)
+(defun print-document-blob* (element document &key default-value)
   (let ((*print-case* :downcase)
-	(blob (and item (getfx item field))))
+	(blob (and document (getx document element))))
 
     (if (and blob (blob-p blob))
 	(blob-raw blob)
 	default-value)))
 
-(defmethod print-item-val ((type (eql :lisp-code)) field item
+(defmethod print-document-val ((type (eql :lisp-code)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-blob* field item :default-value default-value))
+  (print-document-blob* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :css)) field item
+(defmethod print-document-val ((type (eql :css)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-blob* field item :default-value default-value))
+  (print-document-blob* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :html)) field item
+(defmethod print-document-val ((type (eql :html)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-blob* field item :default-value default-value))
+  (print-document-blob* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :java-script)) field item
+(defmethod print-document-val ((type (eql :java-script)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-blob* field item :default-value default-value))
+  (print-document-blob* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :text-blob)) field item
+(defmethod print-document-val ((type (eql :text-blob)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-blob* field item :default-value default-value))
+  (print-document-blob* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :string)) field item
+(defmethod print-document-val ((type (eql :string)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :link)) field item
+(defmethod print-document-val ((type (eql :link)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :text)) field item
+(defmethod print-document-val ((type (eql :text)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defun file-server-path (collection field item)
+(defun file-server-path (collection element document)
   (string-downcase
    (frmt "~A/files/~A/~A/~A"
-	 (if (and (item-collection item)
-		  (location (item-collection item)))
-	     (location (item-collection item))
+	 (if (and (document-collection document)
+		  (location (document-collection document)))
+	     (location (document-collection document))
 	     (string-downcase
 	      (frmt "~A~A"
 		    (location
 		     (store
 		      collection))
 		    (name collection))))
-	 (item-data-type item)
-	 (getf field :name)
-	 ;; (item-hash item)
-	 (if (not (empty-p (getx item (getf field :name))))	     		
-	     (sanitize-file-name (getx item (getf field :name)))))))
+	 (document-type-def document)
+	 (getx element :name)
+	 ;; (document-hash document)
+	 (if (not (empty-p (getx document (getx element :name))))	     		
+	     (sanitize-file-name (getx document (getx element :name)))))))
 
-(defun file-url (collection field item)
+(defun file-url (collection element document)
   (string-downcase
      (frmt "~A~A/~A/files/~A/~A/~A"
 	   (site-url *system*)
 	   (first (getx (active-user) :selected-licenses))
 	   (name collection)
-	   (item-data-type item)
-	   (getf field :name)
-	   ;; (item-hash item)
-	   (if (not (empty-p (getx item (getf field :name))))
-	       (sanitize-file-name (getx item (getf field :name)))))))
+	   (document-type-def document)
+	   (getx element :name)
+	   ;; (document-hash document)
+	   (if (not (empty-p (getx document (getx element :name))))
+	       (sanitize-file-name (getx document (getx element :name)))))))
 
-(defmethod print-item-val ((type (eql :image)) field item
+(defmethod print-document-val ((type (eql :image)) element document
 			   &key default-value &allow-other-keys)
   (declare (ignore default-value))
   
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
-	 (server-path (file-server-path collection field item)))
+	 (server-path (file-server-path collection element document)))
     (with-html-string
       
-      (if (getx item (getf field :name))
-	  (let ((image-url (file-url collection field item)))
+      (if (getx document (getx element :name))
+	  (let ((image-url (file-url collection element document)))
 	    (push (hunchentoot::create-static-file-dispatcher-and-handler
 		   image-url
 		   server-path)
@@ -136,35 +137,35 @@
 	    (cl-who:htm
 	     (:a :data-toggle "modal"
 		 :data-target (string-downcase
-			       (frmt "#~A-modal" (getf field :name)))
+			       (frmt "#~A-modal" (getx element :name)))
 		 (:img
 		  :style "width:128px;height:128px;"
 		  :src image-url))
 	     (:div :class "modal fade"
 		   :tab-index -1
-		   :id (string-downcase (frmt "~A-modal" (getf field :name)))
+		   :id (string-downcase (frmt "~A-modal" (getx element :name)))
 		   (:div :class "modal-dialog modal-dialog-centered "
 			 (:img
 			  :style "max-width:120%;"
 			  :src image-url)))))
 	  (cl-who:htm (:img :src "/umage/cor/web/images/logo-small.png"))))))
 
-(defmethod print-item-val ((type (eql :email)) field item
+(defmethod print-document-val ((type (eql :email)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :file)) field item
+(defmethod print-document-val ((type (eql :file)) element document
 			   &key default-value &allow-other-keys)
   (declare (ignore default-value))
   
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
-	 (server-path (file-server-path collection field item)))
+	 (server-path (file-server-path collection element document)))
     (with-html-string
       
-      (if (getx item (getf field :name))
-	  (let ((file-url (file-url collection field item)))
+      (if (getx document (getx element :name))
+	  (let ((file-url (file-url collection element document)))
 	  
 	    (push (hunchentoot::create-static-file-dispatcher-and-handler
 		   file-url
@@ -176,20 +177,20 @@
 	    ))
 	  ))))
 
-(defmethod print-item-val ((type (eql :number)) field item
+(defmethod print-document-val ((type (eql :number)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :integer)) field item
+(defmethod print-document-val ((type (eql :integer)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :date-time)) field item
+(defmethod print-document-val ((type (eql :date-time)) element document
 			   &key default-value &allow-other-keys)
   (let* ((*print-case* :downcase)
-	 (val (if item (getfx item field)))
-	 (accessors (if (listp (getf field :db-type))
-			(dig field :db-type :accessor)))
+	 (val (if document (getx document element)))
+	 (accessors (if (listp (getx element :type-def))
+			(digx element :type-def :accessor)))
 	 (accessor-val (if accessors
 				  (accessor-value
 				   val
@@ -215,13 +216,13 @@
     
      final-val))
 
-(defmethod print-item-val ((type (eql :date)) field item
+(defmethod print-document-val ((type (eql :date)) element document
 			   &key default-value &allow-other-keys)
   
   (let* ((*print-case* :downcase)
-	 (val (if item (getfx item field)))
-	 (accessors (if (listp (getf field :db-type))
-			(dig field :db-type :accessor)))
+	 (val (if document (getx document element)))
+	 (accessors (if (listp (getx element :type-def))
+			(digx element :type-def :accessor)))
 	 (final-val (if val
 			(frmt "~A" (if accessors
 				       (accessor-value (if (typep val 'local-time:timestamp)
@@ -238,42 +239,42 @@
   
   )
 
-(defmethod print-item-val ((type (eql :time)) field item
+(defmethod print-document-val ((type (eql :time)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-a* field item :default-value default-value))
+  (print-document-val-a* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :boolean)) field item
+(defmethod print-document-val ((type (eql :boolean)) element document
 			   &key default-value &allow-other-keys)
-  (if (getfx item field)
+  (if (getx document element)
       "checked"
       (if default-value
 	  default-value
 	  "")))
 
-(defmethod print-item-val ((type (eql :key-value)) field item
+(defmethod print-document-val ((type (eql :key-value)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :item)) field item
+(defmethod print-document-val ((type (eql :document)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
 
-(defmethod print-item-val ((type (eql :value-list)) field item
+(defmethod print-document-val ((type (eql :value-list)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :key-value-list)) field item
+(defmethod print-document-val ((type (eql :key-value-list)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :value-string-list)) 
-			   field item &key default-value
+(defmethod print-document-val ((type (eql :value-string-list)) 
+			   element document &key default-value
 					&allow-other-keys)
   (declare (ignore default-value))
   
-  (let* ((delimiter (dig field :db-type :delimiter))
-	 (val (getsfx (dig field :db-type :type) field item))
+  (let* ((delimiter (digx element :type-def :delimiter))
+	 (val (cl-naive-document-type-defs::getxe document element (digx element :type-def :type)  ))
 	 (final-val))
   
     (when (and val (listp val))
@@ -284,250 +285,250 @@
 		  (concatenate 'string final-val (if (stringp delimiter)
 						     delimiter
 						     (eval delimiter)) 
-			       (if (equalp (dig field :db-type :type)
+			       (if (equalp (digx element :type-def :type)
 					   :keyword)
 				   (string-downcase (frmt "~S" x))
 				   x))
-		  (if (equalp (dig field :db-type :type)
+		  (if (equalp (digx element :type-def :type)
 			      :keyword)
 		      (string-downcase (frmt "~S" x))
 		      x)))))
 
     final-val))
 
-(defmethod print-item-val ((type (eql :list-objects)) field item
+(defmethod print-document-val ((type (eql :list-objects)) element document
 			   &key default-value &allow-other-keys)
-  (print-item-val-s* field item :default-value default-value))
+  (print-document-val-s* element document :default-value default-value))
 
-(defmethod print-item-val ((type (eql :collection-objects))
-			   field item &key default-value
+(defmethod print-document-val ((type (eql :collection-objects))
+			   element document &key default-value
 					&allow-other-keys)
   (declare (ignore default-value))
  
-  (let ((item-val (getfx item field))
-	(accessor (dig field :db-type :accessor)))
+  (let ((document-val (getx document element))
+	(accessor (digx element :type-def :accessor)))
     
-    (when (listp item-val)
-      (when item-val	
+    (when (listp document-val)
+      (when document-val	
 	(frmt "~A"
-	      (accessor-value (first item-val) accessor)
+	      (accessor-value (first document-val) accessor)
 	      )))))
 
-(defmethod print-item-val ((type (eql :contained-item)) field item
+(defmethod print-document-val ((type (eql :contained-document)) element document
 			   &key default-value
 			     &allow-other-keys)
   (declare (ignore default-value))
   
-  (let ((item-val (getfx item field))
-	(accessor (dig field :db-type :accessor)))
+  (let ((document-val (getx document element))
+	(accessor (digx element :type-def :accessor)))
     
-    (when (or (listp item-val)
-	      (item-p item-val))
-      (when item-val
+    (when (or (listp document-val)
+	      (document-p document-val))
+      (when document-val
 	(frmt "~A"
-	      (accessor-value item-val accessor))))))
+	      (accessor-value document-val accessor))))))
 
-(defmethod print-item-val ((type (eql :collection-contained-item)) 
-			   field item &key default-value
+(defmethod print-document-val ((type (eql :collection-contained-document)) 
+			   element document &key default-value
 					&allow-other-keys)
   (declare (ignore default-value))
-  (print-item-val-s* field item))
+  (print-document-val-s* element document))
 
-(defmethod print-item-val ((type (eql :collection)) field item
+(defmethod print-document-val ((type (eql :collection)) element document
 			   &key &allow-other-keys)
   
-  (let ((item-val (getfx item field))
-	(accessor (dig field :db-type :accessor)))
+  (let ((document-val (getx document element))
+	(accessor (digx element :type-def :accessor)))
     
-    (when (or (listp item-val)
-	      (item-p item-val))
-       (when item-val
+    (when (or (listp document-val)
+	      (document-p document-val))
+       (when document-val
 	 (frmt "~A"
-	       (accessor-value item-val accessor))))))
+	       (accessor-value document-val accessor))))))
 
-(defmethod print-item-val ((type (eql :hierarchical)) field item 
+(defmethod print-document-val ((type (eql :hierarchical)) element document 
 			   &key default-value &allow-other-keys)
   (declare (ignore default-value))
   
   ;;TODO: Sort this shit out need to loop tree
-  (let ((item-val (getfx item field))
+  (let ((document-val (getx document element))
 	(final))    
-    (when item-val
-      (dolist (x item-val)
+    (when document-val
+      (dolist (x document-val)
 	(if final
 	    (setf final (frmt "~A ~A"
 			      final
-			      (accessor-value x (dig field :db-type :accessor))
+			      (accessor-value x (digx element :type-def :accessor))
 			     ))
-	    (frmt "~A" (accessor-value x (dig field :db-type :accessor))))))))
+	    (frmt "~A" (accessor-value x (digx element :type-def :accessor))))))))
 
 
-(defgeneric render-input-val (type field item &key &allow-other-keys))
+(defgeneric render-input-val (type element document &key &allow-other-keys))
 
-(defun item-default-val* (field item)
-  (if (getf field :default-value)
-      (if (stringp (getf field :default-value))
-	  (getf field :default-value)
+(defun document-default-val* (element document)
+  (if (getx element :default-value)
+      (if (stringp (getx element :default-value))
+	  (getx element :default-value)
 	  (apply
 	   (eval%
-	    (getf field :default-value))
-	   (list item)))))
+	    (getx element :default-value))
+	   (list document)))))
 
-(defun render-input-val* (type field item)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+(defun render-input-val* (type element document)
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
 		  :type "text"		  
 		  :value
-		  (print-item-val 
+		  (print-document-val 
 			       type
-			       field 
-			       item
+			       element 
+			       document
 			       :default-value
-			       (item-default-val* field item))
+			       (document-default-val* element document))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
 		  :type "text"
-		  :required (if (getf field :key-p)
+		  :required (if (getx element :key-p)
 				"required")
 		  :value
 		  (or
 		   (parameter name)
-		   (print-item-val 
+		   (print-document-val 
 		    type
-		    field 
-		    item
+		    element 
+		    document
 		    :default-value
-		    (item-default-val* field item))))))))
+		    (document-default-val* element document))))))))
 
-(defmethod render-input-val ((type (eql :symbol)) field item
+(defmethod render-input-val ((type (eql :symbol)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :keyword)) field item
+(defmethod render-input-val ((type (eql :keyword)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :string)) field item
+(defmethod render-input-val ((type (eql :string)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :link)) field item
+(defmethod render-input-val ((type (eql :link)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :text)) field item
+(defmethod render-input-val ((type (eql :text)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 3
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item
+			element 
+			document
 			:default-value
-			       (item-default-val* field item)))))
+			       (document-default-val* element document)))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 3
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item
+	      element 
+	      document
 	      :default-value
-	      (item-default-val* field item)))))))))
+	      (document-default-val* element document)))))))))
 
-(defun render-image (field item)
+(defun render-image (element document)
   (let* ((collection (wfx-get-collection
 		      (gethash :collection-name
 			       (cache *context*))))
-	 (image-path (file-url collection field item)))
+	 (image-path (file-url collection element document)))
     (with-html-string
       (:input :type "hidden"
 	      :id (string-downcase
 		   (frmt "args-~A-~A"
-			 (getf field :name)
-			 (item-hash item)))
+			 (getx element :name)
+			 (document-hash document)))
 	      :value (string-downcase
-		      (frmt "{\"license\":\"~A\", \"collection\":\"~A\", \"datatype\":\"~A\", \"field\":\"~A\"}"
+		      (frmt "{\"license\":\"~A\", \"collection\":\"~A\", \"datatype\":\"~A\", \"element\":\"~A\"}"
 			    (first (getx (active-user) :selected-licenses))
 			    (name collection)
-			    (item-data-type item)
-			    (getf field :name))))
+			    (document-type-def document)
+			    (getx element :name))))
       
       (:input :type "hidden"
 	      :id (string-downcase
-		   (frmt "init-~A-~A" (getf field :name)
-			 (item-hash item)))
+		   (frmt "init-~A-~A" (getx element :name)
+			 (document-hash document)))
 	      :value image-path
 	      :name (string-downcase
-		     (frmt "~A" (getf field :name))))
+		     (frmt "~A" (getx element :name))))
       
       (:input :type "file"
 	      :class "file-upload"
 	      :multiple t
 	      :id (string-downcase
-		   (frmt "~A-~A" (getf field :name)
-			 (item-hash item)))
-	      :required (if (getf field :key-p)
+		   (frmt "~A-~A" (getx element :name)
+			 (document-hash document)))
+	      :required (if (getx element :key-p)
 			    "required")))))
 
 (defun ajax-render-file-upload (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
   
-  (let* ((data-type (parameter "data-type"))
-	(item (getcx data-type :edit-item))
-	(fields (getcx data-type :fields)))
+  (let* ((document-type (parameter "document-type"))
+	(document (getcx document-type :edit-document))
+	(elements (getcx document-type :elements)))
 
-    (dolist (field fields)
-      (when (equalp (getf field :name) (parameter "field-name"))
+    (dolist (element elements)
+      (when (equalp (getx element :name) (parameter "element-name"))
 	(return-from ajax-render-file-upload
-	  (render-image field item))))
+	  (render-image element document))))
     )
   )
 
-(defmethod render-input-val ((type (eql :image)) field item
+(defmethod render-input-val ((type (eql :image)) element document
 			     &key  &allow-other-keys)
 
   (with-html-string
     (:div :class "col"
 	  (:div :class "row"	  
 		:id (string-downcase
-		     (frmt "file-upload-row-~A" (item-data-type item)))
+		     (frmt "file-upload-row-~A" (document-type-def document)))
 		:name (string-downcase
-		       (frmt "file-upload-row-~A" (item-data-type item)))
-		(cl-who:str (render-image field item))
+		       (frmt "file-upload-row-~A" (document-type-def document)))
+		(cl-who:str (render-image element document))
 		))))
 
-(defmethod render-input-val ((type (eql :file)) field item
+(defmethod render-input-val ((type (eql :file)) element document
 			     &key &allow-other-keys)
 
   (with-html-string
     (:div :class "col"
 	  (:div :class "row"	  
 		:id (string-downcase
-		     (frmt "file-upload-row-~A" (item-data-type item)))
+		     (frmt "file-upload-row-~A" (document-type-def document)))
 		:name (string-downcase
-		       (frmt "file-upload-row-~A" (item-data-type item)))
-		(cl-who:str (render-image field item))
+		       (frmt "file-upload-row-~A" (document-type-def document)))
+		(cl-who:str (render-image element document))
 		)))
   #|
 (with-html-string
@@ -537,25 +538,25 @@
 		 :class "file-upload"
 		 :type "file"
 			:onchange (frmt "$(\"#file-~A\").val($(this).val());"
-					(getf field :name)))
+					(getx element :name)))
 		
 		(:input :type "text" :class "form-control "
-			:name (getf field :name)
-			:id (frmt "file-~A" (getf field :name))
-			:value (getx item (getf field :name))
+			:name (getx element :name)
+			:id (frmt "file-~A" (getx element :name))
+			:value (getx document (getx element :name))
 			:readonly t))))
   |#
   )
 
-(defmethod render-input-val ((type (eql :email)) field item
+(defmethod render-input-val ((type (eql :email)) element document
 			     &key &allow-other-keys)
-  (render-input-val* type field item))
+  (render-input-val* type element document))
 
-(defmethod render-input-val ((type (eql :number)) field item
+(defmethod render-input-val ((type (eql :number)) element document
 			     &key &allow-other-keys)
 
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 		      
 	    (:input :class "form-control"
@@ -564,12 +565,12 @@
 		    :type "number"
 		    :step "any"		  
 		    :value
-		    (print-item-val 
+		    (print-document-val 
 		     type
-		     field 
-		     item
+		     element 
+		     document
 		     :default-value
-		     (item-default-val* field item))
+		     (document-default-val* element document))
 		    :disabled "disabled"))
 	
 	(with-html-string
@@ -578,24 +579,24 @@
 		    :name name		  
 		    :type "number"
 		    :step "any"
-		    :min (digx field :min)
-		    :max (digx field :max)
-		    :required (if (getf field :key-p)
+		    :min (digx element :min)
+		    :max (digx element :max)
+		    :required (if (getx element :key-p)
 				  "required")
 		    :value
 		    (or (parameter name)
-			(print-item-val 
+			(print-document-val 
 			 type
-			 field 
-			 item
+			 element 
+			 document
 			 :default-value
-			 (item-default-val* field item))
+			 (document-default-val* element document))
 			))))))
 
-(defmethod render-input-val ((type (eql :integer)) field item
+(defmethod render-input-val ((type (eql :integer)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
@@ -603,12 +604,12 @@
 		  :type "number"
 		  :step "any"		  
 		  :value
-		  (print-item-val 
+		  (print-document-val 
 			       type
-			       field 
-			       item
+			       element 
+			       document
 			       :default-value
-			       (item-default-val* field item))
+			       (document-default-val* element document))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
@@ -616,59 +617,59 @@
 		  :name name		  
 		  :type "number"
 		  :step "1"
-		  :required (if (getf field :key-p)
+		  :required (if (getx element :key-p)
 				"required")
 		  :value
 		  (or (parameter name)
-		      (print-item-val 
+		      (print-document-val 
 		       type
-		       field 
-		       item
+		       element 
+		       document
 		       :default-value
-		       (item-default-val* field item))
+		       (document-default-val* element document))
 		      ))))))
 
 
-(defmethod render-input-val ((type (eql :date-time)) field item
+(defmethod render-input-val ((type (eql :date-time)) element document
 			     &key &allow-other-keys)
   
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control "
 		  :id name
 		  :name name 
 		  :type "datetime-local"		 
 		  :value
-		  (print-item-val 
+		  (print-document-val 
 			       type
-			       field 
-			       item
+			       element 
+			       document
 			       :default-value
-			       (item-default-val* field item))
+			       (document-default-val* element document))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control date"
 		  :id name
 		  :name name 
 		  :type "datetime-local"
-		  :required (if (getf field :key-p)
+		  :required (if (getx element :key-p)
 				"required")
 		  :value
 		  (or
 		   (parameter name)
-		   (print-item-val 
+		   (print-document-val 
 		    type
-		    field 
-		    item
+		    element 
+		    document
 		    :default-value
-		    (item-default-val* field item))
+		    (document-default-val* element document))
 		   ))))))
 
-(defmethod render-input-val ((type (eql :date)) field item
+(defmethod render-input-val ((type (eql :date)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control "
 		  :id name
@@ -676,85 +677,85 @@
 		  :type "date"
 		 
 		  :value
-		  (print-item-val 
+		  (print-document-val 
 			       type
-			       field 
-			       item
+			       element 
+			       document
 			       :default-value
-			       (item-default-val* field item))
+			       (document-default-val* element document))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control date"
 		  :id name
 		  :name name 
 		  :type "date"
-		  :required (if (getf field :key-p)
+		  :required (if (getx element :key-p)
 				"required")
 		  :value
 		  (or
 		   (parameter name)
-		   (print-item-val 
+		   (print-document-val 
 		    type
-		    field 
-		    item
+		    element 
+		    document
 		    :default-value
-		    (item-default-val* field item))
+		    (document-default-val* element document))
 		   ))))))
 
-(defmethod render-input-val ((type (eql :time)) field item
+(defmethod render-input-val ((type (eql :time)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
-    (if (not (digx field :attributes :editable))
+  (let ((name (getx element :name)))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
 		  :type "time"	     
 		  :value
-		  (print-item-val 
+		  (print-document-val 
 			       type
-			       field 
-			       item
+			       element 
+			       document
 			       :default-value
-			       (item-default-val* field item))
+			       (document-default-val* element document))
 		  :disabled "disabled"))
 	(with-html-string
 	  (:input :class "form-control"
 		  :id name
 		  :name name 
 		  :type "time"
-		  :required (if (getf field :key-p)
+		  :required (if (getx element :key-p)
 				"required")
 		  :value
 		  (or
 		   (parameter name)
-		   (print-item-val 
+		   (print-document-val 
 		    type
-		    field 
-		    item
+		    element 
+		    document
 		    :default-value
-		    (item-default-val* field item))))))))
+		    (document-default-val* element document))))))))
 
-(defmethod render-input-val ((type (eql :boolean)) field item
+(defmethod render-input-val ((type (eql :boolean)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name))
-	(print-val (getsfx type field item)))
+  (let ((name (getx element :name))
+	(print-val (getxe document element type)))
     
     (with-html-string
       (:div :class "form-check" 
-	    (if (not (digx field :attributes :editable))
+	    (if (not (digx element :attributes :editable))
 		(cl-who:htm (:div :class "form-check-label"
 				  (:input
 				   :class "form-check-input"
 				   :type "checkbox"
 				   :id name
 				   :name name
-				   :value (getsfx
+				   :value (getxe
+					   document
+					   element
 					   type
-					   field 
-					   item
 					   :default-value
-					   (item-default-val* field item))
+					   (document-default-val* element document))
 				   :checked print-val
 				   :aria-label "..."
 				   :disabled "disabled")))
@@ -764,220 +765,220 @@
 				   :type "checkbox"
 				   :id name
 				   :name name
-				   :required (if (getf field :key-p)
+				   :required (if (getx element :key-p)
 						 "required")
 				   :value (or
 					   (parameter name)
-					   (getsfx
+					   (getxe
+					    document
+					    element
 					    type
-					    field 
-					    item
 					    :default-value
-					    (item-default-val* field item)))
+					    (document-default-val* element document)))
 				   :checked print-val
 				   :aria-label "..."))))))))
 
 
-(defmethod render-input-val ((type (eql :css)) field item
+(defmethod render-input-val ((type (eql :css)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-css-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-css-code"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
-(defmethod render-input-val ((type (eql :html)) field item
+(defmethod render-input-val ((type (eql :html)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-html-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-html-code"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
-(defmethod render-input-val ((type (eql :java-script)) field item
+(defmethod render-input-val ((type (eql :java-script)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-js-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-js-code"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
-(defmethod render-input-val ((type (eql :lambda)) field item
+(defmethod render-input-val ((type (eql :lambda)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-lisp-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-lisp-code"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
-(defmethod render-input-val ((type (eql :lisp-code)) field item
+(defmethod render-input-val ((type (eql :lisp-code)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-lisp-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-lisp-code"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
-(defmethod render-input-val ((type (eql :text-blob)) field item
+(defmethod render-input-val ((type (eql :text-blob)) element document
 			     &key &allow-other-keys)
-  (let ((name (getf field :name)))
+  (let ((name (getx element :name)))
     
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control wfx-lisp-code"
 	   :id name
 	   :name name :cols 50 :rows 10
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			type
-			field 
-			item))))
+			element 
+			document))))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 50 :rows 10
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str
 	    (or
 	     (parameter name)
-	     (print-item-val 
+	     (print-document-val 
 	      type
-	      field 
-	      item))))))))
+	      element 
+	      document))))))))
 
 (defmethod render-input-val ((type (eql :value-string-list)) 
-			     field item &key &allow-other-keys)
-  (let* ((name (getf field :name))
-	 (delimiter (dig field :db-type :delimiter)))
+			     element document &key &allow-other-keys)
+  (let* ((name (getx element :name))
+	 (delimiter (digx element :type-def :delimiter)))
 
     (if (stringp delimiter)
 	delimiter
 	(setf delimiter (eval delimiter)))
 
-    (if (not (digx field :attributes :editable))
+    (if (not (digx element :attributes :editable))
 	(with-html-string
 	  (:textarea 
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
 	   :disabled "disabled"
-	   (cl-who:str (print-item-val 
+	   (cl-who:str (print-document-val 
 			:value-string-list
-			field 
-			item)))
+			element 
+			document)))
 	  (:span 
 	   (cl-who:str (frmt "Delimit by ~A" (cond ((string-equal delimiter " ")
 						    "#\Space")
@@ -990,14 +991,14 @@
 	   :class "form-control"
 	   :id name
 	   :name name :cols 20 :rows 3
-	   :required (if (getf field :key-p)
+	   :required (if (getx element :key-p)
 			 "required")
 	   (cl-who:str (or
 			(parameter name)
-			(print-item-val 
+			(print-document-val 
 			 :value-string-list
-			 field 
-			 item))))
+			 element 
+			 document))))
 	  (:span (cl-who:str
 		  (frmt "Delimit by ~A" (cond ((string-equal delimiter " ")
 						    "#\Space")

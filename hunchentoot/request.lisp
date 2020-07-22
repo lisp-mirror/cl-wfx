@@ -38,7 +38,7 @@
   (let ((allowed-actions (list "save" "delete" "login" "logout"
 			       "assign-campaign" "select-action" "grid-select-action"
 			       "add-selection" "eval-repl" "eval-import" "import-data"
-			       "set-password" "item-action"))
+			       "set-password" "document-action"))
 	(action-parameters (list "wfxaction" "set-entities")))
 
     (when (action-parameter-allowed-values system)

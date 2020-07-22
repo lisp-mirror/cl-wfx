@@ -1,11 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "lambda"
      :label "Lambda"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -21,7 +21,7 @@
    (:collection
     (:name "lambdas"
      :label "Lambdas"
-     :data-type "lambda")
+     :type-def "lambda")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -39,11 +39,11 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
 
-   (:data-type
+   (:type-def
     (:name "package"
      :label "Package"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -59,7 +59,7 @@
    (:collection
     (:name "packages"
      :label "Packages"
-     :data-type "package")
+     :type-def "package")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -77,11 +77,11 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
 
-   (:data-type
+   (:type-def
     (:name "java-script"
      :label "Java Script"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -91,7 +91,7 @@
 	     :label "Load Timing"
 	     :db-type (:type :keyword
 			     :complex-type :value-list
-			     :values (:header 
+			     :elements (:header 
 				      :footer 
 				      ))
 	     :attributes (:display t :editable t)
@@ -106,7 +106,7 @@
    (:collection
     (:name "java-scripts"
      :label "Java Scripts"
-     :data-type "java-script")
+     :type-def "java-script")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -124,11 +124,11 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
 
-   (:data-type
+   (:type-def
     (:name "stylesheet"
      :label "Stylesheet"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -145,7 +145,7 @@
    (:collection
     (:name "stylesheets"
      :label "Stylesheets"
-     :data-type "stylesheet")
+     :type-def "stylesheet")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -170,7 +170,7 @@
 (defun apply-lambda (name args)
   (let ((lambdax (wfx-query-data
 		  "lambdas"
-		  :query (lambda (item)
-			   (equalp (getx item :name) name)))))
+		  :query (lambda (document)
+			   (equalp (getx document :name) name)))))
     (when lambdax
       (apply (getx lambdax :code) args))))

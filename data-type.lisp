@@ -1,11 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
-    (:name "field"
+ '((:type-def
+    (:name "element"
      :label "Fields"
-     :top-level-p nil
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
@@ -35,11 +35,11 @@
 		     :documentation "")))
     :destinations (:core :system :license))
    
-   (:data-type
-    (:name "data-type"
+   (:type-def
+    (:name "document-type"
      :label "Data Type"
-     :top-level-p nil
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
@@ -51,12 +51,12 @@
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")
-	      (:name :fields
+	      (:name :elements
 		     :label "Fields"
 		     :key-p nil
 		     :db-type (:type :list
-				     :list-type :item
-				     :data-type "field"
+				     :list-type :document
+				     :type-def "element"
 				     :key-accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")
@@ -67,7 +67,7 @@
    (:collection
    (:name "modules"
 	  :label "Modules"
-	  :data-type "module")
+	  :type-def "module")
    :destinations (:core :system :license)
    :access
    (:stores
@@ -85,8 +85,8 @@
       (:system (:update :delete :lookup))
       (:license (:update :delete :lookup))))))))
 
-(defun get-data-type (store type-name)
-  (query-data-object
-   (get-collection store "data-types")
-   :query (lambda (item)
-	   (equalp (getx item :name) type-name))))
+(defun get-document-type (store type-name)
+  (query-document
+   (get-collection store "document-types")
+   :query (lambda (document)
+	   (equalp (getx document :name) type-name))))

@@ -1,12 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name
      "email-log"
      :label "Email Log"
-     :top-level-p t
-     :fields
+     :elements
      ((:name :date-stamp
 	     :label "Date Stamp"
 	     :key-p t
@@ -36,7 +35,7 @@
 	     :key-p t
 	     :db-type (:type :keyword
 			     :complex-type :value-list
-			     :values (:sent
+			     :elements (:sent
 				      :error))
 	     :attributes (:display t :editable t)
 	     :documentation "")
@@ -51,7 +50,7 @@
    (:collection
     (:name "email-logs"
      :label "Email Logs"
-     :data-type "email-log")
+     :type-def "email-log")
     :destinations (:system :license)
     :access
     (:stores
@@ -61,12 +60,12 @@
        (:license (:update :delete :lookup))))))
    
    
-   (:data-type
+   (:type-def
     (:name
      "email-template"
      :label "Email Template"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :description
 	     :label "Description"
 	     :key-p t
@@ -77,7 +76,7 @@
 	     :label "Email Account"	     
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "email-account"
+			     :type-def "email-account"
 			     :collection "email-accounts"
 			     :accessor (:email))
 	     :attributes (:display t :editable t)
@@ -96,7 +95,7 @@
    (:collection
     (:name "email-templates"
      :label "Email Templates"
-     :data-type "email-template")
+     :type-def "email-template")
     :destinations (:system :license)
     :access
     (:stores
@@ -105,12 +104,12 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
    
-   (:data-type
+   (:type-def
     (:name
      "email-account"
      :label "Email Account"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :email
 	     :label "Email"
 	     :key-p t
@@ -148,7 +147,7 @@
    (:collection
     (:name "email-accounts"
      :label "Email Accounts"
-     :data-type "email-account")
+     :type-def "email-account")
     :destinations (:system :license)
     :access
     (:stores
@@ -158,18 +157,18 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
 
-   (:data-type
+   (:type-def
     (:name
      "entity-email-account"
      :label "Entity Email Account"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :entity
 	     :label "Entity"
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "entity"
+			     :type-def "entity"
 			     :collection "entities"
 			     :accessor (:name))
 	     :attributes (:display t :editable t)
@@ -211,7 +210,7 @@
    (:collection
     (:name "entity-email-accounts"
      :label "Entity Email Accounts"
-     :data-type "entity-email-account")
+     :type-def "entity-email-account")
     :destinations (:license))))
 
 (setf cl-smtp::*debug* t)
@@ -219,16 +218,16 @@
 (defvar *mail-data* nil)
 
 (defun get-entity-email-account (email)
-  (wfx-query-data-object
+  (wfx-query-document
    (wfx-get-collection "entity-email-accounts")
-   :query (lambda (item)
-	    (string-equal (getx item :email) email))))
+   :query (lambda (document)
+	    (string-equal (getx document :email) email))))
 
 (defun get-email-account (email)
-  (wfx-query-data-object
+  (wfx-query-document
    (wfx-get-collection "email-accounts")
-   :query (lambda (item)
-	    (string-equal (getx item :email) email))))
+   :query (lambda (document)
+	    (string-equal (getx document :email) email))))
 
 
 
@@ -288,10 +287,10 @@
 (defparameter *email-template* nil)
 
 (defun get-email-template (description)
-  (query-data-object
+  (query-document
    (wfx-get-collection "email-templates")
-   :query (lambda (item)
-	    (string-equal (getx item :description) description))))
+   :query (lambda (document)
+	    (string-equal (getx document :description) description))))
 
 (defun send-template-mail-by-description (description &key data)
   (let ((template (get-email-template description)))
@@ -299,11 +298,11 @@
 
 (defun log-email (email-account email-template to status error)
   (let ((collection (wfx-get-collection "email-logs")))
-    (persist-object
+    (persist-document
      collection
-     (make-item :collection collection
-		:data-type "email-log"
-		:values (list :date-stamp (local-time:now)
+     (make-document :collection collection
+		:type-def "email-log"
+		:elements (list :date-stamp (local-time:now)
 			      :email-account email-account
 			      :email-template email-template
 			      :to to

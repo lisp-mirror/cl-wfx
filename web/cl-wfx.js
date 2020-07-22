@@ -358,6 +358,7 @@ function fetchURI(uri, callback, parameters) {
 
 
 function cl_ajax_render (script_name, renderer, id, args, callback) {
+    
     ajax_call('CL-AJAX-RENDER', callback, [script_name, renderer , id], args);
 }
 
@@ -395,6 +396,7 @@ function prep_elements() {
 }
 
 function ajax_render (script_name, renderer, id, args) {
+
     var widget = find_widget(id);
 
   //  alert(renderer);

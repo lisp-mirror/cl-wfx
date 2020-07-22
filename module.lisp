@@ -1,11 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "context-parameter"
      :label "Context Parameter"
-     :top-level-p nil
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
@@ -19,11 +19,11 @@
 		     :documentation "")))
     :destinations (:core :system :license))
    
-   (:data-type
-    (:name "menu-item"
+   (:type-def
+    (:name "menu-document"
      :label "Menu Item"
-     :top-level-p nil
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
@@ -34,16 +34,16 @@
 		     :key-p nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "menu-item"
+				     :type-def "menu-document"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")
 	      (:name :context-spec
 		     :label "Context Spec"
 		     :key-p nil
-		     :db-type (:type :item
+		     :db-type (:type :document
 				     :complex-type :collection
-				     :data-type "context-spec"
+				     :type-def "context-spec"
 				     :collection "context-specs"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -53,38 +53,38 @@
 		     :key-p nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "context-parameter"
+				     :type-def "context-parameter"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
     :destinations (:core :system :license))
    
-   (:data-type
+   (:type-def
     (:name "menu"
      :label "Menu"
-     :top-level-p nil
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
 		     :attributes (:display t :editable t)
 		     :documentation "")		    
-	      (:name :menu-items
+	      (:name :menu-documents
 		     :label "Menu Items"
 		     :key-p nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "menu-item"
+				     :type-def "menu-document"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
     :destinations (:core :system :license))
    
-   (:data-type
+   (:type-def
     (:name "module"
      :label "Module"
-     :top-level-p t
-     :fields ((:name :name
+     
+     :elements ((:name :name
 		     :label "Name"
 		     :key-p t
 		     :db-type :string
@@ -101,7 +101,7 @@
 		     :key-p nil
 		     :db-type (:type :list
 				     :complex-type :collection-objects
-				     :data-type "context-spec"
+				     :type-def "context-spec"
 				     :collection "context-specs"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
@@ -111,7 +111,7 @@
 		     :key-p nil
 		     :db-type (:type :list
 				     :complex-type :list-objects
-				     :data-type "menu"
+				     :type-def "menu"
 				     :accessor :name)
 		     :attributes (:display t :editable t)
 		     :documentation "")))
@@ -120,7 +120,7 @@
    (:collection
     (:name "modules"
      :label "Modules"
-     :data-type "module")
+     :type-def "module")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -139,10 +139,10 @@
        (:license (:update :delete :lookup))))))))
 
 (defun get-module (store module-name)   
-  (query-data-object
+  (query-document
    (get-collection store "modules" )
-   :query (lambda (item)
-	    (string-equal module-name (getx item :name)))))
+   :query (lambda (document)
+	    (string-equal module-name (getx document :name)))))
 
 (defun get-module-context (module context-name)  
   (dolist (context (getx module :contexts))
@@ -150,10 +150,10 @@
 	(return-from get-module-context context))))
 
 (defun get-module-short (store module-short)  
-  (query-data-object
+  (query-document
    (get-collection store "modules")
-   :query (lambda (item)
-	    (string-equal module-short (getx item :module-short)))))
+   :query (lambda (document)
+	    (string-equal module-short (getx document :module-short)))))
 
 
 

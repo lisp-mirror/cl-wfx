@@ -7,11 +7,12 @@
 	       "cl-ppcre"
 	       "ironclad"
 	       "bordeaux-threads"
+	       "cl-getx"
 	       "cl-naive-store"
 	       "cl-naive-indexed"
-	       "cl-naive-data-types"
-	       "cl-naive-data-type-defs"
-	       "cl-naive-items"
+	       "cl-naive-document-types"
+	       "cl-naive-document-type-defs"
+	       "cl-naive-documents"
 	       "hunchentoot"
 	       "cl-who"
 	       "split-sequence"
@@ -21,6 +22,7 @@
 	       "kunru-sandbox"
 	       "csv-parser"
 	       "local-time"
+	       "cl-getx"
 	      ;; "postoffice"
 	       )
   :components ((:file "packages")

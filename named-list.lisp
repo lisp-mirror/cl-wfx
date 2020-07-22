@@ -1,11 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
       (:name "key-value"
        :label "Key Value"
-       :top-level-p nil
-       :fields ((:name :key
+       
+       :elements ((:name :key
 		       :label "Key"
 		       :db-type :string
 		       :key-p t
@@ -18,11 +18,11 @@
        :documentation "")
     :destinations (:core :system :license))
 
-   (:data-type
+   (:type-def
       (:name "list-value"
        :label "List Value"
-       :top-level-p nil
-       :fields ( 
+       
+       :elements ( 
 		(:name :value
 		       :label "Value"
 		       :key-p t
@@ -32,18 +32,18 @@
 		       :label "Attributes"
 		       :db-type (:type :list
 				       :complex-type :list-objects 
-				       :data-type "key-value"
+				       :type-def "key-value"
 				       :accessor (:key)
 				       :documentation "")		       
 		       :attributes (:display t :editable t)))
        :documentation "")
     :destinations (:core :system :license))
 
-   (:data-type
+   (:type-def
       (:name "named-list"
        :label "named-list"
-       :top-level-p nil
-       :fields ((:name :list-name
+       
+       :elements ((:name :list-name
 		       :label "List Name"
 		       :db-type :string
 		       :key-p t
@@ -52,7 +52,7 @@
 		       :label "List Values"
 		       :db-type (:type :list
 				       :complex-type :list-objects 
-				       :data-type "list-value"
+				       :type-def "list-value"
 				       :accessor (:key)
 				       :documentation "")		       
 		       :attributes (:display t :editable t)))
@@ -62,7 +62,7 @@
    (:collection
     (:name "named-lists"
      :label "Named Lists"
-     :data-type "named-list")
+     :type-def "named-list")
     :destinations (:core :system :license)
     :access
     (:stores
@@ -74,21 +74,21 @@
 
 
 (defun get-named-list (name &key store)
-  (wfx-query-data-object
+  (wfx-query-document
    (get-collection (or
 		     store
 		     (system-store))
 		    "named-lists")
-   :query (lambda (item)
-	   (string-equal name (getx item :list-name)))))
+   :query (lambda (document)
+	   (string-equal name (getx document :list-name)))))
 
 (defun get-named-list-values (name &key store)
   (let ((list
 	 (get-named-list name :store store)))
     (getx list :list-values)))
 
-(defun sort-order (list-item)
-  (dolist (att (getx list-item :attributes))
+(defun sort-order (list-document)
+  (dolist (att (getx list-document :attributes))
     (when (equalp (getx att :key) :sort-order)
       (return-from sort-order (getx att :value)))))
 
@@ -114,6 +114,6 @@
 	 (sorted-list (if list
 			  (funcall sort-function (getx list :list-values))))
 	 (value-list))
-    (dolist (item sorted-list)
-      (setf value-list (pushnew (getx item :value) value-list)))
+    (dolist (document sorted-list)
+      (setf value-list (pushnew (getx document :value) value-list)))
     value-list))

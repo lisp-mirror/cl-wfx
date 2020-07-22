@@ -1,52 +1,51 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "license"
-	   :label "License"
-	   :top-level-p t
-	   :fields ((:name :license-code
-			   :label "License Code"
-			   :key-p t
-			   :db-type :string
-			   :attributes (:display t :editable t)
-			   :documentation "")		    
-		    (:name :license-holder
-			   :label "License Holder"
-			   :key-p nil
-			   :db-type :string
-			   :attributes (:display t :editable t)
-			   :documentation "")
-		    (:name :modules
-			   :label "License Modules"
-			   :key-p nil
-			   :db-type (:type :list
-					   :complex-type :collection-objects
-					   :data-type "module"
-					   :collection "Modules"
-					   :accessor :name)
-			   :attributes (:display t :editable t)
-			   :documentation "")
-		    (:name :license-date
-			   :label "License Date"
-			   :key-p nil
-			   :db-type :date
-			   :attributes (:display t :editable t)
-			   :documentation "")
-		    (:name :license-status
-			   :label "License Status"
-			   :key-p nil
-			   :db-type (:type :keyword
-					   :complex-type :value-list
-					   :values (:demo :suspended :active))
-			   :attributes (:display t :editable t)
-			   :documentation "")))
+     :label "License"
+     :elements ((:name :license-code
+		       :label "License Code"
+		       :key-p t
+		       :db-type :string
+		       :attributes (:display t :editable t)
+		       :documentation "")		    
+		(:name :license-holder
+		       :label "License Holder"
+		       :key-p nil
+		       :db-type :string
+		       :attributes (:display t :editable t)
+		       :documentation "")
+		(:name :modules
+		       :label "License Modules"
+		       :key-p nil
+		       :db-type (:type :list
+				       :complex-type :collection-objects
+				       :type-def "module"
+				       :collection "Modules"
+				       :accessor :name)
+		       :attributes (:display t :editable t)
+		       :documentation "")
+		(:name :license-date
+		       :label "License Date"
+		       :key-p nil
+		       :db-type :date
+		       :attributes (:display t :editable t)
+		       :documentation "")
+		(:name :license-status
+		       :label "License Status"
+		       :key-p nil
+		       :db-type (:type :keyword
+				       :complex-type :value-list
+				       :elements (:demo :suspended :active))
+		       :attributes (:display t :editable t)
+		       :documentation "")))
     :destinations (:core))
    
    (:collection
     (:name "licenses"
      :label "Licenses"
-     :data-type "license")
+     :type-def "license")
     :destinations (:core)
     :access
     (:stores
@@ -57,10 +56,10 @@
        (:license (:lookup))))))))
 
 (defun get-license (code)
-  (query-data-object
+  (query-document
    (core-collection "licenses")
-   :query (lambda (item)
-	   (string-equal (getx item :license-code) code))))
+   :query (lambda (document)
+	   (string-equal (getx document :license-code) code))))
 
 
 (defvar *license-code-lock* (bordeaux-threads:make-lock))
@@ -77,10 +76,10 @@
 (defgeneric assign-license-code (license)
   (:documentation "Assigns a code to the license. Uses a thread lock in :around to ensure unique code."))
 
-(defmethod assign-license-code :around ((license item))
+(defmethod assign-license-code :around ((license document))
   )
 
-(defmethod assign-license-code ((license item))
+(defmethod assign-license-code ((license document))
   (let ((code ))
     (setf (getx license :license-code) code)))
 
@@ -98,9 +97,9 @@
 	  (setf (getx license :license-date) date)))
       
       (unless license
-	(setf license (make-item
-		       :data-type "license"
-		       :values
+	(setf license (make-document
+		       :type-def "license"
+		       :elements
 		       (list :license-code (if code
 					       code
 					       (generate-new-license-code))
@@ -108,7 +107,7 @@
 			     :license-date (format-date (get-universal-time))
 			     :license-status :active)))
 	
-	(persist-object (core-collection "licenses") license)
+	(persist-document (core-collection "licenses") license)
 	
 	(init-license-universe system
 			       (getx license :license-code)))

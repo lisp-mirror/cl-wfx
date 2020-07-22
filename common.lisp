@@ -41,7 +41,7 @@ Dont set manually use with-system macro.")
 
 (defparameter *lambda-functions*
   (list 'cl-wfx:frmt
-	'cl-wfx::wfx-query-context-data-item
+	'cl-wfx::wfx-query-context-data-document
 	'cl-wfx::wfx-query-context-data
 	'cl-wfx:with-html
 	'cl-wfx:with-html-string
@@ -50,7 +50,7 @@ Dont set manually use with-system macro.")
 	'cl-who:htm
 	'cl-who:str
 	'cl-who:esc
-	'cl-naive-store:getx))
+	'cl-getx:getx))
 
 (defun lambda-eval-safe (lambdax)
   (let* ((sandbox-impl::*allowed-extra-symbols*
@@ -164,12 +164,12 @@ Dont set manually use with-system macro.")
 
 (defun eval% (object &key package-name)
   
-  (cond  ((and (item-p object) (item-of-type-p object "lambda"))
+  (cond  ((and (document-p object) (document-of-type-p object "lambda"))
 	    (let ((*package* (or (and package-name (or (find-package package-name)
 						       (make-package package-name)))
 				 *package*)))
 	      (eval-blob% (getx object :code))))
-	   ((and (item-p object) (item-of-type-p object "package"))
+	   ((and (document-p object) (document-of-type-p object "package"))
 	    (let ((*package* (or
 			      (and package-name (or (find-package package-name)
 						    (make-package package-name)))
@@ -204,10 +204,10 @@ Dont set manually use with-system macro.")
 
 (defun load% (object &key package)
 
-  (cond  ((and (item-p object) (item-of-type-p object "lambda"))
+  (cond  ((and (document-p object) (document-of-type-p object "lambda"))
 	  (let ((*package* (or package  *package*)))
 	    (load-blob% (getx object :code))))
-	 ((and (item-p object) (item-of-type-p object "package"))
+	 ((and (document-p object) (document-of-type-p object "package"))
 	  (let ((*package* (or
 			    package
 			    (and (getx object :package)
@@ -320,7 +320,7 @@ is replaced with replacement."
 (defun sanitize-file-name (name)
   (when name
     (string-downcase
-     (replace-all-shit name
+     (replace-all-list name
 		       '(("_" "-")
 			 ("(" "-")
 			 (")" "-")
@@ -433,7 +433,7 @@ is replaced with replacement."
   (multiple-value-bind (year month day) (decode-iso-date date)
     (if year
         (values year month day)
-        (let ((date-split (ppcre:split "[.\\/ -]+" (trim-whitespace date))))
+        (let ((date-split (ppcre:split "[.\\/ -]+" (naive-impl::trim-whitespace date))))
           (and date-split
                (let* ((month-raw (second date-split))
                       (month (or (month-number month-raw)

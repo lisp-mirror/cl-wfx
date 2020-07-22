@@ -1,17 +1,17 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "context-lambda"
      :label "Context Lambda"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :lambda
 	     :label "Lambda"
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "lambda"
+			     :type-def "lambda"
 			     :collection "lambdas"
 			     :accessor :name)
 	     :attributes (:display t :editable t))
@@ -21,7 +21,7 @@
 	     :key-p nil
 	     :db-type (:type :keyword
 			     :complex-type :value-string-list
-			     :values (:select :save
+			     :elements (:select :save
 					      :delete
 					      :new
 					      :export
@@ -33,17 +33,17 @@
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
-   (:data-type
+   (:type-def
     (:name "context-js"
      :label "Context js"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :java-script
 	     :label "Java Script"
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "java-script"
+			     :type-def "java-script"
 			     :collection "java-scripts"
 			     :accessor :name)
 	     :attributes (:display t :editable t))
@@ -52,7 +52,7 @@
 	     :key-p nil
 	     :db-type (:type :keyword
 			     :complex-type :value-string-list
-			     :values (:select :save
+			     :elements (:select :save
 					      :delete
 					      :new
 					      :export
@@ -62,11 +62,11 @@
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
-   (:data-type
+   (:type-def
     (:name "context-spec"
      :label "Context Spec"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -98,14 +98,14 @@
 	     :label "Lambdas"
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "context-lambda"
+			     :type-def "context-lambda"
 			     :accessor (:lambda :name))			  
 	     :attributes (:display t :editable t))
       (:name :lambdas
 	     :label "Lambdas"
 	     :db-type (:type :list
 			     :complex-type :list-objects
-			     :data-type "context-lambda"
+			     :type-def "context-lambda"
 			     :accessor (:java-script :name))			  
 	     :attributes (:display t :editable t))
       (:name :package
@@ -113,7 +113,7 @@
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "package"
+			     :type-def "package"
 			     :collection "packages"
 			     :accessor :name)
 	     :attributes (:display t :editable t))
@@ -139,7 +139,7 @@
    (:collection
       (:name "context-specs"
 	     :label "Context Specs"
-	     :data-type "context-spec")
+	     :type-def "context-spec")
       :destinations (:core :system :license)
       :access
       (:stores
@@ -158,13 +158,13 @@
 	 (:license (:update :delete :lookup))))))))
 
 (defun get-context-spec (store name)
-  (query-data-object
+  (query-document
    (get-collection store "context-specs")
-   :query (lambda (item)
-	    (equalp name (getx item :name)))))
+   :query (lambda (document)
+	    (equalp name (getx document :name)))))
 
 (defun get-context-spec-x (name)
-  (wfx-query-data-object
+  (wfx-query-document
    "context-specs"
-   :query (lambda (item)
-	   (equalp name (getx item :name)))))
+   :query (lambda (document)
+	   (equalp name (getx document :name)))))

@@ -48,7 +48,7 @@
 	  (string-downcase 
 	   spec-name)))
 
-(defun clear-hash-items (hash)
+(defun clear-hash-documents (hash)
   (when hash
     (loop for key being the hash-keys of hash	 
        do (remhash key hash))))
@@ -57,20 +57,20 @@
 
   (when (current-user)
     (when *session*
-      (clear-hash-items (cache *session*))
-      (clear-hash-items (contexts *session*))
+      (clear-hash-documents (cache *session*))
+      (clear-hash-documents (contexts *session*))
       (setf (user *session*) nil)))
 
   (dolist (license-code (available-licenses user))
     (init-license-universe *system* license-code))
   
-  (let ((active-user (query-data-object
+  (let ((active-user (query-document
 		      (core-collection "active-users")
-		      :query (lambda (item)				 
+		      :query (lambda (document)				 
 			       (equalp (parameter "email")
-				       (digx item :email))))))
+				       (digx document :email))))))
     (unless active-user      
-      (setf active-user (persist-object (core-collection "active-users")
+      (setf active-user (persist-document (core-collection "active-users")
 				      (list :email (digx user :email) 
 					    :selected-licenses nil
 					    :selected-entities nil))))
@@ -102,7 +102,7 @@
 
   (setf (contexts *session*) nil)
   (setf *session* nil)
-  (persist-object (core-collection "active-users") (active-user))
+  (persist-document (core-collection "active-users") (active-user))
   (hunchentoot:remove-session hunchentoot:*session*)
   
   (hunchentoot:redirect (frmt "~As-wfx?cs=login" (site-url *system*))))
@@ -111,20 +111,20 @@
   (wfx-query-data
    "modules"
    :query
-   (lambda (item)			    
-     (not (string-equal "Core" (digx item :name))))))
+   (lambda (document)			    
+     (not (string-equal "Core" (digx document :name))))))
 
 (defun mod-menu (mod)
   (if mod
-      (digx (first (digx mod :menu)) :menu-items)))
+      (digx (first (digx mod :menu)) :menu-documents)))
 
 (defun system-menu ()
-  (let ((sys-mod (query-data-object
+  (let ((sys-mod (query-document
 		  (core-collection "modules")
-		  :query (lambda (item)
-			   (string-equal "Core" (digx item :name)))))) 
+		  :query (lambda (document)
+			   (string-equal "Core" (digx document :name)))))) 
     (if sys-mod
-	(digx (first (digx sys-mod :menu)) :menu-items))))
+	(digx (first (digx sys-mod :menu)) :menu-documents))))
 
 (defun accessible-entity (entity accessible-entities)
   (if (find entity accessible-entities)
@@ -153,7 +153,7 @@
 			      (cl-who:htm "&nbsp;"))
 			    
 			    (if (find entity accessible-entities)
-				(if (find (item-hash entity)
+				(if (find (document-hash entity)
 					  (digx (active-user)
 						:selected-entities)
 					  :test #'equalp)
@@ -161,13 +161,13 @@
 				     (:input :class "form-check-input"
 					     :type "checkbox" 
 					     :name "tree-entity-id" 
-					     :value (item-hash entity)
+					     :value (document-hash entity)
 					     :checked ""))
 				    (cl-who:htm
 				     (:input :class "form-check-input"
 					     :type "checkbox" 
 					     :name "tree-entity-id"
-					     :value (item-hash entity))))
+					     :value (document-hash entity))))
 				(cl-who:htm
 				 (:input :class "form-check-input"
 					 :type "checkbox" 
@@ -205,7 +205,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (getf (item-values (active-user)) :selected-entities) nil)
+  (setf (getf (document-elements (active-user)) :selected-entities) nil)
  
   (dolist (parameter (hunchentoot:post-parameters*))
     (when (equalp (car parameter) "tree-entity-id")
@@ -214,10 +214,10 @@
 	
 	(dolist (entity (available-entities license-code))
 	  
-	  (when (string-equal (frmt "~A" (item-hash entity)) (cdr parameter))
-	    (pushnew (item-hash entity)
+	  (when (string-equal (frmt "~A" (document-hash entity)) (cdr parameter))
+	    (pushnew (document-hash entity)
 		     (getx (active-user) :selected-entities))
-	    (persist-object (core-collection "active-users") (active-user))))))))
+	    (persist-document (core-collection "active-users") (active-user))))))))
 
 (defun render-licence-codes ()
   (with-html-string
@@ -264,7 +264,7 @@
 
 (defun render-user-admin-menu ()
   (with-html-string
-    (:div :class "nav-item dropdown"
+    (:div :class "nav-document dropdown"
 	  
 	  (:a :class
 	      (concatenate
@@ -285,18 +285,18 @@
 	  (:div :class "dropdown-menu"
 		:aria-labelledby "userDropdown"
 		(let ((sys-mod 
-		       (query-data-object
+		       (query-document
 			(core-collection "modules")
-			:query (lambda (item)
+			:query (lambda (document)
 				(string-equal
 				 "Core" 
-				 (digx item :name))))))
+				 (digx document :name))))))
 
 		  (dolist (menu (digx sys-mod :menu))
 		    (when (equalp (digx menu :name) "System")
-		      (dolist (item (digx menu :menu-items))
+		      (dolist (document (digx menu :menu-documents))
 			(let ((parameters))
-			  (dolist (param (digx item :context-parameters))
+			  (dolist (param (digx document :context-parameters))
 			    (if parameters
 				(setf parameters 
 				      (frmt "~A&~A=~A" 
@@ -308,31 +308,31 @@
 					    (digx param :name)
 					    (digx param :value)))))
 			  
-			  (when (or (equalp (digx item :name) "Logout")
+			  (when (or (equalp (digx document :name) "Logout")
 				    (context-access-p
-				     (digx item :context-spec)))
+				     (digx document :context-spec)))
 
-			    (when (system-context-p (digx item :context-spec))
-			      (when (equalp (digx item :context-spec) :divider)
+			    (when (system-context-p (digx document :context-spec))
+			      (when (equalp (digx document :context-spec) :divider)
 				(cl-who:htm (:div :class "dropdown-divider")))
 
 
-			      (unless (equalp (digx item :context-spec) :divider)
+			      (unless (equalp (digx document :context-spec) :divider)
 				 (cl-who:htm
-				  (:a :class "dropdown-item"
+				  (:a :class "dropdown-document"
 				      :href 
 				      (if parameters
 					  (frmt "~A&~A" 
 						(context-url 
-						 (digx item :context-spec :name))
+						 (digx document :context-spec :name))
 						parameters)
 					  (context-url 
-					   (digx item :context-spec :name)))
+					   (digx document :context-spec :name)))
 				      (:i	:class (frmt "fa far fab ~A"
-							     (digx item :context-spec :icon))
+							     (digx document :context-spec :icon))
 						:style "width:25px;")
 				      " "
-				      (cl-who:str (digx item :name)))))
+				      (cl-who:str (digx document :name)))))
 			      )))))))))))
 
 (defun render-header-display (text)
@@ -349,53 +349,53 @@
 	   (cl-who:str
 	    text))))
 
-(defun data-menu (menu-items)
-  (let ((items))
-    (dolist (item menu-items)
+(defun data-menu (menu-documents)
+  (let ((documents))
+    (dolist (document menu-documents)
      
       (when (and
-	     (digx item :context-spec)
+	     (digx document :context-spec)
 	     (context-access-p
-	      (digx item :context-spec))
-	     (item-collection (digx item :context-spec)
+	      (digx document :context-spec))
+	     (document-collection (digx document :context-spec)
 			      )
-	     (not (getx (digx item :context-spec) :report)))
-	(pushnew item items)))
-    (reverse items)))
+	     (not (getx (digx document :context-spec) :report)))
+	(pushnew document documents)))
+    (reverse documents)))
 
-(defun report-menu (menu-items)
-  (let ((items))
-    (dolist (item menu-items)
+(defun report-menu (menu-documents)
+  (let ((documents))
+    (dolist (document menu-documents)
       (when (and
-	     (digx item :context-spec)
+	     (digx document :context-spec)
 	     (context-access-p
-	      (digx item :context-spec))
-	     (getx (digx item :context-spec) :report))
-	(pushnew item items)))
-    (reverse items)))
+	      (digx document :context-spec))
+	     (getx (digx document :context-spec) :report))
+	(pushnew document documents)))
+    (reverse documents)))
 
-(defun other-menu (menu-items)
-  (let ((items))
-    (dolist (item menu-items)
+(defun other-menu (menu-documents)
+  (let ((documents))
+    (dolist (document menu-documents)
       (when (and
-	     (digx item :context-spec)
+	     (digx document :context-spec)
 	     (context-access-p
-	      (digx item :context-spec))
-	     (and (not (getx (digx item :context-spec) :report))
-		  (not (getx (digx item :context-spec) :collection))))
-	(pushnew item items)))
-    (reverse items)))
+	      (digx document :context-spec))
+	     (and (not (getx (digx document :context-spec) :report))
+		  (not (getx (digx document :context-spec) :collection))))
+	(pushnew document documents)))
+    (reverse documents)))
 
-(defun render-menu-item-text (item)
+(defun render-menu-document-text (document)
   
   (with-html-string    
     (:a :class "btn btn-light text-dark w-100 text-left"
 	:role "button"
 	    
 	     :href (context-url
-		    (digx item :context-spec :name))
+		    (digx document :context-spec :name))
 	    
-	     (cl-who:str (digx item :name)))))
+	     (cl-who:str (digx document :name)))))
 
 ;;When super-user has selected the system license then exclude grids which dont have collections
 ;; that have a system/core function ie destination
@@ -414,7 +414,7 @@
 			:test 'equalp)))
 	  t)))
 
-(defun render-menu-item (item)
+(defun render-menu-document (document)
   (with-html-string
     (:tr
      (:td
@@ -425,15 +425,15 @@
        :class "btn btn-light"
        :style "width:45px;"  
        :href (context-url
-	      (digx item :context-spec :name))
+	      (digx document :context-spec :name))
        (:i
 	
 	:class (frmt "fa far ~A"
-		     (digx item :context-spec
+		     (digx document :context-spec
 			   :icon))))
       (:td
        :class "bg-light"
-       (cl-who:str (render-menu-item-text item)))))))
+       (cl-who:str (render-menu-document-text document)))))))
 
 (defun render-left-user-menu ()
   (with-html-string
@@ -485,14 +485,14 @@
 			   (:ul :class "nav flex-column ml"
 				(:table :class "table table-sm"
 					
-					(dolist (item (data-menu (digx menu :menu-items)))
+					(dolist (document (data-menu (digx menu :menu-documents)))
 
 					  
 					  
-					  (when (system-context-p (digx item :context-spec))
+					  (when (system-context-p (digx document :context-spec))
 					    
 					    (cl-who:str
-					     (render-menu-item item)
+					     (render-menu-document document)
 					     )))))))
 		    (cl-who:htm
 		     (:a :class "nav-link bg-header text-dark border-bottom border-right border-left"
@@ -502,10 +502,10 @@
 		     (:div :id "report-menu" :class "collapse"
 			   (:ul :class "nav flex-column ml"
 				(:table :class "table table-sm"
-					(dolist (item (report-menu (digx menu :menu-items)))
-					  (when (system-context-p (digx item :context-spec))
+					(dolist (document (report-menu (digx menu :menu-documents)))
+					  (when (system-context-p (digx document :context-spec))
 					    (cl-who:str
-					     (render-menu-item item)
+					     (render-menu-document document)
 					     ))
 					  
 					  )))))
@@ -517,8 +517,8 @@
 		     (:div :id "other-menu" :class "collapse"
 			   (:ul :class "nav flex-column ml"
 				(:table :class "table table-sm"
-					(dolist (item (other-menu (digx menu :menu-items)))
-					  (cl-who:str (render-menu-item item)))))))
+					(dolist (document (other-menu (digx menu :menu-documents)))
+					  (cl-who:str (render-menu-document document)))))))
 
 		    )
 		  )
@@ -548,7 +548,7 @@
 	    (:div :class "dropdown-menu w-100"
 		  (dolist (option list)
 		    (cl-who:htm
-		     (:span :class "dropdown-item"
+		     (:span :class "dropdown-document"
 			    :onclick (js-render-form-values
 				      "cl-wfx:ajax-license-select"
 				      "entities-selection"
@@ -566,9 +566,9 @@
 (defun ajax-license-select (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
-  (unless (equalp (parameter "license-selected") "Select a License")
+  (when (equalp (parameter "license-selected") "Select a License")
     ;;Set license for session
-    (setf (getf (item-values (active-user)) :selected-licenses) nil)
+    (setf (getf (document-elements (active-user)) :selected-licenses) nil)
     (setf (getx (active-user) :selected-entities) nil)
     
     (setf (getx (active-user) :selected-licenses)
@@ -578,17 +578,17 @@
 		      :license (parameter "select-action-value")
 		      (data-definitions *system*))
     
-    (persist-object (core-collection "active-users") (active-user)))
+    (setf (active-session-user *session*)
+	  (persist-document (core-collection "active-users") (active-user))))
   
   (with-html-string
     (:div :class "col"
 	  (:div :class "row bg-light"
 		(:div :class "col bg-light font-weight-bold"
 		      "Accessible Entities"))
-	  
+          
 	  (dolist (license-code (digx (active-user) 
-				      :selected-licenses))
-	    
+				      :selected-licenses))            
 	    (when (or (license-user license-code)
 		      (getx (current-user) :super-user-p))	      
 	      (cl-who:str
@@ -601,7 +601,7 @@
 			   (request hunch-request)
 			   &key &allow-other-keys)
 
-  (setf (getf (item-values (active-user)) :selected-licenses) nil)
+  (setf (getf (document-elements (active-user)) :selected-licenses) nil)
   (setf (getx (active-user) :selected-entities) nil)
 
   (dolist (parameter (hunchentoot:post-parameters*))
@@ -614,13 +614,13 @@
 			:license (cdr parameter)
 			(data-definitions *system*))
       
-      (persist-object (core-collection "active-users") (active-user)))))
+      (persist-document (core-collection "active-users") (active-user)))))
 
 (defun render-right-menu ()
   (with-html-string
     (:form
      :id "license-selection"
-     (:div :class "col nav-item  bg-light font-weight-bold"
+     (:div :class "col nav-document  bg-light font-weight-bold"
 	   "Accessible Licenses")
      (:div :class "row"
 	   (:div :class "col"
@@ -635,10 +635,10 @@
 		 (:div :class "row"
 		       (:div :class "col"
 			     (let ((license-code
-				    (car (getf (item-values (active-user))
+				    (car (getf (document-values (active-user))
 					       :selected-licenses))))
 			       (when license-code
-				 (when (getf (item-values (active-user))
+				 (when (getf (document-values (active-user))
 					     :selected-entities)
 				   (cl-who:str
 				    (render-entity-tree 
@@ -646,10 +646,10 @@
 				     (available-entities license-code)))))))))))))
 
 (defun theme-element (theme element)
-  (dig theme element))
+  (digx theme element))
 
 (defun theme-element-attribute (theme element attribute)
-  (dig theme element attribute))
+  (digx theme element attribute))
 
 (defun tea (theme element attribute &optional default)
   (let ((attribute 
@@ -661,7 +661,7 @@
 
 (defun theme-style (theme element)
   (let ((style-string ""))
-    (dolist (style (dig theme element :style))
+    (dolist (style (digx theme element :style))
       (setf style-string
        (concatenate 'string style-string
 		    (frmt "~A: ~A;" (first style) (second style)))))
@@ -669,7 +669,7 @@
 
 (defun theme-attribute-style (theme element attribute)
   (let ((style-string ""))
-    (dolist (style (dig (theme-element-attribute theme element attribute) :style))
+    (dolist (style (digx (theme-element-attribute theme element attribute) :style))
       (setf style-string
        (concatenate 'string style-string
 		    (frmt "~A: ~A;" (first style) (second style)))))
@@ -1582,7 +1582,7 @@
 
     (dolist (object (gethash :import-data (cache *context*)))
       
-      (persist-object (item-collection object) object ))))
+      (persist-document (document-collection object) object ))))
 
 (defun render-set-password ()
   (with-html-string
@@ -1642,12 +1642,12 @@
   (with-html-string
     (when (parameter "collection")
       (cond ((string-equal (parameter "export-type") "json")
-	     (cl-who:str (item-list-to-json (wfx-query-data (parameter "collection")))))
+	     (cl-who:str (document-list-to-json (wfx-query-data (parameter "collection")))))
 	    ((string-equal (parameter "export-type") "csv")
-	     (cl-who:str (item-list-to-csv (wfx-query-data (parameter "collection")))))
+	     (cl-who:str (document-list-to-csv (wfx-query-data (parameter "collection")))))
 	    (t
 	     (cl-who:str
-	      (frmt "~S" (items-to-plist (wfx-query-data (parameter "collection")))))
+	      (frmt "~S" (documents-to-plist (wfx-query-data (parameter "collection")))))
 	     ))
 
       )))
@@ -1668,7 +1668,7 @@
 				(parameter "license")
 				(parameter "collection")
 				(parameter "datatype")
-				(parameter "field")))))
+				(parameter "element")))))
 
 	(ensure-directories-exist server-path)
 

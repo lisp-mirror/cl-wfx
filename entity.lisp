@@ -1,11 +1,11 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "entity"
 	   :label "Entity"
-	   :top-level-p t
-	   :fields ((:name :name
+	   
+	   :elements ((:name :name
 			   :label "Name"
 			   :key-p t
 			   :db-type :string
@@ -28,7 +28,7 @@
 			   :key-p nil
 			   :db-type (:type :list
 					   :complex-type :hierarchical
-					   :data-type "entity"
+					   :type-def "entity"
 					   :collection "entities"
 					   :accessor (:name)
 					   :child-accessor (:children))
@@ -39,7 +39,7 @@
 			   :key-p nil
 			   :db-type (:type :keyword
 					   :complex-type :value-list
-					   :values (:demo :suspended :active))
+					   :elements (:demo :suspended :active))
 			   :attributes (:display t :editable t)
 			   :documentation "")))
     :destinations (:license))
@@ -47,7 +47,7 @@
    (:collection
     (:name "entities"
      :label "Entities"
-     :data-type "entity")
+     :type-def "entity")
     :destinations (:license)
     :access
     (:stores		  
@@ -55,7 +55,7 @@
       (:user-levels
        (:license (:update :delete :lookup))))))))
 
-(defgeneric match-context-entities (item))
+(defgeneric match-context-entities (document))
 
 (defun get-license-entities (code)
   (query-data (license-collection code "entities")))
@@ -85,37 +85,37 @@
 	    (when entity
 	      (return-from get-entity entity))))))))
 
-(defun match-entity (item)
+(defun match-entity (document)
 
-  (let ((data-type-def (if (stringp (item-data-type item))
-			   (get-data-type (item-store item)
-					  (item-data-type item))
-			   (item-data-type item))))
+  (let ((document-type-def (if (stringp (document-type-def document))
+			   (get-document-type (document-store document)
+					  (document-type-def document))
+			   (document-type-def document))))
     (cond ((not (getx (active-user) :selected-entities))
 	   (when  (getx (current-user) :super-user-p)
-	     item))
-	  ((equalp (name data-type-def) "entity")
-	   (find (item-hash item)
+	     document))
+	  ((equalp (name document-type-def) "entity")
+	   (find (document-hash document)
 		 (getx (active-user) :selected-entities)
 		 :test #'equalp))
-	  ((and (slot-exists-p data-type-def 'entity-accessor)
-		(and data-type-def (entity-accessor data-type-def)))
-	   (let ((entity (apply 'digx item (entity-accessor data-type-def))))
+	  ((and (slot-exists-p document-type-def 'entity-accessor)
+		(and document-type-def (entity-accessor document-type-def)))
+	   (let ((entity (apply 'digx document (entity-accessor document-type-def))))
 	     (if entity
-		 (find (item-hash entity) 
+		 (find (document-hash entity) 
 		       (getx (active-user) :selected-entities)
 		       :test #'equalp)
 		 (when  (getx (current-user) :super-user-p)
-		   item))))
-	  ((exists-p item :entity)
-	   (if (getx item :entity)
-	       (find (item-hash (getx item :entity))
+		   document))))
+	  ((cl-getx:place-exists-p document :entity)
+	   (if (getx document :entity)
+	       (find (document-hash (getx document :entity))
 		     (getx (active-user) :selected-entities)
 		     :test #'equalp)
 	       (when  (getx (current-user) :super-user-p)
-		 item)))
+		 document)))
 	  (t
-	   item))))
+	   document))))
 
-(defmethod match-context-entities ((item item))
-  (match-entity item))
+(defmethod match-context-entities ((document document))
+  (match-entity document))

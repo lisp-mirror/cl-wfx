@@ -3,10 +3,10 @@
 (defvar *data* nil)
 
 (add-core-definitions
- '((:data-type
+ '((:type-def
     (:name "file"
      :label "file"
-     :fields
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -19,11 +19,10 @@
 	     :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
-   (:data-type
+   (:type-def
     (:name "report"
      :label "Report"
-     :top-level-p t
-     :fields
+     :elements
      ((:name :name 
 	     :label "Name"
 	     :key-p t
@@ -50,16 +49,16 @@
 	     :attributes (:display t :editable t))
       (:name :files
 	     :label "Files"
-	     :db-type (:type :item
+	     :db-type (:type :document
 			     :complex-type :list-objects
-			     :data-type "file"
+			     :type-def "file"
 			     :accessor (:name))))
      :destinations (:core :system :license)))
    
    (:collection
       (:name "reports"
 	     :label "Reports"
-	     :data-type "report")
+	     :type-def "report")
       :destinations (:core :system :license)
       :access
       (:stores
@@ -77,17 +76,17 @@
 	 (:system (:update :delete :lookup))
 	 (:license (:update :delete :lookup))))))
 
-   (:data-type
+   (:type-def
     (:name "entity-report"
      :label "Entity Report"
-     :top-level-p t
-     :fields
+     
+     :elements
      ((:name :entity
 	     :label "Entity"
 	     :key-p t
 	     :db-type (:type :list
 			     :complex-type :collection
-			     :data-type "entity"
+			     :type-def "entity"
 			     :collection "entities"
 			     :accessor (:name))
 	     :attributes (:display t :editable t)
@@ -118,21 +117,21 @@
 	     :attributes (:display t :editable t))
       (:name :files
 	     :label "Files"
-	     :db-type (:type :item
+	     :db-type (:type :document
 			     :complex-type :list-objects
-			     :data-type "file"
+			     :type-def "file"
 			     :accessor (:name))))
      :destinations (:license)))
 
    (:collection
 	(:name "entity-reports"
 	 :label "Entity Reports"
-	 :data-type "entity-report")
+	 :type-def "entity-report")
 	:destinations (:license))))
 
 
 
-(defvar *item* nil)
+(defvar *document* nil)
 
 (defmethod render-report-element ((type (eql :html))
 				  (element-type (eql :data-row))
@@ -140,8 +139,8 @@
   (when *data*
     (when (getf *data* :data) 
       (with-html-string
-	  (dolist (*item* (eval (getf element :data-script)))
-	    (when *item*
+	  (dolist (*document* (eval (getf element :data-script)))
+	    (when *document*
 		(cl-who:htm
 		 (:div :class "row"	       
 		       (dolist (cell (getf element :cells))
@@ -249,10 +248,10 @@
     (eval (digx report :code :selection-lambda))))
 
 (defmethod render-report ((type (eql :html)) report-name)
-  (let* ((report (wfx-query-data-object
+  (let* ((report (wfx-query-document
 		  "reports"
-		  :query (lambda (item)
-			  (equalp (getx item :name)
+		  :query (lambda (document)
+			  (equalp (getx document :name)
 				  report-name)))))
     (cl-wfx::with-html-string
       (:div :id "report-body"

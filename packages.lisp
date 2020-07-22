@@ -1,7 +1,8 @@
 (in-package :common-lisp-user)
 
 (defpackage :cl-wfx
-  (:use :cl :cl-naive-store :cl-naive-indexed :cl-naive-data-types :cl-naive-data-type-defs :cl-naive-items)
+  (:use :cl :cl-getx :cl-naive-store :cl-naive-indexed :cl-naive-document-types
+	:cl-naive-document-type-defs :cl-naive-documents)
   
   (:export
    ;;#### common.lisp
@@ -42,9 +43,9 @@
    :license-collection
    :wfx-get-collection
    :wfx-query-data
-   :wfx-query-data-object
+   :wfx-query-document
    :wfx-query-context-data
-   :wfx-query-context-data-object
+   :wfx-query-context-document
    
    :sanitize-data-file
    
@@ -157,7 +158,7 @@
 
 
 (defpackage :wfx-repl
-  (:use :cl :cl-naive-store :cl-naive-items :cl-wfx))
+  (:use :cl :cl-naive-store :cl-naive-documents :cl-wfx))
 
 (defpackage :wfx-importer
-  (:use :cl :cl-naive-store :cl-naive-items :cl-wfx))
+  (:use :cl :cl-naive-store :cl-naive-documents :cl-wfx))
