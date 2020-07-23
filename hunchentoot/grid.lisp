@@ -69,7 +69,7 @@
 	    (:div :class "dropdown-menu" :aria-labelledby (frmt "~A" name)
 		  (dolist (option list)
 		    (cl-who:htm
-		     (:span :class "dropdown-document"
+		     (:span :class "dropdown-item"
 			    :onclick (if select-onclick-func
 					 (funcall
 					  select-onclick-func option))
@@ -197,7 +197,7 @@
 					 required-p
 					 hierarchy)
   (declare (ignore hierarchy) (ignore document))
-  
+
   (let* ((element-name (digx element :name))
 	(selected-value (if selected
 			    (if value-func
@@ -205,7 +205,7 @@
 				selected)
 			    (or (parameter (frmt "~A" element-name))
 				context-state-selected))))
-
+    
     (with-html-string
       (:div :class "col"
 	    
@@ -664,6 +664,7 @@
 
 
 (defun render-grid-edit-row (document-type name element label document parent-document hierarchy)
+  
   (with-html-string
    (:div
     :class
@@ -684,6 +685,8 @@
 	    (character "-")  
 	    (format nil "~A" name) 
 	    :test #'equalp)))))
+
+    
     (or
      (cl-who:str
       (render-input-val 
@@ -691,7 +694,7 @@
        element document
        :parent-document
        parent-document
-       :type-def document-type
+       :document-type document-type
        :hierarchy hierarchy))))))
 
 
@@ -2036,9 +2039,11 @@
   (let* ((indicator (pop indicators))
 	 (place (gethash indicator (cache *context*))))
 
-    (if indicators
-	(apply 'digx  place indicators)
-	place)))
+;;    (break "place ~A" place)
+    (when place
+      (if indicators
+	  (apply 'digx  place indicators)
+	  place))))
 
 (defun (setf getcx) (value &rest indicators)
   (let* ((indicator (pop indicators))
@@ -2525,7 +2530,7 @@
 	   
 	   (dolist (option list)
 	     (cl-who:htm
-	      (:span :class "auto-complete-document nav-link"
+	      (:span :class "auto-complete-item nav-link"
 		     (:input :type "hidden"
 			     :value (frmt "~A" (if option (document-hash option))))
 		     (cl-who:str
@@ -2564,7 +2569,7 @@
 				 (accessor-value document accessors))))
 	 (dolist (option list)
 	   (cl-who:htm
-	    (:span :class "auto-complete-document nav-link"
+	    (:span :class "auto-complete-item nav-link"
 		   (:input :type "hidden"
 			   :value (frmt "~A" (document-hash option)))
 		   (cl-who:str

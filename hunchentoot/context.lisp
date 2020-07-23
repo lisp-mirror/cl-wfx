@@ -319,7 +319,7 @@
 
 			      (unless (equalp (digx document :context-spec) :divider)
 				 (cl-who:htm
-				  (:a :class "dropdown-document"
+				  (:a :class "dropdown-item"
 				      :href 
 				      (if parameters
 					  (frmt "~A&~A" 
@@ -548,7 +548,7 @@
 	    (:div :class "dropdown-menu w-100"
 		  (dolist (option list)
 		    (cl-who:htm
-		     (:span :class "dropdown-document"
+		     (:span :class "dropdown-item"
 			    :onclick (js-render-form-values
 				      "cl-wfx:ajax-license-select"
 				      "entities-selection"

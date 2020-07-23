@@ -3,6 +3,7 @@ function prep_dropdowns() {
     $(document).on('click', '.dropdown-item', function(){
 	var selVal = $(this).children().first();
 	var selText = $(this).text();
+	
 	$(this).parents('.dropdown').find('.dropdown-toggle').html($.trim(selText));
 	$(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
     });
@@ -57,7 +58,7 @@ function prep_expands () {
 			    this.dataset.collection,
 			    [["data-type", this.dataset.type],
 			     ["wfxaction", "expand"],
-			     ["item-id", this.dataset.hash],
+			     ["document-id", this.dataset.hash],
 			     ["pages", this.dataset.pages],
 			     ["page", this.dataset.page]]);
 	    }
@@ -70,7 +71,7 @@ function prep_expands () {
 			    this.dataset.collection,
 			    [["data-type", this.dataset.type],
 			     ["wfxaction", "unexpand"],
-			     ["item-id", ""],
+			     ["document-id", ""],
 			     ["pages", this.dataset.pages],
 			     ["page", this.dataset.page]]); 
 	    }
