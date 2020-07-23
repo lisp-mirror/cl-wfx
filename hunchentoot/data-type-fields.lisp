@@ -223,6 +223,7 @@
 	 (val (if document (getx document element)))
 	 (accessors (if (listp (getx element :type-def))
 			(digx element :type-def :accessor)))
+	 
 	 (final-val (if val
 			(frmt "~A" (if accessors
 				       (accessor-value (if (typep val 'local-time:timestamp)
@@ -230,12 +231,17 @@
 							    local-time:+iso-8601-date-format+ val)
 							   val)
 						       accessors)
-				       val))
+				       (if (typep val 'local-time:timestamp)
+					   (local-time:format-timestring
+					    local-time:+iso-8601-date-format+ val)
+					   val)))
 			(if default-value
-			    default-value
+			    (if (typep default-value 'local-time:timestamp)
+				(local-time:format-timestring
+				 local-time:+iso-8601-date-format+ default-value)
+				default-value)
 			    ""))) )
-    
-     final-val)
+    final-val)
   
   )
 

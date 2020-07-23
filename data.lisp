@@ -5,7 +5,9 @@
 		 :accessor store-class
 		 :initform 'document-store
 		 :allocation :class
-		 :documentation "Overriding store class here to influence document-type-class and collection-class.")))
+		 :documentation "Overriding store class here to influence document-type-class and collection-class."))
+  (:default-initargs
+   :store-class 'document-store))
 
 (defparameter *core-store-definitions* nil)
 
@@ -294,6 +296,7 @@ that override others to the correct level."
 			     (digx collection :collection :name)))
 	(stores (collection-stores *system* collection-name)))
 
+    
     (dolist (store stores)
       (let ((collection (get-collection
 				  store 
@@ -307,7 +310,7 @@ that override others to the correct level."
 				  (when (match-context-entities document)
 				    (if query
 					(funcall query document)
-					document)))))
+					document)))))            
 	    (setf documents
 		  (append-documents
 		   documents
@@ -317,7 +320,6 @@ that override others to the correct level."
 		   other-documents
 		   others))))))
     
-  
     (values (first documents) (rest documents) other-documents)))
 
 (defun in-place-subst (file refs)

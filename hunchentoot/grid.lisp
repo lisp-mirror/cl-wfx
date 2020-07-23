@@ -2038,8 +2038,7 @@
 (defun getcx (&rest indicators)
   (let* ((indicator (pop indicators))
 	 (place (gethash indicator (cache *context*))))
-
-;;    (break "place ~A" place)
+    
     (when place
       (if indicators
 	  (apply 'digx  place indicators)
@@ -2769,14 +2768,15 @@
 
 
 (defun synq-value (element edit-document parent-document value)
+  
   (cond ((equalp (complex-type element) :collection)
 	 (setf (getx edit-document element)
 		 (wfx-query-context-document
 			(digx element :type-def :collection)
 			:query (lambda (document)
+				 
 				 (string-equal (frmt "~A" (document-hash document))
-					       (frmt "~A" value))))))
-	
+					       (frmt "~A" value))))))	
 	((equalp (complex-type element) :collection-contained-document)
 	 (setf (getx edit-document element)
 	       (if (not (empty-p value))
@@ -2805,14 +2805,13 @@
 			     more-document)
 
 	   (setf (getx edit-document element) more-document)))
-	(t	
+	(t
 	 (setf (getx edit-document element) value))))
 
 
 (defun validate-value (element element-name edit-document parent-document value)
   (if (equalp (complex-type element) :document)
       (cond ((equalp (complex-type element) :collection)
-             
 	     (validate-xe
 	      edit-document 
 	      element 
@@ -2865,7 +2864,6 @@
 					 (parameter element-name)))
 			(list t nil))))
 
-	
 	(unless (first valid)
 	  (pushnew 
 	   (list element-name (second valid))
@@ -2875,7 +2873,7 @@
 	  (synq-value element edit-document parent-document
 		      (or (parameter (string-downcase element-name))
 			  (parameter element-name))))))	  
-  
+
     (when (getx element :key-p)
       
       (when (empty-p (parameter (getx element :name)))
