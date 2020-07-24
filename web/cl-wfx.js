@@ -1,9 +1,9 @@
 function prep_dropdowns() {
-//    alert("prep_dropdowns")
+
     $(document).on('click', '.dropdown-item', function(){
 	var selVal = $(this).children().first();
 	var selText = $(this).text();
-	
+
 	$(this).parents('.dropdown').find('.dropdown-toggle').html($.trim(selText));
 	$(this).parents('.dropdown').find('.selected-value').val($(selVal).val());
     });

@@ -91,6 +91,7 @@
 			   (get-document-type (document-store document)
 					  (document-type-def document))
 			   (document-type-def document))))
+    
     (cond ((not (getx (active-user) :selected-entities))
 	   (when  (getx (current-user) :super-user-p)
 	     document))

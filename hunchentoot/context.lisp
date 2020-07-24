@@ -183,9 +183,9 @@
 (defun render-entity-tree (license-code accessible-entities )
   (with-html-string
     (:form
+     
      (dolist (entity (accessible-entity-roots
 		      accessible-entities license-code))
-
        (when (digx entity :root-p)
 	   (cl-who:str (render-entity-check entity 0 accessible-entities))))
 
@@ -566,7 +566,8 @@
 (defun ajax-license-select (&key id from-ajax)
   (declare (ignore id) (ignore from-ajax))
 
-  (when (equalp (parameter "license-selected") "Select a License")
+  (when (and (parameter "license-selected")
+	     (not (equalp (parameter "license-selected") "Select a License")))
     ;;Set license for session
     (setf (getf (document-elements (active-user)) :selected-licenses) nil)
     (setf (getx (active-user) :selected-entities) nil)
@@ -577,7 +578,6 @@
     (init-definitions (universe *system*)
 		      :license (parameter "select-action-value")
 		      (data-definitions *system*))
-    
     (setf (active-session-user *session*)
 	  (persist-document (core-collection "active-users") (active-user))))
   
@@ -586,7 +586,7 @@
 	  (:div :class "row bg-light"
 		(:div :class "col bg-light font-weight-bold"
 		      "Accessible Entities"))
-          
+
 	  (dolist (license-code (digx (active-user) 
 				      :selected-licenses))            
 	    (when (or (license-user license-code)

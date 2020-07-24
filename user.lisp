@@ -413,6 +413,7 @@ must be valid email to enable confirmation.")
 	    :type-def-permissions document-type-permissions
 	    :accessible-entities entities	   
 	    :status :active)))))
+    
     user))
 
 (defgeneric ensure-user (system email password &key &allow-other-keys))

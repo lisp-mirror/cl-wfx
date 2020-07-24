@@ -223,6 +223,14 @@ documents override earlier ones. See append-documents."
 that override others to the correct level."
   (first (last (collection-stores *system*
 				  collection-name))))
+(defun wfx-get-document-type (type-name)
+  
+  (dolist (store (list (license-store (first (getx (active-user) :selected-licenses)))
+		       (system-store)
+		       (core-store)))
+    (let ((doc-type (get-document-type store type-name)))
+      (when doc-type
+	(return-from wfx-get-document-type doc-type)))))
 
 (defun wfx-get-collection (collection-name)
   "Selects the collection from the correct store in the hierarchy of stores."

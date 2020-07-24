@@ -1216,6 +1216,7 @@
 				  (if (> (length hierarchy) 1)
 				      hierarchy
 				      nil))))
+    
 
     (with-html-string
       (:tbody
@@ -1242,8 +1243,8 @@
 	     (:td :style "width:25px;"
 		  (cl-who:str
 		   (render-expand-buttons subs document-type document)))))
-	
-	(dolist (element row-elements)
+
+	(dolist (element row-elements)	  
 	  (cl-who:str (render-table-cell element document)))
 
 	(:td :style "width:40px;"
@@ -1251,17 +1252,14 @@
 		   
 		   (when (not *rendering-shit*)
 		     (cl-who:str			      
-		      (render-grid-buttons document-type document hierarchy)))
-		   
-		   ))
+		      (render-grid-buttons document-type document hierarchy)))))
+	
 	(when (check-top-level-p document-type)
 	  (cl-who:htm
 	   (:td :style "width:40px;text-align:center;"
 	    
 	    (cl-who:str
-	     (render-select-button document)))))
-	
-	)))))
+	     (render-select-button document))))))))))
 
 
 
@@ -1552,6 +1550,8 @@
 		       (setf access-p t))))))))
     access-p))
 
+
+
 (defun render-grid-data (document-type page-documents sub-level
 			 parent-document parent-spec hierarchy)
   (let ((documents))
@@ -1561,7 +1561,17 @@
     (with-html-string
       (let ((elements (getcx document-type :elements))
 	    (subs))
-		    
+
+	(unless elements
+	  
+	  (let ((document-def (wfx-get-document-type document-type)))
+            
+	    (when document-def
+	      (setf (getcx document-type :elements) (elements document-def)))
+
+	    (setf elements (elements document-def))))
+
+	
 	(dolist (element elements)
 	  (when (sub-grid-p element)
 	 
