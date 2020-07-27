@@ -1262,7 +1262,6 @@
 	     (render-select-button document))))))))))
 
 
-
 (defun render-select-document-row (document-type documents elements)
   (with-html-string
       (:tbody :style "display:table-row-group;"
