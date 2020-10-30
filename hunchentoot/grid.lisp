@@ -2474,7 +2474,8 @@
 	(return-from get-child (list (getx element :name)
 				     (make-document :type-def
 						(string-downcase
-						 (frmt "~A" document-type)))))))))
+						 (frmt "~A" document-type))
+						:hash (uuid:make-v4-uuid))))))))
 
 (defun fetch-grid-root-edit-document (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))   
@@ -2779,6 +2780,7 @@
 (defun synq-value (element edit-document parent-document value)
   
   (cond ((equalp (complex-type element) :collection)
+	 
 	 (setf (getx edit-document element)
 		 (wfx-query-context-document
 			(digx element :type-def :collection)
@@ -2798,12 +2800,15 @@
 		       edit-document))))))
 	
 	((equalp (complex-type element) :contained-document)
+         
 	 (setf (getx edit-document element)
 	       (find-contained-document
 		value
 		(accessor-value parent-document
 				(digx  element :type-def :container-accessor)) )))
 	((equalp (complex-type element) :document)
+	 (break "mtf ?? ~A" element edit-document)
+	 
 	 (let* ((sub-document-type (digx  element :type-def :type-def))
 		(more-document (or (getx edit-document element)
 			       (make-document :type-def
@@ -2894,13 +2899,26 @@
   (unless (getcx document-type :validation-errors)
     ;;Append parent-slot only if new	
     (when parent-slot
-      (let ((exists (find-equalp-document edit-document
-				      (getx parent-document parent-slot))))
+      (let ((exists
+              
+	      (find-equalp-document edit-document
+					  (getx parent-document parent-slot))))
+	;;(break "append ~A~%~A" exists parent-document)
+
+	#|
+	(break "llmfh ~A~% ~A"
+	       edit-document
+	       (append (getx parent-document parent-slot)
+		       
+		       (list edit-document)))
+	|#
 	(if exists
-	    edit-document		  
+	    edit-document            
 	    (setf (getx parent-document parent-slot)
 		  (append (getx parent-document parent-slot)
-			  (list edit-document))))))))
+			  (list edit-document))))
+	;;(break "append x ~A" parent-document)
+	))))
 
 (defun grid-persist-document (document-type root-document)
   (unless (getcx document-type :validation-errors)
@@ -2928,7 +2946,8 @@
 	(parent-document)
 	(edit-document)
 	(parent-slot))
-      
+
+    
     (when edit-objects
       
       (setf root-document (getx (first edit-objects) :document))
@@ -3004,6 +3023,7 @@
 			   &key &allow-other-keys)
 
 
+  
   (let* ((document-type (string-downcase (parameter "document-type")))
 	 (elements (getcx document-type :elements)))
 
@@ -3011,7 +3031,7 @@
     
     (multiple-value-bind (root-document parent-slot parent-document edit-document)
 	(prepare-edit-objects)
-
+      
       (when elements
 	
 	(unless edit-document

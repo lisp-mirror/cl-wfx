@@ -150,6 +150,9 @@ Calls tear-down-data to clean up data."))
 (defmethod stop-sys :after ((system system) &key &allow-other-keys)
   (setf (system-status system) :started))
 
+#|
+;;TODO: clashing with shard lock
+
 ;;TODO: How to force lock, how to stop users or more by system lock so that only admin can perform tasks on the system?"
 (defgeneric lock (system &key &allow-other-keys)
   (:documentation "Implement system lock tasks."))
@@ -168,4 +171,4 @@ Calls tear-down-data to clean up data."))
   (setf (system-status system) :started))
 
 
-
+|#
