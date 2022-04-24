@@ -1,101 +1,55 @@
 (in-package :cl-wfx)
 
 (add-core-definitions
- '((:type-def
+ '((:document-type
     (:name
      "email-log"
      :label "Email Log"
      :elements
      ((:name :date-stamp
-	     :label "Date Stamp"
-	     :key-p t
-	     :db-type :date-time
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "Date Stamp"
+       :key-p t
+       :concrete-type :date-time
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :email-account
-	     :label "Email Account"	     
-	     :db-type :email
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
+       :label "Email Account"
+       :concrete-type :email
+       :attributes (:display t :editable t)
+       :documentation
+       "")
       (:name :email-template
-	     :label "Email Template"	     
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
+       :label "Email Template"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation
+       "")
       (:name :to
-	     :label "To"	     
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
+       :label "To"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation
+       "")
       (:name :status
-	     :label "Status"
-	     :key-p t
-	     :db-type (:type :keyword
-			     :complex-type :value-list
-			     :elements (:sent
-				      :error))
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "Status"
+       :key-p t
+       :concrete-type (:type :keyword
+		       :complex-type :value-list
+		       :elements (:sent
+				  :error))
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :error
-	     :label "Error"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")))
+       :label "Error"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")))
     :destinations (:system :license))
-
 
    (:collection
     (:name "email-logs"
      :label "Email Logs"
-     :type-def "email-log")
-    :destinations (:system :license)
-    :access
-    (:stores
-     (:core
-      (:user-levels
-        (:system (:update :delete :lookup))
-       (:license (:update :delete :lookup))))))
-   
-   
-   (:type-def
-    (:name
-     "email-template"
-     :label "Email Template"
-     
-     :elements
-     ((:name :description
-	     :label "Description"
-	     :key-p t
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")
-      (:name :email-account
-	     :label "Email Account"	     
-	     :db-type (:type :list
-			     :complex-type :collection
-			     :type-def "email-account"
-			     :collection "email-accounts"
-			     :accessor (:email))
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
-      (:name :email-script
-	     :label "Email Script"
-	     :db-type :lambda
-	     :attributes (:display t :editable t)
-	     :documentation "")
-      
-      ))
-    :destinations (:system :license))
-
-
-   (:collection
-    (:name "email-templates"
-     :label "Email Templates"
-     :type-def "email-template")
+     :document-type "email-log")
     :destinations (:system :license)
     :access
     (:stores
@@ -103,51 +57,92 @@
       (:user-levels
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
-   
-   (:type-def
+
+   (:document-type
+    (:name
+     "email-template"
+     :label "Email Template"
+
+     :elements
+     ((:name :description
+       :label "Description"
+       :key-p t
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")
+      (:name :email-account
+       :label "Email Account"
+       :concrete-type (:type :list
+		       :complex-type :collection
+		       :document-type "email-account"
+		       :collection "email-accounts"
+		       :accessor (:email))
+       :attributes (:display t :editable t)
+       :documentation
+       "")
+      (:name :email-script
+       :label "Email Script"
+       :concrete-type :lambda
+       :attributes (:display t :editable t)
+       :documentation "")))
+    :destinations (:system :license))
+
+   (:collection
+    (:name "email-templates"
+     :label "Email Templates"
+     :document-type "email-template")
+    :destinations (:system :license)
+    :access
+    (:stores
+     (:core
+      (:user-levels
+       (:system (:update :delete :lookup))
+       (:license (:update :delete :lookup))))))
+
+   (:document-type
     (:name
      "email-account"
      :label "Email Account"
-     
+
      :elements
      ((:name :email
-	     :label "Email"
-	     :key-p t
-	     :db-type :email
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
+       :label "Email"
+       :key-p t
+       :concrete-type :email
+       :attributes (:display t :editable t)
+       :documentation
+       "")
       (:name :host
-	     :label "Host"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "Host"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :port
-	     :label "port"
-	     :db-type :integer
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "port"
+       :concrete-type :integer
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :ssl
-	     :label "SSL"
-	     :db-type :boolean
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "SSL"
+       :concrete-type :boolean
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :user-name
-	     :label "User Name"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "User Name"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :password
-	     :label "password"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")))
+       :label "password"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")))
     :destinations (:system :license))
-   
+
    (:collection
     (:name "email-accounts"
      :label "Email Accounts"
-     :type-def "email-account")
+     :document-type "email-account")
     :destinations (:system :license)
     :access
     (:stores
@@ -157,60 +152,60 @@
        (:system (:update :delete :lookup))
        (:license (:update :delete :lookup))))))
 
-   (:type-def
+   (:document-type
     (:name
      "entity-email-account"
      :label "Entity Email Account"
-     
+
      :elements
      ((:name :entity
-	     :label "Entity"
-	     :key-p t
-	     :db-type (:type :list
-			     :complex-type :collection
-			     :type-def "entity"
-			     :collection "entities"
-			     :accessor (:name))
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "Entity"
+       :key-p t
+       :concrete-type (:type :list
+		       :complex-type :collection
+		       :document-type "entity"
+		       :collection "entities"
+		       :accessor (:name))
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :email
-	     :label "Email"
-	     :key-p t
-	     :db-type :email
-	     :attributes (:display t :editable t)
-	     :documentation	     
-	     "")
+       :label "Email"
+       :key-p t
+       :concrete-type :email
+       :attributes (:display t :editable t)
+       :documentation
+       "")
       (:name :host
-	     :label "Host"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "Host"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :port
-	     :label "port"
-	     :db-type :integer
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "port"
+       :concrete-type :integer
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :ssl
-	     :label "SSL"
-	     :db-type :boolean
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "SSL"
+       :concrete-type :boolean
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :user-name
-	     :label "User Name"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")
+       :label "User Name"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")
       (:name :password
-	     :label "password"
-	     :db-type :string
-	     :attributes (:display t :editable t)
-	     :documentation "")))
+       :label "password"
+       :concrete-type :string
+       :attributes (:display t :editable t)
+       :documentation "")))
     :destinations (:license))
 
    (:collection
     (:name "entity-email-accounts"
      :label "Entity Email Accounts"
-     :type-def "entity-email-account")
+     :document-type "entity-email-account")
     :destinations (:license))))
 
 (setf cl-smtp::*debug* t)
@@ -229,14 +224,10 @@
    :query (lambda (document)
 	    (string-equal (getx document :email) email))))
 
-
-
-
-
 (defun send-mail (mail-account to from subject message html-message
 		  &key data cc bcc reply-to extra-headers display-name attachments
 		    bubble-errors-p)
-  
+
   (let ((*mail-data* data))
     (handler-case
 	(progn
@@ -274,14 +265,12 @@
 					(cons "Disposition-Notification-To"
 					      (list (getx mail-account :email))))))
 
-	  
 	  nil)
       (error (c)
 	(break "~A" c)
 	(if bubble-errors-p
 	    (error c)
 	    (princ-to-string c))))))
-
 
 (defparameter *email-account* nil)
 (defparameter *email-template* nil)
@@ -301,13 +290,13 @@
     (persist-document
      collection
      (make-document :collection collection
-		:type-def "email-log"
-		:elements (list :date-stamp (local-time:now)
-			      :email-account email-account
-			      :email-template email-template
-			      :to to
-			      :status status
-			      :error error))
+		    :document-type "email-log"
+		    :elements (list :date-stamp (local-time:now)
+				    :email-account email-account
+				    :email-template email-template
+				    :to to
+				    :status status
+				    :error error))
      :collection (wfx-get-collection "email-logs"))))
 
 (defun send-template-mail (template &key data)
@@ -316,12 +305,11 @@
 	(*mail-data* data)
 	(email))
 
-    
     (when (and *email-account* (getx template :email-script))
       (setf email (eval% (getx template :email-script)))
       (when email
 	(handler-case
-	    (progn              
+	    (progn
 	      (send-mail
 	       *email-account*
 	       (getx email :to)
@@ -333,11 +321,11 @@
 	       :bcc (getx email :bcc)
 	       :reply-to (getx email :reply-to)
 	       :display-name (getx email :display-name)
-	       :data data )
+	       :data data)
 
 	      (log-email (getx template :email-account) (getx template :description)
 			 (getx email :to) :sent  nil))
 	  (error (c)
-	    
+
 	    (log-email (getx template :email-account) (getx template :description)
 		       (getx email :to) :error  c)))))))

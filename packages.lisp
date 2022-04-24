@@ -1,9 +1,10 @@
 (in-package :common-lisp-user)
 
 (defpackage :cl-wfx
-  (:use :cl :cl-getx :cl-naive-store :cl-naive-indexed :cl-naive-document-types
-	:cl-naive-document-type-defs :cl-naive-documents)
-  
+  (:use :cl :cl-getx :cl-naive-store.naive-core :cl-naive-store.naive-indexed
+	:cl-naive-store.document-types :cl-naive-store.document-type-defs
+	:cl-naive-store.naive-documents)
+
   (:export
    ;;#### common.lisp
 
@@ -11,10 +12,10 @@
    :*context*
    :current-user
    :active-user
-   :getx   
+   :getx
    :frmt
    :trim-whitespace
-      
+
    :empty-p
    :ensure-parse-integer
    :parse-date
@@ -31,7 +32,7 @@
    :load%
 
    :plist-to-value-pairs
-   
+
    ;;#### data.lisp
    :wfx-universe
    :init-license-universe
@@ -46,11 +47,11 @@
    :wfx-query-document
    :wfx-query-context-data
    :wfx-query-context-document
-   
+
    :sanitize-data-file
-   
+
    ;;????
-   :system 
+   :system
 
    ;;###system-code.lisp
    :lambda-eval
@@ -61,7 +62,7 @@
    :request-parameter
    :action-handler
    :parameter
-   
+
    ;;#### context.lisp
    :context-parameter
    :context
@@ -73,11 +74,11 @@
    :cache
    :*lambda-functions*
    :context-log
-   
-   ;;#### 
+
+   ;;####
    :load-context-specs
    :load-modules
-   
+
    :init-sys-universe
    :init-universe-definitions
    :add-core-definitions
@@ -87,7 +88,7 @@
    :license-collecton
 
    ;;### System
-   
+
    :hunch-system
    :site-url
    :ajax-process
@@ -101,7 +102,7 @@
    :theme
 
    :start-sys
-  
+
    ;;### Session
    :session-parameter
    :current-user
@@ -113,7 +114,7 @@
 
    ;;entity.lisp
    :match-context-entities
-   
+
    ;;#### module.lisp
    :get-module
    :get-module-context
@@ -125,8 +126,7 @@
    :make-user
    :change-user
    :add-user
-   
-   
+
    ;;#### context-spec.lisp
    :get-context-spec
 
@@ -134,7 +134,7 @@
    :hunch-request
    :with-html
    :with-html-string
-   
+
    ;;#### hunchentoot/context.lisp
    :setup-context
    :tea
@@ -151,14 +151,12 @@
    :get-email-template
    :send-template-mail-by-description
    :log-email
-   :send-template-mail
-   
-   
-   ))
-
+   :send-template-mail))
 
 (defpackage :wfx-repl
-  (:use :cl :cl-naive-store :cl-naive-documents :cl-wfx))
+  (:use :cl :cl-naive-store.naive-core
+	:cl-naive-store.naive-documents :cl-wfx))
 
 (defpackage :wfx-importer
-  (:use :cl :cl-naive-store :cl-naive-documents :cl-wfx))
+  (:use :cl :cl-naive-store.naive-core
+	:cl-naive-store.naive-documents :cl-wfx))
