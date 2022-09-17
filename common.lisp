@@ -2,7 +2,6 @@
 
 (defgeneric parameter (parameter))
 
-
 ;;Enable ISO 8601 date-time
 (local-time:enable-read-macros)
 
@@ -11,13 +10,11 @@
 (defun log-shit (shit)
   (when *log-shit-p*
     (with-open-file (out "/home/phil/source/shit.log"
-			 :direction :output
-			 :if-exists :append
-			 :if-does-not-exist :create)
+                         :direction :output
+                         :if-exists :append
+                         :if-does-not-exist :create)
       (pprint (frmt "***********************************************************~%~A" shit) out)
-      (close out)
-      
-      ))
+      (close out)))
   nil)
 
 ;;GLOBAL VARS and Shortcut functions ################################
@@ -33,7 +30,7 @@
   "Not to be set. Used internally Exposes the current session.")
 
 (defvar *system* nil
-  "Global variable designating the current system. 
+  "Global variable designating the current system.
 Notes:
 Dont set manually use with-system macro.")
 
@@ -41,163 +38,158 @@ Dont set manually use with-system macro.")
 
 (defparameter *lambda-functions*
   (list 'cl-wfx:frmt
-	'cl-wfx::wfx-query-context-data-document
-	'cl-wfx::wfx-query-context-data
-	'cl-wfx:with-html
-	'cl-wfx:with-html-string
-	'cl-wfx::render-report
-	'cl-wfx::parameter
-	'cl-who:htm
-	'cl-who:str
-	'cl-who:esc
-	'cl-getx:getx))
+        'cl-wfx::wfx-query-context-data-document
+        'cl-wfx::wfx-query-context-data
+        'cl-wfx:with-html
+        'cl-wfx:with-html-string
+        'cl-wfx::render-report
+        'cl-wfx::parameter
+        'cl-who:htm
+        'cl-who:str
+        'cl-who:esc
+        'cl-getx:getx))
 
 (defun lambda-eval-safe (lambdax)
+  #|
   (let* ((sandbox-impl::*allowed-extra-symbols*
-	    *lambda-functions*)
-	  (lambda-result (make-array '(0) :element-type 'base-char
-			    :fill-pointer 0 :adjustable t)))
+  *lambda-functions*)
+  (lambda-result (make-array '(0) :element-type 'base-char
+  :fill-pointer 0 :adjustable t)))
 
-      (with-output-to-string (s lambda-result)
-	(let ((kunru-sandbox::*msg-value-prefix* "")
-	      (kunru-sandbox::*msg-error-prefix* "")
-	      (kunru-sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
-	      (kunru-sandbox::*msg-no-value-message* "Nil"))
-	  
-	  (kunru-sandbox::read-eval-print lambdax  s)
-	  lambda-result))))
+  (with-output-to-string (s lambda-result)
+  (let ((kunru-sandbox::*msg-value-prefix* "")
+  (kunru-sandbox::*msg-error-prefix* "")
+  (kunru-sandbox::*msg-value-formatter* "~{~S~^<br/> ~}")
+  (kunru-sandbox::*msg-no-value-message* "Nil"))
 
+  (kunru-sandbox::read-eval-print lambdax  s)
+  lambda-result)))
+  |#)
 
 (defun read-s-expressions (expressions-string)
   (let ((stream (make-string-input-stream expressions-string))
-	(expressions))
-    
+        (expressions))
+
     (when stream
       (loop with expr = nil
-	   do
-	   (setf expr (read stream nil))
-	   (when expr
-	     (setf expressions (push expr  expressions)))
-	   while expr)
+            do
+            (setf expr (read stream nil))
+            (when expr
+              (setf expressions (push expr  expressions)))
+            while expr)
       (close stream))
-    
-    (reverse expressions)))
 
+    (reverse expressions)))
 
 (defun read-no-eval (value)
   :documentation "Function to convert string to s-expressions. Any value that is not a string is returned as is. When the value to read is a string it could consist of multiple s-expresssions, the second parameter returned indicates if this is the case or not. If multiple a list of s-expressions is returned else a single s-expression."
   (let ((*read-eval* nil)
-	(expressions ))
+        (expressions))
     (if value
-	(if (stringp value)
-	    (progn
-	      (setf expressions 
-		    (read-s-expressions value))
-	      (if (> (length expressions) 1)
-		  (values expressions t)
-		  (values (first expressions))))
-	    (values value nil)))))
+        (if (stringp value)
+            (progn
+              (setf expressions
+                    (read-s-expressions value))
+              (if (> (length expressions) 1)
+                  (values expressions t)
+                  (values (first expressions))))
+            (values value nil)))))
 
 (defun evaluable-p (s-expression)
   (fboundp (first s-expression)))
 
-
 (defun clear-eval-log ()
   (when *context*
-    (setf (gethash :debug-error (cache *context*))	   
-	      nil )
-    (setf (gethash :debug-results (cache *context*))	   
-	  nil)
-    (setf (gethash :debug-backtrace (cache *context*))	   
-	  nil)))
+    (setf (gethash :debug-error (cache *context*))
+          nil)
+    (setf (gethash :debug-results (cache *context*))
+          nil)
+    (setf (gethash :debug-backtrace (cache *context*))
+          nil)))
 
 (defun log-eval (error results backtrace)
   (when *context*
-    (setf (gethash :debug-error (cache *context*))	   
-	      error )
-    (setf (gethash :debug-results (cache *context*))	   
-	  results )
-    (setf (gethash :debug-backtrace (cache *context*))	   
-	  backtrace)))
-
-
+    (setf (gethash :debug-error (cache *context*))
+          error)
+    (setf (gethash :debug-results (cache *context*))
+          results)
+    (setf (gethash :debug-backtrace (cache *context*))
+          backtrace)))
 
 (defun read-eval (expressions-string)
   :documentation "Function converts a string to s-expressions and returns the results of evaluating each s-expression in turn. If the s-expression is not deemed to be evaluatable the expression is returned as is."
   (let ((results)
-	(last-expression))
+        (last-expression))
 
     (clear-eval-log)
-    
-    (handler-case
-	(let ((stream (make-string-input-stream expressions-string) ))
-	  
-	  (when stream
-	    (loop with expr = nil
-	       do
-		 (setf expr (read stream nil))
-		 (when expr
-		   (setf last-expression expr)
-		   (if (evaluable-p expr)
-	     	       (push (eval expr) results)
-		       (push expr results)))
-	       while expr)
-	    (close stream))
-	 ;; (setf results (reverse results))
-	  (values (car results)
-		  (cdr results)
-		  (list
-		   :error nil
-		   :backtrace nil)))
-      (error (c)
-	(break "?~A" c)
-	(log-eval c results (sb-debug:list-backtrace))
-	(values c
-		results
-		(list 
-		 :error c
-		 :backtrace (append (list (list last-expression)) (sb-debug:list-backtrace))))))))
 
+    (handler-case
+        (let ((stream (make-string-input-stream expressions-string)))
+
+          (when stream
+            (loop with expr = nil
+                  do
+                  (setf expr (read stream nil))
+                  (when expr
+                    (setf last-expression expr)
+                    (if (evaluable-p expr)
+                        (push (eval expr) results)
+                        (push expr results)))
+                  while expr)
+            (close stream))
+          ;; (setf results (reverse results))
+          (values (car results)
+                  (cdr results)
+                  (list
+                   :error nil
+                   :backtrace nil)))
+      (error (c)
+        (break "?~A" c)
+        (log-eval c results (sb-debug:list-backtrace))
+        (values c
+                results
+                (list
+                 :error c
+                 :backtrace (append (list (list last-expression)) (sb-debug:list-backtrace))))))))
 
 (defun eval-blob% (blob)
-  (read-eval (blob-string-value blob) ))
+  (read-eval (blob-string-value blob)))
 
 (defun eval% (object &key package-name)
-  
-  (cond  ((and (document-p object) (document-of-type-p object "lambda"))
-	    (let ((*package* (or (and package-name (or (find-package package-name)
-						       (make-package package-name)))
-				 *package*)))
-	      (eval-blob% (getx object :code))))
-	   ((and (document-p object) (document-of-type-p object "package"))
-	    (let ((*package* (or
-			      (and package-name (or (find-package package-name)
-						    (make-package package-name)))
-			      (and (getx object :package)
-				   (find-package (frmt "~A" (getx object :package))))
-			      (and (getx object :package)
-				   (make-package (frmt "~A" (getx object :package))))
-			      *package*)))
-	      (eval-blob% (getx object :code))))
-	   ((stringp object)
-	    (let ((*package* (or (and package-name (or (find-package package-name)
-						       (make-package package-name)))
-				 *package*)))
-	      (read-eval object)))
-	   (t
-	    (clear-eval-log)
-	    (let ((*package* (or (and package-name (or (find-package package-name)
-						       (make-package package-name)))
-				 *package*)))
-              
-	      (handler-case
-		  
-		  (eval object)
-		
-		(error (c)
-		  (log-eval c nil (sb-debug:list-backtrace))
-		  (error c)))))))
 
+  (cond  ((and (document-p object) (document-of-type-p object "lambda"))
+          (let ((*package* (or (and package-name (or (find-package package-name)
+                                                     (make-package package-name)))
+                               *package*)))
+            (eval-blob% (getx object :code))))
+         ((and (document-p object) (document-of-type-p object "package"))
+          (let ((*package* (or
+                            (and package-name (or (find-package package-name)
+                                                  (make-package package-name)))
+                            (and (getx object :package)
+                                 (find-package (frmt "~A" (getx object :package))))
+                            (and (getx object :package)
+                                 (make-package (frmt "~A" (getx object :package))))
+                            *package*)))
+            (eval-blob% (getx object :code))))
+         ((stringp object)
+          (let ((*package* (or (and package-name (or (find-package package-name)
+                                                     (make-package package-name)))
+                               *package*)))
+            (read-eval object)))
+         (t
+          (clear-eval-log)
+          (let ((*package* (or (and package-name (or (find-package package-name)
+                                                     (make-package package-name)))
+                               *package*)))
+
+            (handler-case
+
+                (eval object)
+
+              (error (c)
+                (log-eval c nil (sb-debug:list-backtrace))
+                (error c)))))))
 
 (defun load-blob% (blob)
   (load (make-string-input-stream (blob-string-value blob))))
@@ -205,54 +197,50 @@ Dont set manually use with-system macro.")
 (defun load% (object &key package)
 
   (cond  ((and (document-p object) (document-of-type-p object "lambda"))
-	  (let ((*package* (or package  *package*)))
-	    (load-blob% (getx object :code))))
-	 ((and (document-p object) (document-of-type-p object "package"))
-	  (let ((*package* (or
-			    package
-			    (and (getx object :package)
-				 (find-package (frmt "~A" (getx object :package))))
-			    (and (getx object :package)
-				 (make-package (frmt "~A" (getx object :package))))
-			    *package*)))
-	    (load-blob% (getx object :code))))
-	 ((blob-p object)
-	  (load-blob% object))
-	 ((stringp object)
-	  (load object))
-	 (t
-	  (load object))))
+          (let ((*package* (or package  *package*)))
+            (load-blob% (getx object :code))))
+         ((and (document-p object) (document-of-type-p object "package"))
+          (let ((*package* (or
+                            package
+                            (and (getx object :package)
+                                 (find-package (frmt "~A" (getx object :package))))
+                            (and (getx object :package)
+                                 (make-package (frmt "~A" (getx object :package))))
+                            *package*)))
+            (load-blob% (getx object :code))))
+         ((blob-p object)
+          (load-blob% object))
+         ((stringp object)
+          (load object))
+         (t
+          (load object))))
 
 (defun apply% (function arg &rest arguments)
   (handler-case
       (apply function arg arguments)
     (error (c)
-      
+
       (log-eval c nil (sb-debug:list-backtrace))
-      (error c)
-      )))
+      (error c))))
 
 (defun funcall% (function &rest arguments)
   (handler-case
       (apply  function (car arguments) (cdr arguments))
     (error (c)
-      
+
       (log-eval c nil (sb-debug:list-backtrace))
       (error c))))
 
-
 ;;#############################STRINGS
 ;;FORMAT
-
 
 (defun format-money-for-export-no-cents (value &key (include-comma nil))
   (typecase value
     (null "")
     ((or integer single-float ratio float)
      (if include-comma
-	 (format nil "~:d" (truncate value))
-	 (format nil "~d" (truncate value))
-	 ))
+         (format nil "~:d" (truncate value))
+         (format nil "~d" (truncate value))))
     (t
      (princ-to-string value))))
 
@@ -261,29 +249,27 @@ Dont set manually use with-system macro.")
     (null "")
     ((or integer single-float ratio float)
      (if include-comma
-	 (format nil "~:d" value)
-	 (format nil "~d" value)
-	 ))
+         (format nil "~:d" value)
+         (format nil "~d" value)))
     (t
      (princ-to-string value))))
 
-
 (defun frmt-money (value &key (include-comma t))
   (typecase value
-        (null "")
-        (number
-         (multiple-value-bind (quot rem) (truncate (round value 1/100) 100)
-           (format nil "~@?.~2,'0d"
-                   (if include-comma "~:d" "~d")
-                   quot (abs rem))))
-        (t
-         (princ-to-string value))))
+    (null "")
+    (number
+     (multiple-value-bind (quot rem) (truncate (round value 1/100) 100)
+       (format nil "~@?.~2,'0d"
+               (if include-comma "~:d" "~d")
+               quot (abs rem))))
+    (t
+     (princ-to-string value))))
 
 #|
 ;;STRING MANIPULATION
 (defun trim-whitespace (string)
-  (string-trim
-   '(#\Space #\Newline #\Tab #\Return) string))
+(string-trim
+'(#\Space #\Newline #\Tab #\Return) string))
 |#
 
 (defun assert-ends-with-/ (string)
@@ -294,60 +280,60 @@ Dont set manually use with-system macro.")
                            (substitute #\- #\Space (string-downcase id)) ""))
 
 (defun replace-all (string part replacement &key (test #'char=))
-"Returns a new string in which all the occurences of the part 
+  "Returns a new string in which all the occurences of the part
 is replaced with replacement."
-(when string
-  (with-output-to-string (out)
-    (loop with part-length = (length part)
-       for old-pos = 0 then (+ pos part-length)
-       for pos = (search part string
-			 :start2 old-pos
-			 :test test)
-       do (write-string string out
-			:start old-pos
-			:end (or pos (length string)))
-       when pos do (write-string replacement out)
-       while pos))))
+  (when string
+    (with-output-to-string (out)
+      (loop with part-length = (length part)
+            for old-pos = 0 then (+ pos part-length)
+            for pos = (search part string
+                              :start2 old-pos
+                              :test test)
+            do (write-string string out
+                             :start old-pos
+                             :end (or pos (length string)))
+            when pos do (write-string replacement out)
+            while pos))))
 
 (defun replace-all-list (string value-pairs)
   (let ((new-val string))
     (dolist (value-pair value-pairs)
       (setf new-val (replace-all new-val
-				 (first value-pair)
-				 (second value-pair))))
+                                 (first value-pair)
+                                 (second value-pair))))
     new-val))
 
 (defun sanitize-file-name (name)
   (when name
     (string-downcase
      (replace-all-list name
-		       '(("_" "-")
-			 ("(" "-")
-			 (")" "-")
-			 ("'" "-")
-			 ("\"" "-")
-			 ("," "-")
-			 (" " "-")
-			 ("“" "")
-			 ("\"" "")
-			 ("." "-")
-			 ("?" "")
-			 ("--" "-")
-                         
-			 (":" "-"))))))
+                       '(("_" "-")
+                         ("(" "-")
+                         (")" "-")
+                         ("'" "-")
+                         ("\"" "-")
+                         ("," "-")
+                         (" " "-")
+                         ("“" "")
+                         ("\"" "")
+                         ("." "-")
+                         ("?" "")
+                         ("--" "-")
+
+                         (":" "-"))))))
 
 #|
 (defun plural-name (name)
-  (setf name (frmt "~A" name))
-  (let ((last-char (char name (1- (length name)))))
-    (cond ((char-equal last-char #\s)
-	   name)
-	  ((char-equal last-char #\y)
-	   (alexandria:symbolicate (subseq name 0
-					   (1- (length name)))
-				   'ies))
-	  (t
-	   (alexandria:symbolicate name 's)))))
+(setf name (frmt "~A" name))
+(let ((last-char (char name (1- (length name)))))
+(cond ((char-equal last-char #\s)
+name)
+((char-equal last-char #\y)
+(alexandria:symbolicate (subseq name 0
+(1- (length name)))
+'ies))
+(t
+(alexandria:symbolicate name 's)))))
 
 |#
 
@@ -355,15 +341,14 @@ is replaced with replacement."
 
 #|
 (defun empty-p (value)
-  "Checks if value is null or an empty string."
-  (or
-   (not value)
-   (null value)
-   (equal value "")
-   (if (stringp value)
-       (string-equal value "NIL")
-       )
-   (equal (trim-whitespace (princ-to-string value)) "")))
+"Checks if value is null or an empty string."
+(or
+(not value)
+(null value)
+(equal value "")
+(if (stringp value)
+(string-equal value "NIL"))
+(equal (trim-whitespace (princ-to-string value)) "")))
 |#
 
 (declaim (inline ensure-num))
@@ -371,24 +356,23 @@ is replaced with replacement."
   :documentation "If there is junk in the value then 0 is returned."
   (let ((final-val 0))
     (if (empty-p value)
-	final-val
-	(if (stringp value)
-	    (setf final-val (read-from-string value))
-	    (setf final-val value)))
+        final-val
+        (if (stringp value)
+            (setf final-val (read-from-string value))
+            (setf final-val value)))
     (cond ((numberp final-val)
-	       final-val)
-	      (t
-	       0))))
+           final-val)
+          (t
+           0))))
 
 ;;#####################DATES
 
 (defvar *time-zone* 0)
 
-
 (defun decode-iso-date (date)
   (ppcre:register-groups-bind ((#'parse-integer year)
                                (#'parse-integer month)
-                               (#'parse-integer day)) 
+                               (#'parse-integer day))
       ("(\\d{4})-(\\d{1,2})-(\\d{1,2})" date)
     (values year month day)))
 
@@ -405,7 +389,6 @@ is replaced with replacement."
 (defvar *long-months-afrikaans*
   #("Januarie" "Februarie" "Maart" "April" "Mei" "Junie"
     "Julie" "Augustus" "September" "Oktober" "November" "Desember"))
-
 
 (defun month-number (month)
   (let ((position (or (position (frmt "~A" month) *short-months*
@@ -424,7 +407,7 @@ is replaced with replacement."
     (string
      (multiple-value-bind (integer position)
          (parse-integer value :junk-allowed t
-                        :start start :end end)
+                              :start start :end end)
        (when (= (length value) position)
          integer)))
     (integer value)))
@@ -454,21 +437,18 @@ is replaced with replacement."
 
 (defvar *month-days* '(31 28 31 30 31 30 31 31 30 31 30 31))
 
-
 (defun leap-year-p (year)
   (cond
     ((zerop (rem year 400)) t)
     ((zerop (rem year 100)) nil)
     ((zerop (rem year 4)) t)))
 
-
 (defun month-days (month-number year)
   (if (and (leap-year-p year)
-	   (= month-number 2))
-      29      
+           (= month-number 2))
+      29
       (nth (1- month-number)
-	   *month-days*)))
-
+           *month-days*)))
 
 (defun check-date (date month year)
   ;; Technically, there can be a 31 dec 1899 date, if the time-zone is
@@ -476,10 +456,9 @@ is replaced with replacement."
   (when (and (typep year '(integer 1900))
              (typep month '(integer 1 12))
              (plusp date))
-    
+
     (let ((days ;;(svref *month-days* (1- month))
-	   (month-days month year)
-	   ))
+            (month-days month year)))
       (cond ((and (= month 2)
                   (leap-year-p year))
              (<= date 29))
@@ -556,7 +535,6 @@ is replaced with replacement."
       (format-system-universal-date date)
       date))
 
-
 (defconstant +24h-secs+ (* 60 60 24))
 
 (defconstant +hour-secs+ (* 60 60))
@@ -571,7 +549,5 @@ is replaced with replacement."
         (t
          (- end-date start-date))))
 
-
 ;;########################################list manipulation
-
 
