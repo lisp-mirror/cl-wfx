@@ -113,6 +113,10 @@ Dont set manually use with-system macro.")
     (setf (gethash :debug-backtrace (cache *context*))
           backtrace)))
 
+(defun list-backtrace (&optional condition)
+  (with-output-to-string (out)
+    (uiop:print-backtrace :stream out :condition condition)))
+
 (defun read-eval (expressions-string)
   :documentation "Function converts a string to s-expressions and returns the results of evaluating each s-expression in turn. If the s-expression is not deemed to be evaluatable the expression is returned as is."
   (let ((results)
@@ -142,12 +146,14 @@ Dont set manually use with-system macro.")
                    :backtrace nil)))
       (error (c)
         (break "?~A" c)
-        (log-eval c results (sb-debug:list-backtrace))
-        (values c
-                results
-                (list
-                 :error c
-                 :backtrace (append (list (list last-expression)) (sb-debug:list-backtrace))))))))
+        (let ((backtrace (list-backtrace)))
+          (log-eval c results backtrace)
+          (values c
+                  results
+                  (list
+                   :error c
+                   :backtrace (append (list (list last-expression))
+                                      (list backtrace)))))))))
 
 (defun eval-blob% (blob)
   (read-eval (blob-string-value blob)))
@@ -185,7 +191,7 @@ Dont set manually use with-system macro.")
                 (eval object)
 
               (error (c)
-                (log-eval c nil (sb-debug:list-backtrace))
+                (log-eval c nil (list-backtrace c))
                 (error c)))))))
 
 (defun load-blob% (blob)
@@ -217,7 +223,7 @@ Dont set manually use with-system macro.")
       (apply function arg arguments)
     (error (c)
 
-      (log-eval c nil (sb-debug:list-backtrace))
+      (log-eval c nil (list-backtrace c))
       (error c))))
 
 (defun funcall% (function &rest arguments)
@@ -225,7 +231,7 @@ Dont set manually use with-system macro.")
       (apply  function (car arguments) (cdr arguments))
     (error (c)
 
-      (log-eval c nil (sb-debug:list-backtrace))
+      (log-eval c nil (list-backtrace c))
       (error c))))
 
 ;;#############################STRINGS

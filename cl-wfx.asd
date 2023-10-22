@@ -6,6 +6,7 @@
   :depends-on ("alexandria"
                "cl-ppcre"
                "ironclad"
+               "babel"
                "bordeaux-threads"
                "cl-getx"
                "cl-naive-store"

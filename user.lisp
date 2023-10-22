@@ -296,7 +296,7 @@ must be valid email to enable confirmation.")
 (defun hash-password (password salt)
   (hash-sequence
    (concatenate '(simple-array (unsigned-byte 8) (*))
-                (sb-ext:string-to-octets password)
+                (babel:string-to-octets password :encoding :utf-8)
                 salt)))
 
 (defun make-password (password)

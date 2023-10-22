@@ -1,9 +1,14 @@
 (in-package :common-lisp-user)
 
 (defpackage :cl-wfx
-  (:use :cl :cl-getx :cl-naive-store.naive-core :cl-naive-store.naive-indexed
-	:cl-naive-store.document-types :cl-naive-store.document-type-defs
-	:cl-naive-store.naive-documents)
+  (:use
+   :cl
+   :cl-getx
+   :cl-naive-store.naive-core
+   :cl-naive-store.naive-indexed
+   :cl-naive-store.document-types
+   :cl-naive-store.definitions
+   :cl-naive-store.naive-documents)
 
   (:export
    ;;#### common.lisp
