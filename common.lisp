@@ -6,7 +6,7 @@
 
 (defun log-shit (shit)
   (when *log-shit-p*
-    (with-open-file (out "/home/phil/source/shit.log"
+    (with-open-file (out (merge-pathnames "shit.log" (user-homedir-pathname))
                          :direction :output
                          :if-exists :append
                          :if-does-not-exist :create)
