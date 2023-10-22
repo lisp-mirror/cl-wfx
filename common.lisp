@@ -2,9 +2,6 @@
 
 (defgeneric parameter (parameter))
 
-;;Enable ISO 8601 date-time
-(local-time:enable-read-macros)
-
 (defparameter *log-shit-p* nil)
 
 (defun log-shit (shit)
