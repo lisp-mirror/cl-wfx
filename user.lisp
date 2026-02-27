@@ -6,20 +6,20 @@
      :label "User Permission"
 
      :elements ((:name :context-spec
-		 :label "Context Spec"
-		 :concrete-type (:type :document
-				 :complex-type :collection
-				 :document-type "context-spec"
-				 :collection "context-specs"
-				 :accessor :name)
-		 :key-p t
-		 :attributes (:display t :editable t))
-		(:name :permissions
-		 :label "Permissions"
-		 :concrete-type (:type :keyword
-				 :complex-type :value-string-list
-				 :delimiter " ")
-		 :attributes (:display t :editable t))))
+                 :label "Context Spec"
+                 :concrete-type (:type :document
+                                 :complex-type :collection
+                                 :document-type "context-spec"
+                                 :collection "context-specs"
+                                 :accessor :name)
+                 :key-p t
+                 :attributes (:display t :editable t))
+                (:name :permissions
+                 :label "Permissions"
+                 :concrete-type (:type :keyword
+                                 :complex-type :value-string-list
+                                 :delimiter " ")
+                 :attributes (:display t :editable t))))
     :destinations (:core :license))
 
    (:document-type
@@ -27,17 +27,17 @@
      :label "Data-Type Permission"
 
      :elements ((:name :type-name
-		 :label "Type Name"
-		 :concrete-type :string
-		 :key-p t
-		 :attributes
-		 (:display t :editable t))
-		(:name :permissions
-		 :label "Permissions"
-		 :concrete-type (:type :keyword
-				 :complex-type :value-string-list
-				 :delimiter " ")
-		 :attributes (:display t :editable t))))
+                 :label "Type Name"
+                 :concrete-type :string
+                 :key-p t
+                 :attributes
+                 (:display t :editable t))
+                (:name :permissions
+                 :label "Permissions"
+                 :concrete-type (:type :keyword
+                                 :complex-type :value-string-list
+                                 :delimiter " ")
+                 :attributes (:display t :editable t))))
     :destinations (:core :license))
 
    (:document-type
@@ -45,27 +45,27 @@
      :label "User Profile"
 
      :elements ((:name :name
-		 :label "Name"
-		 :concrete-type :string
-		 :key-p t
-		 :attributes
-		 (:display t :editable t))
-		(:name :context-permissions
-		 :label "Context Permissions"
-		 :key nil
-		 :concrete-type (:type :list
-				 :complex-type :list-objects
-				 :document-type "user-permission"
-				 :accessor (:context-spec :name))
-		 :attributes (:display t :editable t))
-		(:name :document-type-permissions
-		 :label "Data Type Permissions"
-		 :key nil
-		 :concrete-type (:type :list
-				 :complex-type :list-objects
-				 :document-type "document-type-permission"
-				 :accessor (:name))
-		 :attributes (:display t :editable t)))
+                 :label "Name"
+                 :concrete-type :string
+                 :key-p t
+                 :attributes
+                 (:display t :editable t))
+                (:name :context-permissions
+                 :label "Context Permissions"
+                 :key nil
+                 :concrete-type (:type :list
+                                 :complex-type :list-objects
+                                 :document-type "user-permission"
+                                 :accessor (:context-spec :name))
+                 :attributes (:display t :editable t))
+                (:name :document-type-permissions
+                 :label "Data Type Permissions"
+                 :key nil
+                 :concrete-type (:type :list
+                                 :complex-type :list-objects
+                                 :document-type "document-type-permission"
+                                 :accessor (:name))
+                 :attributes (:display t :editable t)))
      :documentation "Predetermined user settings used to set up users according to role or some other criteria.")
     :destinations (:core :license))
 
@@ -80,15 +80,15 @@
      :label "User Preference"
 
      :elements ((:name :name
-		 :label "name"
-		 :concrete-type :string
-		 :key-p t
-		 :attributes (:display t :editable t))
-		(:name :preference
-		 :label "Preference"
-		 :key nil
-		 :concrete-type :string
-		 :attributes (:display t :editable t)))
+                 :label "name"
+                 :concrete-type :string
+                 :key-p t
+                 :attributes (:display t :editable t))
+                (:name :preference
+                 :label "Preference"
+                 :key nil
+                 :concrete-type :string
+                 :attributes (:display t :editable t)))
      :documentation "")
     :destinations (:core))
 
@@ -108,12 +108,12 @@
       (:name :title
        :label "Title"
        :concrete-type (:type :keyword
-		       :complex-type :value-list
-		       :elements (:mr
-				  :mrs
-				  :miss
-				  :prof
-				  :dr))
+                       :complex-type :value-list
+                       :elements (:mr
+                                  :mrs
+                                  :miss
+                                  :prof
+                                  :dr))
        :attributes (:display t :editable t)
        :documentation "")
       (:name :name
@@ -137,23 +137,23 @@
       (:name :license-codes
        :label "License Codes"
        :concrete-type (:type :string
-		       :complex-type :value-string-list
-		       :delimiter ";")
+                       :complex-type :value-string-list
+                       :delimiter ";")
        :attributes (:display t :editable t))
       (:name :permissions
        :label "Permissions"
        :key nil
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "user-permission"
-		       :accessor (:context-spec :name))
+                       :complex-type :list-objects
+                       :document-type "user-permission"
+                       :accessor (:context-spec :name))
        :attributes (:display t :editable t))
       (:name :preferences
        :label "Preferences"
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "user-preference"
-		       :accessor :name)
+                       :complex-type :list-objects
+                       :document-type "user-preference"
+                       :accessor :name)
        :attributes (:display t :editable t))
       (:name :super-user-p
        :label "Is Super User"
@@ -163,8 +163,8 @@
       (:name :status
        :label "Status"
        :concrete-type (:type :keyword
-		       :complex-type :value-list
-		       :elements (:active :suspended :locked :disabled))
+                       :complex-type :value-list
+                       :elements (:active :suspended :locked :disabled))
        :attributes (:display t :editable t)
        :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -176,10 +176,10 @@
      :document-type "user")
     :destinations (:core)
     :access (:stores
-	     (:core
-	      (:user-levels
-	       (:core (:update :delete :lookup))
-	       (:system (:update :delete :lookup))))))
+             (:core
+              (:user-levels
+               (:core (:update :delete :lookup))
+               (:system (:update :delete :lookup))))))
 
    (:document-type
     (:name
@@ -196,31 +196,31 @@
       (:name :permissions
        :label "Permissions"
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "user-permission"
-		       :accessor (:context-spec :name))
+                       :complex-type :list-objects
+                       :document-type "user-permission"
+                       :accessor (:context-spec :name))
        :attributes (:display t :editable t))
       (:name :document-type-permissions
        :label "Data Type Permissions"
        :key nil
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "document-type-permission"
-		       :accessor (:name))
+                       :complex-type :list-objects
+                       :document-type "document-type-permission"
+                       :accessor (:name))
        :attributes (:display t :editable t))
       (:name :accessible-entities
        :label "Accessible Entities"
        :concrete-type (:type :list
-		       :complex-type :collection-objects
-		       :document-type"entity"
-		       :collection "entities"
-		       :accessor :name)
+                       :complex-type :collection-objects
+                       :document-type"entity"
+                       :collection "entities"
+                       :accessor :name)
        :attributes (:display t :editable t))
       (:name :status
        :label "Status"
        :concrete-type (:type :keyword
-		       :complex-type :value-list
-		       :elements (:active :suspended :locked :disabled))
+                       :complex-type :value-list
+                       :elements (:active :suspended :locked :disabled))
        :attributes (:display t :editable t)
        :documentation "Active, Suspended, Locked Out, Disabled"))
      :documentation "User with enough attributes to implement basic login and ui security.")
@@ -257,17 +257,17 @@ must be valid email to enable confirmation.")
        :label "Selected Licenses"
        :key nil
        :concrete-type (:type :string
-		       :complex-type :value-string-list
-		       :delimiter ";"
-		       :accessor :code)
+                       :complex-type :value-string-list
+                       :delimiter ";"
+                       :accessor :code)
        :attributes (:display t :editable t))
       (:name :selected-entities
        :label "Selected Entities"
        :key nil
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "entity"
-		       :accessor :name)
+                       :complex-type :list-objects
+                       :document-type "entity"
+                       :accessor :name)
        :attributes (:display t :editable t))))
     :destinations (:core))
 
@@ -316,13 +316,13 @@ must be valid email to enable confirmation.")
   (multiple-value-bind (password salt)
       (make-password password)
     (persist-document (core-collection "users")
-		      (list :license-codes license-codes
-			    :email email
-			    :name name
-			    :phone-no phone-no
-			    :password password
-			    :salt salt
-			    :super-user-p super-user-p))))
+                      (list :license-codes license-codes
+                            :email email
+                            :name name
+                            :phone-no phone-no
+                            :password password
+                            :salt salt
+                            :super-user-p super-user-p))))
 
 (defun change-user (user new-password &key)
   (when new-password
@@ -333,61 +333,69 @@ must be valid email to enable confirmation.")
   (query-document
    (core-collection "users")
    :query (lambda (document)
-	    (string-equal email (getx document :email)))))
+            (string-equal email (getx document :email)))))
 
 (defun get-license-user (license-code email)
   (query-document
    (license-collection license-code "license-users")
    :query (lambda (document)
-	    (string-equal email (getx document :email)))))
+            (string-equal email (getx document :email)))))
 
 (defparameter *user* nil)
 
 (defun add-user (email password &key name licenses contexts exclude-document-types
-				  entities super-user-p permissions)
+                 entities super-user-p permissions)
   (let ((user (get-user email))
-	(context-permissions)
-	(document-type-permissions))
+        (context-permissions)
+        (document-type-permissions)
+        (dt-user-permission
+          (get-multiverse-element
+           :document-type (store (core-collection "users"))
+           "context-spec"))
+        (dt-doc-type-permission
+          (get-multiverse-element
+           :document-type (store (core-collection "users"))
+           "document-type-permission")))
 
     (when user
       (multiple-value-bind (password salt)
-	  (make-password password)
-	(setf (getx user :password) password)
-	(setf (getx user :salt) salt))
+          (make-password password)
+        (setf (getx user :password) password)
+        (setf (getx user :salt) salt))
       (setf (getx user :name) name)
       (setf (getx user :license-codes) licenses)
       (persist-document (document-collection user) user))
 
     (unless user
       (setf user (cl-wfx::make-user email password
-				    :name name
-				    :license-codes licenses
-				    :super-user-p super-user-p)))
+                                    :name name
+                                    :license-codes licenses
+                                    :super-user-p super-user-p)))
     (dolist (context contexts)
       (push
        (make-document
-	:document-type "user-permission"
-	:elements
-	(list :context-spec
-	      context
-	      :permissions (or permissions '(:update :delete :search))))
+        :document-type  dt-user-permission
+        :elements
+        (list :context-spec
+              context
+              :permissions (or permissions '(:update :delete :search))))
        context-permissions))
 
     (dolist (document-type exclude-document-types)
       (push
        (make-document
-	:document-type "document-type-permission"
-	:elements
-	(list :type-name
-	      document-type
-	      :permissions permissions))
+        :document-type dt-doc-type-permission
+        :elements
+        (list :type-name
+              document-type
+              :permissions permissions))
        document-type-permissions))
 
     (dolist (code licenses)
       (unless (find code (getx user :license-codes) :test #'equalp)
-	(setf (getx user :license-codes)
-	      (append (getx user :license-codes)
-		      (list code))))
+        (setf (getx user :license-codes)
+              (append (getx user :license-codes)
+                      (list code))))
 
       (persist-document
        (document-collection user)
@@ -395,73 +403,73 @@ must be valid email to enable confirmation.")
 
       (let ((lic-user (get-license-user code email)))
 
-	(when lic-user
-	  (setf (getx lic-user :permissions) context-permissions)
-	  (setf (getx lic-user :accessible-entities) entities)
-	  (setf (getx lic-user :document-type-permissions) document-type-permissions)
+        (when lic-user
+          (setf (getx lic-user :permissions) context-permissions)
+          (setf (getx lic-user :accessible-entities) entities)
+          (setf (getx lic-user :document-type-permissions) document-type-permissions)
 
-	  (persist-document (license-collection code "license-users") lic-user))
+          (persist-document (license-collection code "license-users") lic-user))
 
-	(unless lic-user
-	  (persist-document
-	   (license-collection code "license-users")
-	   (list
-	    :email email
-	    :permissions context-permissions
-	    :document-type-permissions document-type-permissions
-	    :accessible-entities entities
-	    :status :active)))))
+        (unless lic-user
+          (persist-document
+           (license-collection code "license-users")
+           (list
+            :email email
+            :permissions context-permissions
+            :document-type-permissions document-type-permissions
+            :accessible-entities entities
+            :status :active)))))
 
     user))
 
 (defgeneric ensure-user (system email password &key &allow-other-keys))
 
 (defmethod ensure-user ((system system) email password
-			&key name licenses super-user-p &allow-other-keys)
+                        &key name licenses super-user-p &allow-other-keys)
   (or (get-user email)
       (make-user email password
-		 :name name
-		 :license-codes licenses
-		 :super-user-p super-user-p)))
+                 :name name
+                 :license-codes licenses
+                 :super-user-p super-user-p)))
 
 (defmethod ensure-core-user ((system system) &key &allow-other-keys)
   (ensure-user system
-	       "admin@cl-wfx.com"
-	       "admin"
-	       :name "Core Admin"
-	       :super-user-p t))
+               "admin@cl-wfx.com"
+               "admin"
+               :name "Core Admin"
+               :super-user-p t))
 
 (defmethod ensure-system-user ((system system) &key &allow-other-keys)
   (ensure-user system
-	       (frmt "admin@~A.com" (name system))
-	       "admin"
-	       :name "System Admin"
-	       :licenses (or (get-license-codes) (list "000000"))
-	       :super-user-p t))
+               (frmt "admin@~A.com" (name system))
+               "admin"
+               :name "System Admin"
+               :licenses (or (get-license-codes) (list "000000"))
+               :super-user-p t))
 
 (defmacro with-core-user (system &body body)
   `(let* ((*system* ,system)
-	  (*user* (get-user "admin@cl-wfx.com"))
-	  (*session*
-	    (make-instance 'session
-			   :user (make-document
-				  :document-type "user"
-				  :elements (list :email "admin@cl-wfx.com"
-						  :selected-licenses nil
-						  :selected-entities nil)))))
+          (*user* (get-user "admin@cl-wfx.com"))
+          (*session*
+            (make-instance 'session
+                           :user (make-document
+                                  :document-type "user"
+                                  :elements (list :email "admin@cl-wfx.com"
+                                                  :selected-licenses nil
+                                                  :selected-entities nil)))))
      (when *user*
        ,@body)))
 
 (defmacro with-user (system user &body body)
   `(let* ((*system* ,system)
-	  (*user* (get-user ,user))
-	  (*session*
-	    (make-instance 'session
-			   :user (make-document
-				  :document-type "user"
-				  :elements (list :email ,user
-						  :selected-licenses nil
-						  :selected-entities nil)))))
+          (*user* (get-user ,user))
+          (*session*
+            (make-instance 'session
+                           :user (make-document
+                                  :document-type "user"
+                                  :elements (list :email ,user
+                                                  :selected-licenses nil
+                                                  :selected-entities nil)))))
      (when *user*
        ,@body)))
 
@@ -474,24 +482,24 @@ must be valid email to enable confirmation.")
 
 (defun user-context-permission-p (context permission)
   (let ((permission-p)
-	(lic-user (get-license-user
-		   (first (getx (active-user) :selected-licenses))
-		   (getx (active-user) :email))))
+        (lic-user (get-license-user
+                   (first (getx (active-user) :selected-licenses))
+                   (getx (active-user) :email))))
 
     (if (getx (current-user) :super-user-p)
-	(setf permission-p t)
+        (setf permission-p t)
 
-	(dolist (permissionx (getx lic-user :permissions))
+        (dolist (permissionx (getx lic-user :permissions))
 
-	  (when (and (getx permissionx :context-spec)
-		     (equalp (getx (getx permissionx :context-spec) :name)
-			     context))
+          (when (and (getx permissionx :context-spec)
+                     (equalp (getx (getx permissionx :context-spec) :name)
+                             context))
 
-	    (unless permission-p
-	      (setf permission-p
-		    (find permission
-			  (getx permissionx :permissions)
-			  :test #'equalp))))))
+            (unless permission-p
+              (setf permission-p
+                    (find permission
+                          (getx permissionx :permissions)
+                          :test #'equalp))))))
     permission-p))
 
 (defun validate-user (email password)

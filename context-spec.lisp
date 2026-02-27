@@ -10,26 +10,26 @@
        :label "Lambda"
        :key-p t
        :concrete-type (:type :list
-		       :complex-type :collection
-		       :document-type "lambda"
-		       :collection "lambdas"
-		       :accessor :name)
+                       :complex-type :collection
+                       :document-type "lambda"
+                       :collection "lambdas"
+                       :accessor :name)
        :attributes (:display t :editable t))
 
       (:name :events
        :label "Events"
        :key-p nil
        :concrete-type (:type :keyword
-		       :complex-type :value-string-list
-		       :elements (:select :save
-				  :delete
-					  :new
-				  :export
-					  :search
-				  :filter
-					  :select-action-list
-				  :select-action)
-		       :delimiter " ")
+                       :complex-type :value-string-list
+                       :elements (:select :save
+                                  :delete
+                                          :new
+                                  :export
+                                          :search
+                                  :filter
+                                          :select-action-list
+                                  :select-action)
+                       :delimiter " ")
        :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
@@ -42,23 +42,23 @@
        :label "Java Script"
        :key-p t
        :concrete-type (:type :list
-		       :complex-type :collection
-		       :document-type "java-script"
-		       :collection "java-scripts"
-		       :accessor :name)
+                       :complex-type :collection
+                       :document-type "java-script"
+                       :collection "java-scripts"
+                       :accessor :name)
        :attributes (:display t :editable t))
       (:name :event
        :label "Event"
        :key-p nil
        :concrete-type (:type :keyword
-		       :complex-type :value-string-list
-		       :elements (:select :save
-				  :delete
-					  :new
-				  :export
-					  :search
-				  :filter)
-		       :delimiter " ")
+                       :complex-type :value-string-list
+                       :elements (:select :save
+                                  :delete
+                                          :new
+                                  :export
+                                          :search
+                                  :filter)
+                       :delimiter " ")
        :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
@@ -91,31 +91,31 @@
        :label "Permissions"
        :key-p nil
        :concrete-type (:type :keyword
-		       :complex-type :value-string-list
-		       :delimiter " ")
+                       :complex-type :value-string-list
+                       :delimiter " ")
        :attributes (:display t :editable t))
       (:name :lambdas
        :label "Lambdas"
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "context-lambda"
-		       :accessor (:lambda :name))
+                       :complex-type :list-objects
+                       :document-type "context-lambda"
+                       :accessor (:lambda :name))
        :attributes (:display t :editable t))
       (:name :lambdas
        :label "Lambdas"
        :concrete-type (:type :list
-		       :complex-type :list-objects
-		       :document-type "context-lambda"
-		       :accessor (:java-script :name))
+                       :complex-type :list-objects
+                       :document-type "context-lambda"
+                       :accessor (:java-script :name))
        :attributes (:display t :editable t))
       (:name :package
        :label "Package"
        :key-p t
        :concrete-type (:type :list
-		       :complex-type :collection
-		       :document-type "package"
-		       :collection "packages"
-		       :accessor :name)
+                       :complex-type :collection
+                       :document-type "package"
+                       :collection "packages"
+                       :accessor :name)
        :attributes (:display t :editable t))
       (:name :url
        :label "Url"
@@ -131,8 +131,8 @@
        :label "Args"
        :key-p nil
        :concrete-type (:type :keyword
-		       :complex-type :value-string-list
-		       :delimiter " ")
+                       :complex-type :value-string-list
+                       :delimiter " ")
        :attributes (:display t :editable t)))
      :destinations (:core :system :license)))
 
@@ -159,12 +159,12 @@
 
 (defun get-context-spec (store name)
   (query-document
-   (get-collection store "context-specs")
+   (get-multiverse-element :collection store "context-specs")
    :query (lambda (document)
-	    (equalp name (getx document :name)))))
+            (equalp name (getx document :name)))))
 
 (defun get-context-spec-x (name)
   (wfx-query-document
    "context-specs"
    :query (lambda (document)
-	    (equalp name (getx document :name)))))
+            (equalp name (getx document :name)))))

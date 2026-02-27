@@ -43,11 +43,6 @@
                       (cl-who:str
                        (gethash :login-error (cache *context*))))))))
 
-(defun context-url (spec-name)
-  (frmt "~As-wfx?cs=~A" (site-url *system*)
-        (string-downcase
-         spec-name)))
-
 (defun clear-hash-documents (hash)
   (when hash
     (loop for key being the hash-keys of hash
@@ -812,10 +807,11 @@
              (cl-who:str
               "prep_file_upload();"))
 
+    #|
     (:script :type "text/javascript"
-             (cl-who:str
-              "prep_expands();"))
-
+    (cl-who:str
+    "prep_expands();"))
+    |#
     (:script :type "text/javascript"
              (cl-who:str
               "$(document).ready(function () {

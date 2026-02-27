@@ -6,15 +6,15 @@
      :label "Key Value"
 
      :elements ((:name :key
-		 :label "Key"
-		 :concrete-type :string
-		 :key-p t
-		 :attributes (:display t :editable t))
-		(:name :value
-		 :label "Value"
-		 :key-p t
-		 :concrete-type :string
-		 :attributes (:display t :editable t)))
+                 :label "Key"
+                 :concrete-type :string
+                 :key-p t
+                 :attributes (:display t :editable t))
+                (:name :value
+                 :label "Value"
+                 :key-p t
+                 :concrete-type :string
+                 :attributes (:display t :editable t)))
      :documentation "")
     :destinations (:core :system :license))
 
@@ -23,19 +23,19 @@
      :label "List Value"
 
      :elements (
-		(:name :value
-		 :label "Value"
-		 :key-p t
-		 :concrete-type :string
-		 :attributes (:display t :editable t))
-		(:name :attributes
-		 :label "Attributes"
-		 :concrete-type (:type :list
-				 :complex-type :list-objects
-				 :document-type "key-value"
-				 :accessor (:key)
-				 :documentation "")
-		 :attributes (:display t :editable t)))
+                (:name :value
+                 :label "Value"
+                 :key-p t
+                 :concrete-type :string
+                 :attributes (:display t :editable t))
+                (:name :attributes
+                 :label "Attributes"
+                 :concrete-type (:type :list
+                                 :complex-type :list-objects
+                                 :document-type "key-value"
+                                 :accessor (:key)
+                                 :documentation "")
+                 :attributes (:display t :editable t)))
      :documentation "")
     :destinations (:core :system :license))
 
@@ -44,18 +44,18 @@
      :label "named-list"
 
      :elements ((:name :list-name
-		 :label "List Name"
-		 :concrete-type :string
-		 :key-p t
-		 :attributes (:display t :editable t))
-		(:name :list-values
-		 :label "List Values"
-		 :concrete-type (:type :list
-				 :complex-type :list-objects
-				 :document-type "list-value"
-				 :accessor (:key)
-				 :documentation "")
-		 :attributes (:display t :editable t)))
+                 :label "List Name"
+                 :concrete-type :string
+                 :key-p t
+                 :attributes (:display t :editable t))
+                (:name :list-values
+                 :label "List Values"
+                 :concrete-type (:type :list
+                                 :complex-type :list-objects
+                                 :document-type "list-value"
+                                 :accessor (:key)
+                                 :documentation "")
+                 :attributes (:display t :editable t)))
      :documentation "")
     :destinations (:core :system :license))
 
@@ -74,16 +74,16 @@
 
 (defun get-named-list (name &key store)
   (wfx-query-document
-   (get-collection (or
-		    store
-		    (system-store))
-		   "named-lists")
+   (get-multiverse-element :collection (or
+                                        store
+                                        (system-store))
+                           "named-lists")
    :query (lambda (document)
-	    (string-equal name (getx document :list-name)))))
+            (string-equal name (getx document :list-name)))))
 
 (defun get-named-list-values (name &key store)
   (let ((list
-	  (get-named-list name :store store)))
+          (get-named-list name :store store)))
     (getx list :list-values)))
 
 (defun sort-order (list-document)
@@ -95,24 +95,24 @@
   (sort (copy-list list-values) #'> :key #'sort-order))
 
 (defun get-named-list-sorted (name
-			      &key
-				(sort-function
-				 #'named-list-sort-order-function)
-				store)
+                              &key
+                              (sort-function
+                               #'named-list-sort-order-function)
+                              store)
   (let ((list
-	  (get-named-list-values name :store store)))
+          (get-named-list-values name :store store)))
     (when list
       (funcall sort-function list))))
 
 (defun get-named-list-sorted-values (name
-				     &key
-				       (sort-function
-					#'named-list-sort-order-function)
-				       store)
+                                     &key
+                                     (sort-function
+                                      #'named-list-sort-order-function)
+                                     store)
   (let* ((list (get-named-list name :store store))
-	 (sorted-list (if list
-			  (funcall sort-function (getx list :list-values))))
-	 (value-list))
+         (sorted-list (if list
+                          (funcall sort-function (getx list :list-values))))
+         (value-list))
     (dolist (document sorted-list)
       (setf value-list (pushnew (getx document :value) value-list)))
     value-list))

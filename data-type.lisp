@@ -6,33 +6,33 @@
      :label "Fields"
 
      :elements ((:name :name
-		 :label "Name"
-		 :key-p t
-		 :concrete-type :string
-		 :attributes (:display t :editable t)
-		 :documentation "")
-		(:name :key-p
-		 :label "Key"
-		 :key-p nil
-		 :concrete-type :boolean
-		 :attributes (:display t :editable t)
-		 :documentation "")
-		(:name :document-type
-		 :label "Type Def"
-		 :key-p nil
-		 :concrete-type (:type :list
-				 :complex-type :p-list)
-		 :attributes (:display t :editable t)
-		 :documentation "")
+                 :label "Name"
+                 :key-p t
+                 :concrete-type :string
+                 :attributes (:display t :editable t)
+                 :documentation "")
+                (:name :key-p
+                 :label "Key"
+                 :key-p nil
+                 :concrete-type :boolean
+                 :attributes (:display t :editable t)
+                 :documentation "")
+                (:name :document-type
+                 :label "Type Def"
+                 :key-p nil
+                 :concrete-type (:type :list
+                                 :complex-type :p-list)
+                 :attributes (:display t :editable t)
+                 :documentation "")
 
-		(:name :document-type
-		 :label "Attributes"
-		 :key-p nil
-		 :concrete-type (:type :list
-				 :list-type :keyword
-				 :delimiter " ")
-		 :attributes (:display t :editable t)
-		 :documentation "")))
+                (:name :document-type
+                 :label "Attributes"
+                 :key-p nil
+                 :concrete-type (:type :list
+                                 :list-type :keyword
+                                 :delimiter " ")
+                 :attributes (:display t :editable t)
+                 :documentation "")))
     :destinations (:core :system :license))
 
    (:document-type
@@ -40,26 +40,26 @@
      :label "Data Type"
 
      :elements ((:name :name
-		 :label "Name"
-		 :key-p t
-		 :concrete-type :string
-		 :attributes (:display t :editable t)
-		 :documentation "")
-		(:name :label
-		 :label "Label"
-		 :key-p nil
-		 :concrete-type :string
-		 :attributes (:display t :editable t)
-		 :documentation "")
-		(:name :elements
-		 :label "Fields"
-		 :key-p nil
-		 :concrete-type (:type :list
-				 :list-type :document
-				 :document-type "element"
-				 :key-accessor :name)
-		 :attributes (:display t :editable t)
-		 :documentation "")))
+                 :label "Name"
+                 :key-p t
+                 :concrete-type :string
+                 :attributes (:display t :editable t)
+                 :documentation "")
+                (:name :label
+                 :label "Label"
+                 :key-p nil
+                 :concrete-type :string
+                 :attributes (:display t :editable t)
+                 :documentation "")
+                (:name :elements
+                 :label "Fields"
+                 :key-p nil
+                 :concrete-type (:type :list
+                                 :list-type :document
+                                 :document-type "element"
+                                 :key-accessor :name)
+                 :attributes (:display t :editable t)
+                 :documentation "")))
     :destinations (:core :system :license))
 
    (:collection
@@ -85,6 +85,7 @@
 
 (defun get-document-type (store type-name)
   (query-document
-   (get-collection store "document-types")
+   (get-multiverse-element :collection store "document-types")
    :query (lambda (document)
-	    (equalp (getx document :name) type-name))))
+            (equalp (getx document :name) type-name))))
+

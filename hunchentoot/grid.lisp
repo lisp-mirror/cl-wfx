@@ -92,10 +92,9 @@
                 (and (digx element :concrete-type :values-lambda)
                      (eval% (digx element :concrete-type :values-lambda)))
 
-                (digx element :concrete-type :values)))
+                (digx element :concrete-type :elements)))
 
          (selected))
-
     (when (functionp list)
       (setf list (funcall (eval% (digx element :concrete-type :values-lambda)) document parent-document hierarchy)))
 
@@ -240,29 +239,6 @@
                            (js-pair "wfxaction" "grid-auto-complete")))
 
                   (:div :id (frmt "~A-drop-div" element-name) :class "auto-list"))))))
-
-(defun accessor-value (document accessors)
-  (let ((value))
-    (if accessors
-        (if (listp accessors)
-            (if (listp (first accessors))
-                (let ((values))
-                  (dolist (accessor accessors)
-                    (push
-                     (apply #'digx
-                            document
-                            accessor)
-                     values))
-                  (setf value (format nil
-                                      "~{~a~^ ~}"
-                                      (reverse values))))
-                (setf value (apply #'digx
-                                   document
-                                   accessors)))
-            (setf value (apply #'digx
-                               document
-                               (list accessors))))
-        document)))
 
 (defun fetch-contained-document-list (element edit-document)
 
@@ -409,12 +385,15 @@
               (or active-page 1)))))
 
 (defun grid-js-render-file-upload (document-type form-id row-id element-name)
+
   (js-render-form-values
    "cl-wfx:ajax-render-file-upload"
    row-id
    form-id
    (js-pair "document-type"
-            (frmt "~A" document-type))
+            (frmt "~A" (if (stringp document-type)
+                           document-type
+                           (name document-type))))
    (js-pair "element-name" element-name)
    (js-pair "wfxaction" "upload-file")))
 
@@ -423,7 +402,9 @@
 
     (js-render "cl-wfx:ajax-grid"
                (gethash :collection-name (cache *context*))
-               (js-pair "document-type" (frmt "~A" document-type))
+               (js-pair "document-type" (frmt "~A" (if (stringp document-type)
+                                                       document-type
+                                                       (name document-type))))
 
                (js-pair "wfxaction" (or action ""))
 
@@ -444,7 +425,9 @@
              :name "expand" :type "submit"
              :class "btn btn-sm border-0 active"
              :aria-pressed "true"
-             :onclick (grid-js-render document-type
+             :onclick (grid-js-render (if (stringp document-type)
+                                          document-type
+                                          (name document-type))
                                       :action "unexpand")
              (:i :class "fa far fa-chevron-circle-up fa-lg  text-secondary")))
           (with-html-string
@@ -452,7 +435,9 @@
              :name "expand" :type "submit"
              :class "btn btn-sm border-0"
              :aria-pressed "false"
-             :onclick (grid-js-render document-type
+             :onclick (grid-js-render (if (stringp document-type)
+                                          document-type
+                                          (name document-type))
                                       :action "expand"
                                       :document-id (document-hash document))
              (:i :class "fa far fa-chevron-circle-right fa-lg text-light"))))))
@@ -474,7 +459,9 @@
 
     (js-render "cl-wfx:ajax-grid"
                (gethash :collection-name (cache *context*))
-               (js-pair "document-type" (frmt "~A" document-type))
+               (js-pair "document-type" (frmt "~A" (if (stringp document-type)
+                                                       document-type
+                                                       (name document-type))))
 
                (js-pair "wfxaction" "delete")
 
@@ -491,7 +478,9 @@
   (let ((active-page (getcx document-type :active-page)))
     (js-render "cl-wfx:ajax-grid"
                (gethash :collection-name (cache *context*))
-               (js-pair "document-type" (frmt "~A" document-type))
+               (js-pair "document-type" (frmt "~A" (if (stringp document-type)
+                                                       document-type
+                                                       (name document-type))))
 
                (js-pair "wfxaction" "document-action")
                (js-pair "action-name" (string-downcase (frmt "~A" (or action ""))))
@@ -506,13 +495,18 @@
 (defun hierarchy-string (documents)
   (let ((hierarchy ""))
     (dolist (document documents)
-      (setf hierarchy  (concatenate 'string hierarchy " "
-                                    (frmt "(~A ~A)"
-                                          (getx document :document-type)
-                                          (if (getx document :document)
-                                              (if (document-p (getx document :document))
-                                                  (document-hash (getx document :document))
-                                                  (getx document :document)))))))
+      (let ((doc-type (if (stringp (getx document :document-type))
+                          (getx document :document-type)
+                          (name
+                           (getx document :document-type)))))
+        (setf hierarchy
+              (concatenate 'string hierarchy " "
+                           (frmt "(~A ~A)"
+                                 doc-type
+                                 (if doc-type
+                                     (if (document-p (getx document :document))
+                                         (document-hash (getx document :document))
+                                         (getx document :document))))))))
     (frmt "(~A)" hierarchy)))
 
 (defun grid-js-render-edit (document-type &key action document hierarchy)
@@ -520,7 +514,9 @@
 
     (js-render "cl-wfx:ajax-grid-edit"
                (frmt "ajax-edit-~A" (document-hash document))
-               (js-pair "document-type" (frmt "~A" document-type))
+               (js-pair "document-type" (frmt "~A" (if (stringp document-type)
+                                                       document-type
+                                                       (name document-type))))
 
                (js-pair "wfxaction" (string-downcase (frmt "~A" (or action ""))))
 
@@ -544,7 +540,7 @@
                          (getx (context-spec *context*) :name)
                          :update)
                         "fa fa-edit fa-2x "
-                        "fa fa-file-o fa-2x ")
+                        "fa fa-file fa-2x ")
                     :style "color:#5DADE2  "
                     :aria-pressed
                     (if (and (parameter "document-id")
@@ -555,7 +551,9 @@
                         "false")
                     :onclick
                     (frmt "~A;toggle_tbody(\"ajax-edit-~A\");toggle_tbody(\"ajax-editing-row-~A\");toggle_tbody(\"ajax-expand-row-~A\");"
-                          (grid-js-render-edit document-type
+                          (grid-js-render-edit (if (stringp document-type)
+                                                   document-type
+                                                   (name document-type))
                                                :action "edit"
                                                :document document
                                                :hierarchy hierarchy)
@@ -573,7 +571,9 @@
                  :style "color:#EC7063  "
                  :onclick
                  (frmt "if(confirm(\"Are you sure you want to delete?\")){~A}"
-                       (grid-js-render-delete document-type
+                       (grid-js-render-delete (if (stringp document-type)
+                                                  document-type
+                                                  (name document-type))
                                               :document document
                                               :hierarchy hierarchy)))))))
 
@@ -588,11 +588,15 @@
                  (if (getx action :confirmation)
                      (frmt "~A;alert(\"~A\")"
 
-                           (grid-js-render-action document-type
+                           (grid-js-render-action (if (stringp document-type)
+                                                      document-type
+                                                      (name document-type))
                                                   (getx action :name)
                                                   :document document)
                            (getx action :confirmation))
-                     (grid-js-render-action document-type
+                     (grid-js-render-action (if (stringp document-type)
+                                                document-type
+                                                (name document-type))
                                             (getx action :name)
                                             :document document))
 
@@ -605,7 +609,10 @@
                                        (eval%
                                         (getx action :action))
                                        (list document
-                                             (getcx document-type :parent-document))))
+                                             (getcx (if (stringp document-type)
+                                                        document-type
+                                                        (name document-type))
+                                                    :parent-document))))
                     (cl-who:str (getx action :label))))))))))
 
 (defun render-edit-buttons (document-type hierarchy)
@@ -620,9 +627,13 @@
            :class "fa fa-save fa-2x text-success"
            :onclick
            (frmt "if(document.getElementById(\"grid-edit-~A\").checkValidity()) {~A}else console.log(\"invalid form\");"
-                 document-type
+                 (if (stringp document-type)
+                     document-type
+                     (name document-type))
                  (grid-js-render-form-values
-                  document-type
+                  (if (stringp document-type)
+                      document-type
+                      (name document-type))
                   (string-downcase
                    (frmt "grid-edit-~A" document-type))
 
@@ -634,7 +645,10 @@
         :onclick (frmt "~A;toggle_display(\"ajax-edit-row-~A\");"
                        (grid-js-render document-type
                                        :action "cancel")
-                       (document-hash (getcx document-type :edit-document))))))
+                       (document-hash (getcx (if (stringp document-type)
+                                                 document-type
+                                                 (name document-type))
+                                             :edit-document))))))
 
 (defun render-grid-edit-row (document-type name element label document parent-document hierarchy)
 
@@ -697,7 +711,13 @@
 
        (let ((sub-document (getx document (getx element :name))))
          (unless sub-document
-           (setf sub-document (make-document :document-type sub-document-type)))
+           (setf sub-document (make-document :document-type
+                                             (get-multiverse-element
+                                              :document-type
+                                              (store (wfx-get-collection
+                                                      (gethash :collection-name
+                                                               (cache *context*))))
+                                              sub-document-type))))
          (cl-who:htm
           (:div
            :class "row collapse" :id (frmt "~A-more" sub-document-type)
@@ -716,7 +736,6 @@
 
 (defun render-grid-edit (document-type elements document parent-document
                          parent-spec hierarchy)
-
   (setf (getcx document-type :edit-document) document)
   (setf (getcx document-type :parent-spec) parent-document)
   (setf (getcx document-type :parent-spec) parent-spec)
@@ -1211,6 +1230,18 @@
                 (cl-who:str
                  (render-select-button document))))))))))
 
+(defun render-grid-select-button (document)
+  (with-html-string
+    (:div :class "form-check"
+          (:input
+           :class "grid-selection"
+           ;; :style "height:15px;width:15px;"
+           :type "checkbox"
+           :id "grid-selection"
+           :name "grid-selection"
+           :value (frmt "~A" (document-hash document))
+           :aria-label "Select Row"))))
+
 (defun render-select-document-row (document-type documents elements)
   (with-html-string
     (:tbody :style "display:table-row-group;"
@@ -1221,14 +1252,13 @@
                (:tr
                 (:td)
 
-                (dolist (element (limit-elements elements
-                                                 nil))
+                (dolist (element (limit-elements elements nil))
                   (cl-who:str (render-table-cell element document)))
 
                 (:td :width "5px"
                      (:div :class "btn-group"
                            (cl-who:str
-                            (render-select-button document))))))))))
+                            (render-grid-select-button document))))))))))
 
 (defun render-select-from-grid (document-type sub sub-data-spec hierarchy)
 
@@ -1240,12 +1270,12 @@
 
     (let ((*rendering-shit* t)
           (elements (get-data-elements
-                     (getcx (digx sub :concrete-type :type) :elements))))
+                     (getcx (digx sub :concrete-type :document-type) :elements))))
 
       (with-html-string
         (:tbody :style "display:table-row-group;"
                 :id (frmt "ajax-select-from-group-~A"
-                          (digx sub :concrete-type :type))
+                          (digx sub :concrete-type :document-type))
                 (:tr
                  (:td :colspan (+ (length (limit-elements elements
                                                           nil))
@@ -1263,7 +1293,7 @@
                            "~A;toggle_display(\"ajax-select-from-group-~A\");"
                            (grid-js-render document-type
                                            :action "cancel")
-                           (digx sub :concrete-type :type)))
+                           (digx sub :concrete-type :document-type)))
                       (:span :class "float-right"
                              "&nbsp")
                       (:button
@@ -1298,7 +1328,7 @@
                                   2)
                       (:table :class "table table-sm grid-table-stuffx"
                               (cl-who:str (render-select-document-row
-                                           (digx sub :concrete-type :type)
+                                           (digx sub :concrete-type :document-type)
                                            (wfx-query-context-data
                                             (digx sub :concrete-type :collection)
                                             :query (lambda (document)
@@ -1389,6 +1419,7 @@
                            document  parent-document parent-spec
                            elements
                            hierarchy)
+
   (unless *rendering-shit*
     (let ((header-elements (get-header-elements elements)))
 
@@ -1404,38 +1435,41 @@
                                           parent-document
                                           parent-spec
                                           hierarchy))
-            (cl-who:htm (:tbody
-                         :class ""
-                         :style "display:none"
-                         :id (frmt "ajax-edit-~A" (document-hash document)))
-                        (:tbody
-                         :class ""
-                         :id (frmt "ajax-expand-row-~A" (document-hash document))
-                         :style (if (and (string-equal (frmt "~A" (getcx document-type :expand-id))
-                                                       (frmt "~A" (document-hash document))))
-                                    "display:table-row-group"
-                                    "display:none")
-                         (if (string-equal (frmt "~A" (getcx document-type :expand-id))
-                                           (frmt "~A" (document-hash document)))
+            (cl-who:htm
+             (:tbody
+              :class ""
+              :style "display:none"
+              :id (frmt "ajax-edit-~A" (document-hash document)))
+             (:tbody
+              :class ""
+              :id (frmt "ajax-expand-row-~A" (document-hash document))
+              :style (if (and (string-equal
+                               (frmt "~A" (getcx document-type :expand-id))
+                               (frmt "~A" (document-hash document))))
+                         "display:table-row-group"
+                         "display:none")
+              (if (string-equal (frmt "~A" (getcx document-type :expand-id))
+                                (frmt "~A" (document-hash document)))
 
-                             (cl-who:htm
-                              (:tr
+                  (cl-who:htm
+                   (:tr
 
-                               (:td :colspan (if subs
-                                                 (+ (length
-                                                     (limit-elements header-elements
-                                                                     (if (> (length hierarchy) 1)
-                                                                         hierarchy)))
-                                                    3)
-                                                 (+ (length
-                                                     (limit-elements header-elements
-                                                                     (if (> (length hierarchy) 1)
-                                                                         hierarchy)))
-                                                    1))
+                    (:td :colspan
+                         (if subs
+                             (+ (length
+                                 (limit-elements header-elements
+                                                 (if (> (length hierarchy) 1)
+                                                     hierarchy)))
+                                3)
+                             (+ (length
+                                 (limit-elements header-elements
+                                                 (if (> (length hierarchy) 1)
+                                                     hierarchy)))
+                                1))
 
-                                    (cl-who:str (render-expand document-type document subs
-                                                               sub-level
-                                                               hierarchy)))))))))))))
+                         (cl-who:str (render-expand document-type document subs
+                                                    sub-level
+                                                    hierarchy)))))))))))))
 
 (defun render-new-edit (document-type elements parent-document parent-spec hierarchy)
   (with-html-string
@@ -1488,6 +1522,7 @@
 
 (defun render-grid-data (document-type page-documents sub-level
                          parent-document parent-spec hierarchy)
+
   (let ((documents))
     (with-html-string
       (let ((elements (getcx document-type :elements))
@@ -1960,28 +1995,6 @@
 
           (funcall% (eval% (getx action :action))  document))))))
 
-(defun getcx (&rest indicators)
-  (let* ((indicator (pop indicators))
-         (place (gethash indicator (cache *context*))))
-
-    (when place
-      (if indicators
-          (apply 'digx place indicators)
-          place))))
-
-(defun (setf getcx) (value &rest indicators)
-  (let* ((indicator (pop indicators))
-         (place (gethash indicator (cache *context*))))
-
-    (if indicators
-        (progn
-          (unless place
-            (setf place (list (first indicators) nil)))
-          (setf (digx place indicators) value)
-          (setf (gethash indicator (cache *context*))
-                place))
-        (setf (gethash indicator (cache *context*)) value))))
-
 (defun set-grid-search (document-type)
   (when (or (equalp (parameter "wfxaction") "filter")
             (equalp (parameter "wfxaction") "un-filter"))
@@ -2354,7 +2367,8 @@
          (stores (collection-stores *system* collection-name)))
 
     (dolist (store stores)
-      (let ((collection (get-collection
+      (let ((collection (get-multiverse-element
+                         :collection
                          store
                          collection-name)))
 
@@ -2376,11 +2390,17 @@
                               (frmt "~A" hash))
             (return-from get-child (list (getx element :name) document))))
 
-        (return-from get-child (list (getx element :name)
-                                     (make-document :document-type
-                                                    (string-downcase
-                                                     (frmt "~A" document-type))
-                                                    :hash (uuid:make-v4-uuid))))))))
+        (return-from get-child
+          (list (getx element :name)
+                (make-document :document-type
+                               (get-multiverse-element
+                                :document-type
+                                (store (wfx-get-collection
+                                        (gethash :collection-name
+                                                 (cache *context*))))
+                                document-type)
+
+                               :hash (uuid:make-v4-uuid))))))))
 
 (defun fetch-grid-root-edit-document (hash)
   (let ((collection-name (gethash :collection-name (cache *context*))))
@@ -2515,7 +2535,13 @@
     (setf root-document (fetch-grid-root-edit-document root-hash))
 
     (unless root-document
-      (setf root-document (make-document :document-type document-type)))
+      (setf root-document (make-document :document-type
+                                         (get-multiverse-element
+                                          :document-type
+                                          (store (wfx-get-collection
+                                                  (gethash :collection-name
+                                                           (cache *context*))))
+                                          document-type))))
 
     (when root-document
       (setf edit-objects (list (list :document-type root-type :document root-document)))
@@ -2526,7 +2552,9 @@
 
             (dolist (child (cdr hierarchy))
               (setf document (get-child (getcx document-type :elements)
-                                        (or (if document (second document)) root-document)
+                                        (or (if document
+                                                (second document))
+                                            root-document)
                                         (first child)
                                         (second child)))
               (setf document-type (string-downcase (frmt "~A" (first child))))
@@ -2548,7 +2576,10 @@
          (root-type)
          (root-hash)
          (root-document)
-         (edit-objects))
+         (edit-objects)
+         (collection (wfx-get-collection
+                      (gethash :collection-name (cache *context*))))
+         (store (store collection)))
 
     (setf (getcx document-type :edit-object) nil)
 
@@ -2563,10 +2594,17 @@
     (setf root-document (fetch-grid-root-edit-document root-hash))
 
     (unless root-document
-      (setf root-document (make-document :document-type document-type)))
+      (setf root-document (make-document :document-type
+                                         (get-multiverse-element :document-type
+                                                                 store
+                                                                 document-type))))
 
     (when root-document
-      (setf edit-objects (list (list :document-type root-type :document root-document)))
+      (setf edit-objects (list (list :document-type
+                                     (get-multiverse-element :document-type
+                                                             store
+                                                             root-type)
+                                     :document root-document)))
 
       (if (> (length hierarchy) 1)
           (let ((document)
@@ -2574,7 +2612,9 @@
 
             (dolist (child (cdr hierarchy))
               (setf document (get-child (getcx document-type :elements)
-                                        (or (if document (second document)) root-document)
+                                        (or (if document
+                                                (second document))
+                                            root-document)
                                         (first child)
                                         (second child)))
 
@@ -2624,12 +2664,10 @@
         (let* ((server-path
                  (string-downcase
                   (frmt "~A/files/~A/~A/"
-                        (if (location collection)
-                            (location collection)
-                            (string-downcase
-                             (frmt "~A~A"
-                                   (location (store collection))
-                                   (name collection))))
+                        (string-downcase
+                         (frmt "~A~A"
+                               (location (store collection))
+                               (name collection)))
                         (parameter "document-type")
                         (getx element :name))))
                (file-name (sanitize-file-name
@@ -2674,10 +2712,12 @@
       (return-from find-contained-document document))))
 
 (defun synq-value (element edit-document parent-document value)
+  (unless (document-elements edit-document)
+    (setf (document-elements edit-document) (list (name element) nil)))
 
   (cond ((equalp (complex-type element) :collection)
-
-         (setf (getx edit-document element)
+         (break "-?")
+         (setf (getx edit-document (name element))
                (wfx-query-context-document
                 (digx element :concrete-type :collection)
                 :query (lambda (document)
@@ -2685,7 +2725,8 @@
                          (string-equal (frmt "~A" (document-hash document))
                                        (frmt "~A" value))))))
         ((equalp (complex-type element) :collection-contained-document)
-         (setf (getx edit-document element)
+         (break "?")
+         (setf (getx edit-document (name element))
                (if (not (empty-p value))
                    (progn
 
@@ -2696,26 +2737,34 @@
                        edit-document))))))
 
         ((equalp (complex-type element) :contained-document)
-
-         (setf (getx edit-document element)
+         (break "??")
+         (setf (getx edit-document (name element))
                (find-contained-document
                 value
                 (accessor-value parent-document
                                 (digx  element :concrete-type :container-accessor)))))
         ((equalp (complex-type element) :document)
-
+         (break "???")
          (let* ((sub-document-type (digx  element :concrete-type :type))
-                (more-document (or (getx edit-document element)
-                                   (make-document :document-type
-                                                  sub-document-type))))
+                (more-document
+                  (or (getx edit-document element)
+                      (make-document :document-type
+                                     (if (stringp sub-document-type)
+                                         (get-multiverse-element
+                                          :document-type
+                                          (store (wfx-get-collection
+                                                  (gethash :collection-name
+                                                           (cache *context*))))
+                                          sub-document-type)
+                                         sub-document-type)))))
            (synq-document-values sub-document-type
                                  (getcx sub-document-type :elements)
                                  edit-document
                                  more-document)
 
-           (setf (getx edit-document element) more-document)))
+           (setf (getx edit-document (name element)) more-document)))
         (t
-         (setf (getx edit-document element) value))))
+         (setf (getx edit-document (name element)) value))))
 
 (defun validate-value (element element-name edit-document parent-document value)
   (if (equalp (complex-type element) :document)
@@ -2754,7 +2803,6 @@
       (list t nil)))
 
 (defun synq-document-values (document-type elements parent-document edit-document)
-
   (dolist (element elements)
 
     (when (and (digx element :attributes :editable)
@@ -2823,6 +2871,7 @@
          (getcx document-type :validation-errors)))
 
       (when collection
+
         (setf (document-collection root-document) collection)
         (setf (document-store root-document) (store collection))
         (persist-document collection root-document :allow-key-change-p t)))))
@@ -2847,7 +2896,16 @@
       (when (document-store root-document)
         (unless (equalp (store collection)
                         (document-store root-document))
-          (setf root-document (make-document :document-type (document-type root-document)
+          (setf root-document (make-document :document-type
+                                             (if (stringp (document-type root-document))
+                                                 (get-multiverse-element
+                                                  :document-type
+                                                  (store (wfx-get-collection
+                                                          (gethash :collection-name
+                                                                   (cache *context*))))
+                                                  (document-type root-document))
+                                                 (document-type root-document))
+
                                              :collection collection
                                              :elements (document-values root-document)
                                              :changes (document-changes root-document)))
@@ -2864,7 +2922,14 @@
       (when (and edit-document (document-store edit-document))
         (unless (equalp (store collection)
                         (document-store edit-document))
-          (setf edit-document (make-document :document-type document-type
+          (setf edit-document (make-document :document-type
+                                             (get-multiverse-element
+                                              :document-type
+                                              (store (wfx-get-collection
+                                                      (gethash :collection-name
+                                                               (cache *context*))))
+                                              document-type)
+
                                              :collection (wfx-get-collection
                                                           (name (document-collection
                                                                  edit-document)))
@@ -2921,7 +2986,12 @@
 
         (unless edit-document
           (setf edit-document (make-document :document-type
-                                             document-type)))
+                                             (get-multiverse-element
+                                              :document-type
+                                              (store (wfx-get-collection
+                                                      (gethash :collection-name
+                                                               (cache *context*))))
+                                              document-type))))
 
         (when (digx (getcx document-type :document-type) :document-type :client-validation)
           (let ((valid (funcall (eval% (digx (getcx document-type :document-type)
@@ -2936,12 +3006,17 @@
 
         (unless (getcx document-type :validation-errors)
 
-          (handler-case (synq-document-values document-type elements parent-document edit-document)
-            (error (c)
-              (break "~S" c)
-              (pushnew
-               (list document-type (cl-who:escape-string  (frmt "~S" c)))
-               (getcx document-type :validation-errors))))
+          (synq-document-values document-type elements
+                                parent-document edit-document)
+          #|
+          (handler-case
+
+          (error (c)
+          (break "~S" c)
+          (pushnew
+          (list document-type (cl-who:escape-string  (frmt "~S" c)))
+          (getcx document-type :validation-errors))))
+          |#
 
           (unless (getcx document-type :validation-errors)
 

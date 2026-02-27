@@ -7,7 +7,6 @@
    :cl-naive-store.naive-core
    :cl-naive-store.naive-indexed
    :cl-naive-store.document-types
-   :cl-naive-store.definitions
    :cl-naive-store.naive-documents)
 
   (:export
@@ -160,8 +159,8 @@
 
 (defpackage :wfx-repl
   (:use :cl :cl-naive-store.naive-core
-	:cl-naive-store.naive-documents :cl-wfx))
+        :cl-naive-store.naive-documents :cl-wfx))
 
 (defpackage :wfx-importer
   (:use :cl :cl-naive-store.naive-core
-	:cl-naive-store.naive-documents :cl-wfx))
+        :cl-naive-store.naive-documents :cl-wfx))

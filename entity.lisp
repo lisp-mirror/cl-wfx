@@ -87,8 +87,10 @@
 (defun match-entity (document)
 
   (let ((document-document-type (if (stringp (document-document-type document))
-                                    (get-document-type (document-store document)
-                                                       (document-document-type document))
+                                    (get-multiverse-element
+                                     :document-type
+                                     (document-store document)
+                                     (document-document-type document))
                                     (document-document-type document))))
 
     (cond ((not (getx (active-user) :selected-entities))

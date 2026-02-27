@@ -52,8 +52,8 @@
                                 :concrete-type (getf element :concrete-type)
                                 :attributes (getf element :attributes))))))
 
-              (add-document-type
-               (get-store universe store-name)
+              (add-multiverse-element
+               (get-multiverse-element :store universe store-name)
                (make-instance
                 'extended-document-type
                 :name (getf document-document-type :name)
@@ -73,8 +73,10 @@
           (let ((collection-def (getf definition :collection)))
 
             (when collection-def
-              (let ((document-type (get-document-type (get-store universe store-name)
-                                                      (getf collection-def :document-type))))
+              (let ((document-type (get-multiverse-element
+                                    :document-type
+                                    (get-multiverse-element :store universe store-name)
+                                    (getf collection-def :document-type))))
 
                 (unless document-type
                   #|
@@ -86,13 +88,17 @@
                   (error (frmt "Collection document-type (~A) not found."
                                (getf collection-def :document-type))))
 
-                (add-collection
-                 (get-store universe store-name)
-                 (make-instance
-                  'extended-collection
-                  :name (getf collection-def :name)
-                  :document-type document-type
-                  :destinations (getf definition :destinations)))))))))))
+                (unless (get-multiverse-element
+                         :collection
+                         (get-multiverse-element :store universe store-name)
+                         (getf collection-def :name))
+                  (add-multiverse-element
+                   (get-multiverse-element :store universe store-name)
+                   (make-instance
+                    'extended-collection
+                    :name (getf collection-def :name)
+                    :document-type document-type
+                    :destinations (getf definition :destinations))))))))))))
 
 (defun init-definitions (universe destination store-name definitions)
   ;;Data Types need to be done before collections.
@@ -102,9 +108,9 @@
 (defmethod init-core-universe ((system system) &key &allow-other-keys)
   (unless *core-store-definitions*
     (warn (frmt "init-core ~A" *core-store-definitions*)))
-  (add-store (universe system)
-             (make-instance 'document-store
-                            :name "core"))
+  (add-multiverse-element (universe system)
+                          (make-instance 'document-store
+                                         :name "core"))
 
   (dolist (def *core-store-definitions*)
     (pushnew def (data-definitions system)))
@@ -113,41 +119,46 @@
 (defmethod init-system-universe ((system system) &key &allow-other-keys)
   (unless (data-definitions system)
     (warn (frmt "init-system ~A" (data-definitions system))))
-  (add-store (universe system)
-             (make-instance 'document-store
-                            :name (name system)))
+  (add-multiverse-element (universe system)
+                          (make-instance 'document-store
+                                         :name (name system)))
   (init-definitions (universe system)
                     :system (name system) (data-definitions system)))
 
 (defmethod init-license-universe ((system system) license-code
                                   &key &allow-other-keys)
 
-  (add-store (universe system)
-             (make-instance 'document-store
-                            :name license-code))
+  (unless  (get-multiverse-element :store (universe system) license-code)
 
-  (init-definitions (universe system) :license license-code
-                    *core-store-definitions*)
-  (init-definitions (universe system) :license license-code
-                    (data-definitions system)))
+    (add-multiverse-element (universe system)
+                            (make-instance 'document-store
+                                           :name license-code))
+
+    (init-definitions (universe system) :license license-code
+                      *core-store-definitions*)
+    (init-definitions (universe system) :license license-code
+                      (data-definitions system))
+    (dolist (collection (collections (get-multiverse-element
+                                      :store (universe system) license-code)))
+      (load-data collection :parallel-p nil))))
 
 (defun core-store ()
-  (naive-impl::get-store* (universe *system*) "core"))
+  (get-multiverse-element :store (universe *system*) "core"))
 
 (defun core-collection (name)
-  (naive-impl::get-collection* (core-store) name))
+  (get-multiverse-element :collection (core-store) name))
 
 (defun system-store ()
-  (naive-impl::get-store* (universe *system*) (name *system*)))
+  (get-multiverse-element :store  (universe *system*) (name *system*)))
 
 (defun system-collection (name)
-  (naive-impl::get-collection* (system-store) name))
+  (get-multiverse-element :collection (system-store) name))
 
 (defun license-store (license-code)
-  (naive-impl::get-store* (universe *system*) license-code))
+  (get-multiverse-element :store (universe *system*) license-code))
 
 (defun license-collection (license-code name)
-  (naive-impl::get-collection* (license-store license-code) name))
+  (get-multiverse-element :collection (license-store license-code) name))
 
 (defun get-store-from-short-mod (mod)
   (cond ((equalp mod "cor")
@@ -180,7 +191,7 @@
     (dolist (storex stores)
       (setf store storex))
 
-    (cl-naive-store.document-types:get-document-type store def-name)))
+    (get-multiverse-element :document-type store def-name)))
 
 (defun collection-stores (system collection)
   "To enable \"auto\" customization, stores adhere to a hieghrarchy
@@ -225,14 +236,14 @@ that override others to the correct level."
   (dolist (store (list (license-store (first (getx (active-user) :selected-licenses)))
                        (system-store)
                        (core-store)))
-    (let ((doc-type (get-document-type store type-name)))
+    (let ((doc-type (get-multiverse-element :document-type  store type-name)))
       (when doc-type
         (return-from wfx-get-document-type doc-type)))))
 
 (defun wfx-get-collection (collection-name)
   "Selects the collection from the correct store in the hierarchy of stores."
-  (get-collection (collection-store collection-name)
-                  collection-name))
+  (get-multiverse-element :collection (collection-store collection-name)
+                          collection-name))
 
 (defun append-documents (documents more-documents)
   (let ((merged-documents documents))
@@ -254,16 +265,18 @@ that override others to the correct level."
     (naive-impl:set-query-cache :session *session*)
 
     (dolist (store (collection-stores *system* collection-name))
-      (when (get-collection store collection-name)
+      (when (get-multiverse-element :collection store collection-name)
         (setf documents (append-documents
                          documents
-                         (query-data (get-collection store collection-name)
-                                     :query #'(lambda (document)
-                                                (let ((*context* (naive-impl:get-query-cache :context))
-                                                      (*session* (naive-impl:get-query-cache :session)))
-                                                  (if query
-                                                      (funcall query document)
-                                                      document))))))))
+                         (query-data
+                          (get-multiverse-element :collection store collection-name)
+                          :query
+                          #'(lambda (document)
+                              (let ((*context* (naive-impl:get-query-cache :context))
+                                    (*session* (naive-impl:get-query-cache :session)))
+                                (if query
+                                    (funcall query document)
+                                    document))))))))
 
     ;;    (break "~S ~S" collection documents)
 
@@ -288,10 +301,9 @@ that override others to the correct level."
     (naive-impl:set-query-cache :session *session*)
 
     (dolist (store stores)
-      (let ((collection (get-collection
-                         store
-                         collection-name)))
-
+      (let ((collection (get-multiverse-element :collection
+                                                store
+                                                collection-name)))
         (when collection
           (setf documents
                 (append-documents
@@ -323,9 +335,9 @@ that override others to the correct level."
     (naive-impl:set-query-cache :session *session*)
 
     (dolist (store stores)
-      (let ((collection (get-collection
-                         store
-                         collection-name)))
+      (let ((collection (get-multiverse-element :collection
+                                                store
+                                                collection-name)))
         (when collection
           (multiple-value-bind (object others)
               (query-document
